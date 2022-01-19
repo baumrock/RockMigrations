@@ -1,5 +1,6 @@
 <?php namespace ProcessWire;
 
+use DirectoryIterator;
 use RockMigrations\YAML;
 
 /**
@@ -29,7 +30,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.0.5',
+      'version' => '0.0.6',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -52,6 +53,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->wire('rockmigrations', $this);
     $this->rm1(); // load RM1 (install it)
     $this->addRecorderHooks();
+    $this->watchModules();
   }
 
   public function ready() {
@@ -105,12 +107,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       // bd($this->watchlist);
       foreach($this->watchlist as $path=>$options) {
         if(!$options['migrate']) continue;
-        $this->log("Migrating $path");
         $migrate = $this->wire->files->render($path, $options['vars'], [
           'allowedPaths' => [dirname($path)],
         ]);
         if(is_string($migrate)) $migrate = $this->yaml($migrate);
-        $this->migrate($migrate);
+        if(is_array($migrate)) {
+          $this->log("Migrating $path");
+          $this->migrate($migrate);
+        }
+        else {
+          $this->log("Skipping $path (no config)");
+        }
       }
     }
   }
@@ -219,6 +226,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       'vars' => array_merge($defaults, $vars),
     ];
     $this->watchlist->set($path, $options);
+  }
+
+  /**
+   * Watch module migration files
+   * @return void
+   */
+  public function watchModules() {
+    $path = $this->wire->config->paths->siteModules;
+    foreach (new DirectoryIterator($path) as $fileInfo) {
+      if(!$fileInfo->isDir()) continue;
+      if($fileInfo->isDot()) continue;
+      $name = $fileInfo->getFilename();
+      $migrateFile = $fileInfo->getPath()."/$name/$name.migrate.php";
+      $this->watch($migrateFile);
+    }
   }
 
   /**
