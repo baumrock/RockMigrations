@@ -17,6 +17,9 @@ class RockMigrations extends WireData implements Module {
    **/
   private $lastrun;
 
+  /** @var WireArray */
+  private $recorders;
+
   /** @var WireData */
   private $watchlist;
 
@@ -26,7 +29,7 @@ class RockMigrations extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.0.3',
+      'version' => '0.0.4',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -38,7 +41,9 @@ class RockMigrations extends WireData implements Module {
 
   public function __construct() {
     parent::__construct();
+    $this->recorders = $this->wire(new WireArray());
     $this->watchlist = $this->wire(new WireData());
+    $this->lastrun = $this->wire->cache->get(self::cachename);
     $this->watch($this->wire->config->paths->site."migrate.yaml");
     $this->watch($this->wire->config->paths->site."migrate.php");
   }
@@ -46,6 +51,7 @@ class RockMigrations extends WireData implements Module {
   public function init() {
     $this->wire('rockmigrations', $this);
     $this->rm1(); // load RM1 (install it)
+    $this->addRecorderHooks();
   }
 
   public function ready() {
@@ -62,6 +68,15 @@ class RockMigrations extends WireData implements Module {
       return false;
     }
     return self::$method(...$args);
+  }
+
+  /**
+   * Add hooks to field/template creation for recorder
+   * @return void
+   */
+  public function addRecorderHooks() {
+    $this->addHookAfter("Fields::saved", $this, "saveRecorders");
+    $this->addHookAfter("Templates::saved", $this, "saveRecorders");
   }
 
   /**
@@ -84,18 +99,34 @@ class RockMigrations extends WireData implements Module {
    */
   public function migrateWatchfiles() {
     $lastmodified = $this->lastmodified();
-    $lastrun = $this->wire->cache->get(self::cachename);
-    if($lastrun < $lastmodified) {
+    if($this->lastrun < $lastmodified) {
       $this->log('Running migrations...');
-      $this->wire->cache->save(self::cachename, time(), WireCache::expireNever);
+      $this->updateLastrun();
       // bd($this->watchlist);
       foreach($this->watchlist as $path=>$options) {
         if(!$options['migrate']) continue;
         $this->log("Migrating $path");
-        $migrate = $this->wire->files->render($path, $options['vars']);
+        $migrate = $this->wire->files->render($path, $options['vars'], [
+          'allowedPaths' => [dirname($path)],
+        ]);
+        if(is_string($migrate)) $migrate = $this->yaml($migrate);
         $this->migrate($migrate);
       }
     }
+  }
+
+  /**
+   * Record settings to file
+   * @param string $path
+   * @param array $options
+   * @return void
+   */
+  public function record($path, $options = []) {
+    $defaults = [
+      'path' => $path,
+      'type' => 'yaml', // other options: php, json
+    ];
+    $this->recorders->add(array_merge($defaults, $options));
   }
 
   /**
@@ -105,6 +136,56 @@ class RockMigrations extends WireData implements Module {
    */
   public function rm1() {
     return $this->wire->modules->get("RockMigrations1");
+  }
+
+  /**
+   * Save config to recorder file
+   * @return void
+   */
+  public function saveRecorders(HookEvent $event) {
+    foreach($this->recorders as $recorder) {
+      $path = $recorder['path'];
+      $type = strtolower($recorder['type']);
+      $this->log("Writing config to $path");
+
+      $arr = [
+        'fields' => [],
+        'templates' => [],
+      ];
+      foreach($this->sort($event->wire->fields) as $field) {
+        if($field->flags) continue;
+        $arr['fields'][$field->name] = array_merge([
+          'flags' => $field->flags,
+        ], $field->getArray());
+      }
+      foreach($this->sort($event->wire->templates) as $template) {
+        if($template->flags) continue;
+        $arr['templates'][$template->name] = array_merge([
+          'fields' => array_values($template->fields->each('name')),
+        ], $template->getArray());
+      }
+
+      if($type == 'yaml') $this->yaml($path, $arr);
+    }
+    $this->updateLastrun();
+  }
+
+  /**
+   * Get sorted WireArray of fields
+   * @return WireArray
+   */
+  public function sort($data) {
+    $arr = $this->wire(new WireArray()); /** @var WireArray $arr */
+    foreach($data as $item) $arr->add($item);
+    return $arr->sort('name');
+  }
+
+  /**
+   * Update last run timestamp
+   * @return void
+   */
+  public function updateLastrun() {
+    $this->wire->cache->save(self::cachename, time(), WireCache::expireNever);
   }
 
   /**
@@ -166,12 +247,12 @@ class RockMigrations extends WireData implements Module {
   public function __debugInfo() {
     $lastrun = "never";
     if($this->lastrun) {
-      $lastrun = date("Y-m-d H:i:s", $this->lastrun);
-      $lastrun = $this->lastrun." ($lastrun)";
+      $lastrun = date("Y-m-d H:i:s", $this->lastrun)." ({$this->lastrun})";
     }
     return [
       'Version' => $this->getModuleInfo()['version'],
       'lastrun' => $lastrun,
+      'recorders' => $this->recorders,
       'watch' => $this->watchlist,
     ];
   }
