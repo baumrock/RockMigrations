@@ -7,7 +7,7 @@ use RockMigrations\YAML;
  * @license COMMERCIAL DO NOT DISTRIBUTE
  * @link https://www.baumrock.com
  */
-class RockMigrations extends WireData implements Module {
+class RockMigrations extends WireData implements Module, ConfigurableModule {
 
   const cachename = 'rockmigrations-last-run';
 
@@ -29,7 +29,7 @@ class RockMigrations extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.0.4',
+      'version' => '0.0.5',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -242,6 +242,33 @@ class RockMigrations extends WireData implements Module {
     if($path AND $data===null) return $yaml->load($path);
     elseif($path AND $data!==null) return $yaml->save($path, $data);
     return $yaml;
+  }
+
+
+  /**
+  * Config inputfields
+  * @param InputfieldWrapper $inputfields
+  */
+  public function getModuleConfigInputfields($inputfields) {
+
+    $inputfields->add([
+      'name' => 'saveProject',
+      'type' => 'toggle',
+      'label' => 'Save migration data to /site/project.yaml?',
+      'value' => !!$this->saveProject,
+      'columnWidth' => 50,
+      'description' => 'This file will NOT be watched for changes! Think of it as a read-only dump of your project config.',
+    ]);
+    $inputfields->add([
+      'name' => 'saveMigrate',
+      'type' => 'toggle',
+      'label' => 'Save migration data to /site/migrate.yaml?',
+      'value' => !!$this->saveMigrate,
+      'columnWidth' => 50,
+      'description' => 'This file will automatically be watched for changes! That means you can record changes and then edit migrate.yaml in your IDE and the changes will automatically be applied on the next reload.',
+    ]);
+
+    return $inputfields;
   }
 
   public function __debugInfo() {
