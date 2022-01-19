@@ -30,7 +30,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.0.6',
+      'version' => '0.0.7',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -238,8 +238,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if(!$fileInfo->isDir()) continue;
       if($fileInfo->isDot()) continue;
       $name = $fileInfo->getFilename();
-      $migrateFile = $fileInfo->getPath()."/$name/$name.migrate.php";
-      $this->watch($migrateFile);
+      $migrateFile = $fileInfo->getPath()."/$name/$name.migrate";
+      $this->watch("$migrateFile.yaml");
+      $this->watch("$migrateFile.php");
     }
   }
 
@@ -274,18 +275,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public function getModuleConfigInputfields($inputfields) {
 
     $inputfields->add([
-      'name' => 'saveProject',
+      'name' => 'saveToProject',
       'type' => 'toggle',
       'label' => 'Save migration data to /site/project.yaml?',
-      'value' => !!$this->saveProject,
+      'value' => !!$this->saveToProject,
       'columnWidth' => 50,
       'description' => 'This file will NOT be watched for changes! Think of it as a read-only dump of your project config.',
     ]);
     $inputfields->add([
-      'name' => 'saveMigrate',
+      'name' => 'saveToMigrate',
       'type' => 'toggle',
       'label' => 'Save migration data to /site/migrate.yaml?',
-      'value' => !!$this->saveMigrate,
+      'value' => !!$this->saveToMigrate,
       'columnWidth' => 50,
       'description' => 'This file will automatically be watched for changes! That means you can record changes and then edit migrate.yaml in your IDE and the changes will automatically be applied on the next reload.',
     ]);
