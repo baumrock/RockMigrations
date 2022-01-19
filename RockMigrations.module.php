@@ -1,4 +1,7 @@
 <?php namespace ProcessWire;
+
+use RockMigrations\YAML;
+
 /**
  * @author Bernhard Baumrock, 19.01.2022
  * @license COMMERCIAL DO NOT DISTRIBUTE
@@ -17,10 +20,13 @@ class RockMigrations extends WireData implements Module {
   /** @var WireData */
   private $watchlist;
 
+  /** @var YAML */
+  private $yaml;
+
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.0.2',
+      'version' => '0.0.3',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -132,6 +138,29 @@ class RockMigrations extends WireData implements Module {
       'vars' => array_merge($defaults, $vars),
     ];
     $this->watchlist->set($path, $options);
+  }
+
+  /**
+   * Interface to the YAML class based on Spyc
+   *
+   * Get YAML instance:
+   * $rm->yaml();
+   *
+   * Get array from YAML file
+   * $rm->yaml('/path/to/file.yaml');
+   *
+   * Save data to file
+   * $rm->yaml('/path/to/file.yaml', ['foo'=>'bar']);
+   *
+   * @return mixed
+   */
+  public function yaml($path = null, $data = null) {
+    require_once('spyc/Spyc.php');
+    require_once('YAML.php');
+    $yaml = $this->yaml ?: new YAML();
+    if($path AND $data===null) return $yaml->load($path);
+    elseif($path AND $data!==null) return $yaml->save($path, $data);
+    return $yaml;
   }
 
   public function __debugInfo() {
