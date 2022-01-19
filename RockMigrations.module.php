@@ -25,6 +25,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   /** @var string */
   public $path;
 
+  /**
+   * If true we will write data to recorder files
+   * @var bool
+   */
+  public $record = false;
+
   /** @var WireArrayDump */
   private $recorders;
 
@@ -37,7 +43,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.0.9',
+      'version' => '0.1.0',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -60,8 +66,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $config = $this->wire->config;
     $this->wire('rockmigrations', $this);
     $this->rm1(); // load RM1 (install it)
-    $this->addRecorderHooks();
-
 
     // always watch + migrate /site/migrate.[yaml|json|php]
     // the third parameter makes it use the migrateNew() method
@@ -69,9 +73,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->watch($config->paths->site."migrate", true, true);
     $this->watchModules();
 
-    // add recorders based on module settings
-    if($this->saveToProject) $this->record($config->paths->site."project.yaml");
-    if($this->saveToMigrate) $this->record($config->paths->site."migrate.yaml");
+    // add recorders based on module settings (true=add, false=remove)
+    $this->record($config->paths->site."project.yaml", [], !$this->saveToProject);
+    $this->record($config->paths->site."migrate.yaml", [], !$this->saveToMigrate);
+
+    // hooks
+    $this->addHookAfter("Modules::refresh", $this, "resetCache");
+    $this->addHookAfter("ProcessPageView::finished", $this, "triggerRecorder");
+
+    // add hooks for recording changes
+    $this->addHookAfter("Fields::saved", $this, "setRecordFlag");
+    $this->addHookAfter("Fields::deleted", $this, "setRecordFlag");
+    $this->addHookAfter("Templates::saved", $this, "setRecordFlag");
+    $this->addHookAfter("Templates::deleted", $this, "setRecordFlag");
+    $this->addHookAfter("Modules::refresh", $this, "setRecordFlag");
+    $this->addHookAfter("Modules::saveConfig", $this, "setRecordFlag");
   }
 
   public function ready() {
@@ -88,15 +104,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       return false;
     }
     return self::$method(...$args);
-  }
-
-  /**
-   * Add hooks to field/template creation for recorder
-   * @return void
-   */
-  public function addRecorderHooks() {
-    $this->addHookAfter("Fields::saved", $this, "saveRecorders");
-    $this->addHookAfter("Templates::saved", $this, "saveRecorders");
   }
 
   /**
@@ -240,7 +247,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param array $options
    * @return void
    */
-  public function record($path, $options = []) {
+  public function record($path, $options = [], $remove = false) {
+    if($remove) {
+      $this->recorders->remove($this->recorders->get("path=$path"));
+      return;
+    }
     require_once($this->path."RecorderFile.php");
     $data = $this->wire(new RecorderFile()); /** @var RecorderFile $data */
     $data->setArray([
@@ -250,6 +261,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     ]);
     $data->setArray($options);
     $this->recorders->add($data);
+  }
+
+  /**
+   * Reset "lastrun" cache to force migrations
+   * @return void
+   */
+  public function resetCache(HookEvent $event) {
+    $this->updateLastrun(0);
   }
 
   /**
@@ -265,7 +284,37 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Save config to recorder file
    * @return void
    */
-  public function saveRecorders(HookEvent $event) {
+  public function setRecordFlag(HookEvent $event) {
+    if($event->object instanceof Modules) {
+      // module was saved
+      $config = $this->wire->config;
+      $module = $event->arguments(0);
+      if($module != 'RockMigrations') return;
+      // set runtime properties to submitted values so that migrations
+      // fire immediately on module save
+      $this->record($config->paths->site."project.yaml", [],
+        !$this->wire->input->post('saveToProject', 'int'));
+      $this->record($config->paths->site."migrate.yaml", [],
+        !$this->wire->input->post('saveToMigrate', 'int'));
+    }
+
+    // set the flag to write recorders after pageview::finished
+    $this->record = true;
+
+    // we remove this hook because we have already set the flag
+    $event->removeHook(null);
+  }
+
+  /**
+   * This will trigger the recorder if the flag is set
+   * @return void
+   */
+  public function triggerRecorder(HookEvent $event) {
+    if($this->record) $this->writeRecorderFiles();
+  }
+
+  public function writeRecorderFiles() {
+    $this->log('Running recorders...');
     foreach($this->recorders as $recorder) {
       $path = $recorder->path;
       $type = strtolower($recorder->type);
@@ -275,12 +324,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         'fields' => [],
         'templates' => [],
       ];
-      foreach($this->sort($event->wire->fields) as $field) {
+      foreach($this->sort($this->wire->fields) as $field) {
         if($field->flags) continue;
         $arr['fields'][$field->name] = $field->getExportData();
         unset($arr['fields'][$field->name]['id']);
       }
-      foreach($this->sort($event->wire->templates) as $template) {
+      foreach($this->sort($this->wire->templates) as $template) {
         if($template->flags) continue;
         $arr['templates'][$template->name] = $template->getExportData();
         unset($arr['templates'][$template->name]['id']);
@@ -306,8 +355,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Update last run timestamp
    * @return void
    */
-  public function updateLastrun() {
-    $this->wire->cache->save(self::cachename, time(), WireCache::expireNever);
+  public function updateLastrun($timestamp = null) {
+    if($timestamp === null) $timestamp = time();
+    $this->wire->cache->save(self::cachename, $timestamp, WireCache::expireNever);
   }
 
   /**
