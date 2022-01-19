@@ -13,6 +13,7 @@ use RockMigrations\YAML;
  */
 class RockMigrations extends WireData implements Module, ConfigurableModule {
 
+  const debug = false;
   const cachename = 'rockmigrations-last-run';
 
   /**
@@ -36,7 +37,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.0.8',
+      'version' => '0.0.9',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -53,16 +54,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->recorders = $this->wire(new WireArrayDump());
     $this->watchlist = $this->wire(new WireArrayDump());
     $this->lastrun = $this->wire->cache->get(self::cachename);
-    $this->watch($this->wire->config->paths->site."migrate");
   }
 
   public function init() {
+    $config = $this->wire->config;
     $this->wire('rockmigrations', $this);
     $this->rm1(); // load RM1 (install it)
     $this->addRecorderHooks();
+
+
+    // always watch + migrate /site/migrate.[yaml|json|php]
+    // the third parameter makes it use the migrateNew() method
+    // this will be the first file that is watched!
+    $this->watch($config->paths->site."migrate", true, true);
     $this->watchModules();
 
-    $config = $this->wire->config;
+    // add recorders based on module settings
     if($this->saveToProject) $this->record($config->paths->site."project.yaml");
     if($this->saveToMigrate) $this->record($config->paths->site."migrate.yaml");
   }
@@ -97,7 +104,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return string|false
    */
   public function file($path) {
-    $path = Paths::normalizeSeparators(realpath($path));
+    $path = Paths::normalizeSeparators($path);
     if(is_file($path)) return $path;
     foreach(['yaml', 'json', 'php'] as $ext) {
       if(is_file($f = "$path.$ext")) return $f;
@@ -149,7 +156,49 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function migrateNew($data) {
-    // TODO: add new implementation of $rm->migrate() that works with exportData() arrays
+
+    if($fields = $this->val($data, 'fields')) {
+      foreach($fields as $name=>$fielddata) {
+        // prepend the "name" property from fields array key
+        // otherwise you aways need to write it twice
+        $fielddata = ['name' => $name]+$fielddata;
+
+        // write changes back to original array
+        $data['fields'][$name] = $fielddata;
+      }
+    }
+
+    if($templates = $this->val($data, 'templates')) {
+      foreach($templates as $name=>$tpldata) {
+        // prepend "name" and "fields" properties
+        $tpldata = [
+          'name' => $name,
+
+          // add the "fields" property to the array
+          // this is an RM-internal property used for migrating fields of a tpl
+          // if "fields" property is set we take it as new value
+          // otherwise take the "fieldgroupContexts" of export data
+          'fields' => $this->val($tpldata, "fields")
+            ?: $this->val($tpldata, 'fieldgroupContexts'),
+        ]+$tpldata;
+
+        $data['templates'][$name] = $tpldata;
+      }
+    }
+
+    unset($data['fieldgroupFields']);
+    unset($data['fieldgroupContexts']);
+
+    $this->rm1()->migrate($data);
+  }
+
+  /**
+   * Get array value
+   * @return mixed
+   */
+  public function val($arr, $property) {
+    if(!array_key_exists($property, $arr)) return;
+    return $arr[$property];
   }
 
   /**
@@ -158,7 +207,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    */
   public function migrateWatchfiles() {
     $lastmodified = $this->lastmodified();
-    if($this->lastrun < $lastmodified) {
+    if($this->lastrun < $lastmodified OR self::debug) {
       $this->log('Running migrations...');
       $this->updateLastrun();
       // bd($this->watchlist);
@@ -170,7 +219,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         if(is_string($migrate)) $migrate = $this->yaml($migrate);
         if(is_array($migrate)) {
           $this->log("Migrating {$file->path}");
-          $this->migrate($migrate);
+          $this->migrate($migrate, $file->useNewMigrate);
         }
         else {
           $this->log("Skipping {$file->path} (no config)");
@@ -283,10 +332,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    */
   public function watch($file, $migrate = true, $options = []) {
     if(!$path = $this->file($file)) return;
+    $useNewMigrate = $options===true;
 
     // setup variables array that will be passed to file->render()
     $vars = ['rm' => $this];
-    if(array_key_exists('vars', $options)) {
+    if(is_array($options) AND array_key_exists('vars', $options)) {
       $vars = array_merge($vars, $options['vars']);
     }
 
@@ -296,6 +346,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       'path' => $path,
       'migrate' => $migrate,
       'vars' => $vars,
+      'useNewMigrate' => $useNewMigrate,
     ]);
     $this->watchlist->add($data);
   }
