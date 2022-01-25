@@ -16,3 +16,25 @@ $rm->yaml('/path/to/file.yaml');
 // save data to file
 $rm->yaml('/path/to/file.yaml', ['foo'=>'bar']);
 ```
+
+## Field Migration Examples
+
+### Ckeditor Field
+
+```php
+'mytextfield' => [
+  'type' => 'textarea',
+  'tags' => 'MyTags',
+  'inputfieldClass' => 'InputfieldCKEditor',
+  'contentType' => FieldtypeTextarea::contentTypeHTML,
+  'rows' => 5,
+  'formatTags' => "h2;p;",
+  'contentsCss' => "/site/templates/main.css?m=".time(),
+  'stylesSet' => "mystyles:/site/templates/mystyles.js",
+  'toggles' => [
+    InputfieldCKEditor::toggleCleanDIV, // convert <div> to <p>
+    InputfieldCKEditor::toggleCleanP, // remove empty paragraphs
+    InputfieldCKEditor::toggleCleanNBSP, // remove &nbsp;
+  ],
+],
+```
