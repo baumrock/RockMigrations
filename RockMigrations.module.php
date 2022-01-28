@@ -43,7 +43,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.1.0',
+      'version' => '0.1.1',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -375,12 +375,32 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * watchlist:
    * $rm->watch('/site/modules/MyModule.module.php', false);
    *
-   * @param string $file Path to file to be watched for changes
+   * Note that migrations will only run when you are logged in as superuser!
+   * This
+   *
+   * @param string $file Path to file or directory to be watched for changes
    * @param bool $migrate Does the file return an array for $rm->migrate() ?
    * @param array $options Array of options
    * @return void
    */
   public function watch($file, $migrate = true, $options = []) {
+    if(!$this->wire->user->isSuperuser()) return;
+    if(is_dir($file)) {
+      // setup the recursive option
+      // by default we do not recurse into subdirectories
+      $recursive = false;
+      if(array_key_exists('recursive', $options)) {
+        $recursive = $options['recursive'];
+      }
+
+      $opt = [
+        'extensions'=>['php'],
+        'recursive' => $recursive,
+      ];
+      foreach($this->wire->files->find($file, $opt) as $f) {
+        $this->watch($f, $migrate, $options);
+      }
+    }
     if(!$path = $this->file($file)) return;
     $useNewMigrate = $options===true;
 
@@ -403,9 +423,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
   /**
    * Watch module migration files
+   *
+   * Note that files are only watched if you are logged in as superuser!
+   *
    * @return void
    */
   public function watchModules() {
+    if(!$this->wire->user->isSuperuser()) return;
     $path = $this->wire->config->paths->siteModules;
     foreach (new DirectoryIterator($path) as $fileInfo) {
       if(!$fileInfo->isDir()) continue;
