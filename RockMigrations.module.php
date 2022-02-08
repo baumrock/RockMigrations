@@ -43,7 +43,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.1.1',
+      'version' => '0.1.2',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -220,6 +220,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       // bd($this->watchlist);
       foreach($this->watchlist as $file) {
         if(!$file->migrate) continue;
+
+        // if it is a module we call $module->migrate()
+        if($module = $file->module) {
+          if(method_exists($module, "migrate")) {
+            $this->log("Triggering $module::migrate()");
+            $module->migrate();
+          }
+          else {
+            $this->log("Skipping $module::migrate() - method does not exist");
+          }
+          continue;
+        }
+
+        // we have a regular file
         $migrate = $this->wire->files->render($file->path, $file->vars, [
           'allowedPaths' => [dirname($file->path)],
         ]);
@@ -369,6 +383,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * If you dont specify an extension it will watch all available extensions:
    * $rm->watch('/path/to/module'); // watches module.[yaml|json|php]
    *
+   * Watch a module: Put this in your module's init()
+   * $rm->watch($this);
+   * This will automatically call $yourModule->migrate();
+   *
    * Only watch the file but don't migrate it. This is useful if a migration
    * file depends on something else (like constants of a module). To make the
    * migrations run when the module changes you can add the module file to the
@@ -385,7 +403,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    */
   public function watch($file, $migrate = true, $options = []) {
     if(!$this->wire->user->isSuperuser()) return;
-    if(is_dir($file)) {
+
+    $module = false;
+    if($file instanceof Module) {
+      $module = $file;
+      $file = $this->wire->modules->getModuleFile($module);
+    }
+    elseif(is_dir($file)) {
       // setup the recursive option
       // by default we do not recurse into subdirectories
       $recursive = false;
@@ -417,6 +441,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       'migrate' => $migrate,
       'vars' => $vars,
       'useNewMigrate' => $useNewMigrate,
+      'module' => $module,
     ]);
     $this->watchlist->add($data);
   }
