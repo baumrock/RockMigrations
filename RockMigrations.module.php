@@ -16,11 +16,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   const debug = false;
   const cachename = 'rockmigrations-last-run';
 
+  const outputLevelDebug = 'debug';
+  const outputLevelQuiet = 'quiet';
+  const outputLevelVerbose = 'verbose';
+
   /**
    * Timestamp of last run migration
    * @var int
    **/
   private $lastrun;
+
+  private $outputLevel = self::outputLevelQuiet;
 
   /** @var string */
   public $path;
@@ -43,7 +49,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.1.2',
+      'version' => '0.2.0',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -59,13 +65,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     require_once($this->path."WireArrayDump.php");
     $this->recorders = $this->wire(new WireArrayDump());
     $this->watchlist = $this->wire(new WireArrayDump());
-    $this->lastrun = $this->wire->cache->get(self::cachename);
+    $this->lastrun = (int)$this->wire->cache->get(self::cachename);
   }
 
   public function init() {
     $config = $this->wire->config;
     $this->wire('rockmigrations', $this);
-    $this->rm1(); // load RM1 (install it)
+    if($config->debug) $this->setOutputLevel(self::outputLevelVerbose);
 
     // always watch + migrate /site/migrate.[yaml|json|php]
     // the third parameter makes it use the migrateNew() method
@@ -95,15 +101,227 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
-   * Proxy all failing method calls to this version of RM to RM1
+   * Add field to template
+   *
+   * @param Field|string $field
+   * @param Template|string $template
+   * @return void
    */
-  public function __call($method, $args) {
-    if(!method_exists($this, $method)) {
-      $rm1 = $this->rm1();
-      if($rm1) return $rm1->$method(...$args);
-      return false;
+  public function addFieldToTemplate($field, $template, $afterfield = null, $beforefield = null) {
+    $field = $this->getField($field);
+    if(!$field) return; // logging is done in getField()
+    $template = $this->getTemplate($template);
+    if(!$template) return; // logging is done in getField()
+
+    $afterfield = $this->getField($afterfield);
+    $beforefield = $this->getField($beforefield);
+    $fg = $template->fieldgroup; /** @var Fieldgroup $fg */
+
+    if($afterfield) $fg->insertAfter($field, $afterfield);
+    elseif($beforefield) $fg->insertBefore($field, $beforefield);
+    else $fg->add($field);
+
+    // add end field for fieldsets
+    if($field->type instanceof FieldtypeFieldsetOpen
+      AND !$field->type instanceof FieldtypeFieldsetClose) {
+      $closer = $field->type->getFieldsetCloseField($field, false);
+      $this->addFieldToTemplate($closer, $template, $field);
     }
-    return self::$method(...$args);
+
+    $fg->save();
+  }
+
+  /**
+   * Register autoloader for all classes in given folder
+   * This will NOT trigger init() or ready()
+   * You can also use $rm->initClasses() with setting autoload=true
+   */
+  public function autoload($path, $namespace) {
+    $path = Paths::normalizeSeparators($path);
+    spl_autoload_register(function($class) use($path, $namespace) {
+      if(strpos($class, "$namespace\\") !== 0) return;
+      $name = substr($class, strlen($namespace)+1);
+      $file = "$path/$name.php";
+      if(is_file($file)) require_once($file);
+    });
+  }
+
+  /**
+   * Create a field of the given type
+   *
+   * If run multiple times it will only update field data.
+   *
+   * Usage:
+   * $rm->createField('myfield', 'text', [
+   *   'label' => 'My great field',
+   * ]);
+   *
+   * @param string $name
+   * @param string $type
+   * @param array $options
+   * @return Field|false
+   */
+  public function createField($name, $type, $options = null) {
+    $field = $this->getField($name);
+    return;
+
+    // field does not exist
+    if(!$field) {
+      // get type
+      $type = $this->getFieldtype($type);
+      if(!$type) return; // logging above
+
+      // create the new field
+      if(strtolower($name) !== $name) throw new WireException("Fieldname must be lowercase!");
+      $name = strtolower($name);
+      $field = $this->wire(new Field());
+      $field->type = $type;
+      $field->name = $name;
+      $field->label = $name; // set label (mandatory since ~3.0.172)
+      $field->save();
+
+      // create end field for fieldsets
+      if($field->type instanceof FieldtypeFieldsetOpen) {
+        $field->type->getFieldsetCloseField($field, true);
+      }
+
+      // this will auto-generate the repeater template
+      if($field->type instanceof FieldtypeRepeater) {
+        $field->type->getRepeaterTemplate($field);
+      }
+    }
+
+    // set options
+    if($options) $field = $this->setFieldData($field, $options);
+
+    return $field;
+  }
+
+  /**
+   * Create a new Page
+   *
+   * If the page exists it will return the existing page.
+   * Note that all available languages will be set active by default!
+   *
+   * If you need to set a multilang title use
+   * $rm->setFieldLanguageValue($page, "title", [
+   *   'default'=>'foo',
+   *   'german'=>'bar',
+   * ]);
+   *
+   * @param string $title
+   * @param string $name
+   * @param Template|string $template
+   * @param Page|string $parent
+   * @param array $status
+   * @param array $data
+   * @return Page
+   */
+  public function createPage(string $title, $name = null, $template, $parent, array $status = [], array $data = []) {
+    // create pagename from page title if it is not set
+    if(!$name) $name = $this->sanitizer->pageNameTranslate($title);
+
+    $log = "Parent $parent not found";
+    $parent = $this->getPage($parent);
+    if(!$parent->id) return $this->log($log);
+
+    // get page if it exists
+    $page = $this->getPage([
+      'name' => $name,
+      'template' => $template,
+      'parent' => $parent,
+    ]);
+
+    if($page->id) {
+      $page->status($status);
+      $page->setAndSave($data);
+      return $page;
+    }
+
+    // create a new page
+    $p = $this->wire(new Page());
+    $p->template = $template;
+    $p->title = $title;
+    $p->name = $name;
+    $p->parent = $parent;
+    $p->status($status);
+    $p->setAndSave($data);
+
+    // enable all languages for this page
+    $this->enableAllLanguagesForPage($p);
+
+    return $p;
+  }
+
+  /**
+   * Create a new ProcessWire Template
+   *
+   * @param string $name
+   * @param bool $addTitlefield
+   * @return void
+   */
+  public function createTemplate($name, $addTitlefield = true) {
+    $t = $this->templates->get((string)$name);
+    if(!$t) {
+      // create new fieldgroup
+      $fg = $this->wire(new Fieldgroup());
+      $fg->name = $name;
+      $fg->save();
+
+      // create new template
+      $t = $this->wire(new Template());
+      $t->name = $name;
+      $t->fieldgroup = $fg;
+      $t->save();
+    }
+
+    // add title field to this template
+    if($addTitlefield) $this->addFieldToTemplate('title', $t);
+
+    return $t;
+  }
+
+  /**
+   * Delete the given field
+   *
+   * @param string $name
+   * @return void
+   */
+  public function deleteField($name) {
+    $field = $this->getField($name);
+    if(!$field) return; // logging in getField()
+
+    // delete _END field for fieldsets first
+    if($field->type instanceof FieldtypeFieldsetOpen) {
+      $closer = $field->type->getFieldsetCloseField($field, false);
+      $this->deleteField($closer);
+    }
+
+    // make sure we can delete the field by removing all flags
+    $field->flags = Field::flagSystemOverride;
+    $field->flags = 0;
+
+    // remove the field from all fieldgroups
+    foreach($this->fieldgroups as $fieldgroup) {
+      /** @var Fieldgroup $fieldgroup */
+      $fieldgroup->remove($field);
+      $fieldgroup->save();
+    }
+
+    return $this->fields->delete($field);
+  }
+
+  /**
+   * Enable all languages for given page
+   *
+   * @param mixed $page
+   * @return void
+   */
+  public function enableAllLanguagesForPage($page) {
+    if(!$page) return;
+    $page = $this->getPage($page);
+    foreach($this->languages ?: [] as $lang) $page->set("status$lang", 1);
+    $page->save();
   }
 
   /**
@@ -117,6 +335,213 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if(is_file($f = "$path.$ext")) return $f;
     }
     return false;
+  }
+
+  /**
+   * This will add a hook after Modules::refresh
+   *
+   * Usage:
+   * In your module's init() use
+   * $rm->fireOnRefresh($this, "migrate");
+   *
+   * In ready.php you can use it with a callback function:
+   * $rm->fireOnRefresh(function($event) use($rm) {
+   *   $rm->deleteField(...);
+   * });
+   *
+   * @param Module $module module or callback
+   * @param string $method the method name to invoke
+   * @param int|array $priority options array for the hook; if you provide
+   * an integer value it will be casted to the hook priority ['priority'=>xxx]
+   *
+   * @return void
+   */
+  public function fireOnRefresh($module, $method = null, $priority = []) {
+    // If flags are present dont attach hooks to Modules::refresh
+    // See the readme for more information!
+    if(defined("DontFireOnRefresh")) return;
+    if($this->wire->config->DontFireOnRefresh) return;
+
+    // attach the hook
+    if(is_int($priority)) $priority = ['priority'=>$priority];
+    if($module instanceof Module) {
+      if(!$method) $method = "migrate";
+      $this->wire->addHookAfter("Modules::refresh", $module, $method, $priority);
+    }
+    elseif(is_callable($module)) {
+      $callback = $module;
+      $this->wire->addHookAfter("Modules::refresh", $callback, null, $priority);
+    }
+  }
+
+  /**
+   * Convert an array into a WireData config object
+   * @return WireData
+   */
+  public function getConfigObject(array $config) {
+    // this ensures that $config->fields is an empty array rather than
+    // a processwire fields object (proxied from the wire object)
+    $conf = $this->wire(new WireData()); /** @var WireData $conf */
+    $conf->setArray([
+      "fields" => [],
+      "templates" => [],
+      "pages" => [],
+      "roles" => [],
+    ]);
+    $conf->setArray($config);
+    return $conf;
+  }
+
+  /**
+   * Get field by name
+   *
+   * @param Field|string $name
+   * @return mixed
+   */
+  public function getField($name) {
+    if(!$name) return false; // for addfieldtotemplate
+    $field = $this->fields->get((string)$name);
+    if($field) return $field;
+    $this->log("Field $name not found");
+    return false;
+  }
+
+  /**
+   * Get fieldtype instance
+   *
+   * This will also try to install the Fieldtype if it is not installed.
+   *
+   * Usage:
+   * $rm->getFieldtype("page"); // FieldtypePage
+   *
+   * Note that this returns the Fieldtype even if the shortname module exists:
+   * This returns FieldtypeRockMatrix even though RockMatrix is a module!
+   * $rm->getFieldtype("RockMatrix");
+   *
+   * @param mixed $type
+   * @return Fieldtype|false
+   */
+  public function getFieldtype($type) {
+    if($type instanceof Fieldtype) return $type;
+    $modules = $this->wire->modules;
+    $name = (string)$type;
+
+    // first we try to get the module by name
+    // $rm->getFieldtype('page') will request the page module!
+    // we make sure not to auto-install non-fieldtype modules!
+    if($modules->isInstalled($name)) {
+      $module = $modules->get($name);
+      if($module instanceof Fieldtype) return $module;
+    }
+
+    // prepend Fieldtype (page --> FieldtypePage)
+    // now we try to get the module and install it
+    $fname = "Fieldtype".ucfirst($name);
+    $module = $modules->get($fname);
+    if($module) return $module;
+
+    $this->log("No fieldtype found for $type (also tried $fname)");
+    return false;
+  }
+
+  /**
+   * Get page
+   * @return Page
+   */
+  public function getPage($data) {
+    if($data instanceof Page) return $data;
+    return $this->wire->pages->get($data);
+  }
+
+  /**
+   * Get template by name
+   *
+   * @param Template|string $name
+   * @return Template|null
+   */
+  public function getTemplate($name) {
+    $template = $this->templates->get((string)$name);
+    if($template) return $template;
+    $this->log("Template $name not found");
+  }
+
+  /**
+   * Trigger init() method of classes in this folder
+   *
+   * If autoload is set to TRUE it will attach a class autoloader before
+   * triggering the init() method. The autoloader is important so that we do
+   * not get any conflicts on the loading order of the classes. This could
+   * happen if we just used require() in here because then the loading order
+   * would depend on the file names of loaded classes.
+   *
+   * Example problem:
+   * class Bar extends Foo
+   * class Foo
+   *
+   * load order = Bar, then Foo therefore without autoload we'd get an error
+   *
+   * @return void
+   */
+  public function initClasses($path, $namespace = "ProcessWire", $autoload = true) {
+    if($autoload) $this->autoload($path, $namespace);
+    foreach($this->files->find($path, ['extensions' => ['php']]) as $file) {
+      $class = pathinfo($file, PATHINFO_FILENAME);
+      if($namespace) $class = "\\$namespace\\$class";
+      $tmp = new $class();
+      if(method_exists($tmp, "init")) $tmp->init();
+    }
+  }
+
+  /**
+   * Install module
+   *
+   * If an URL is provided the module will be downloaded before installation.
+   *
+   * You can provide module settings as 3rd parameter. If no url is provided
+   * you can submit config data as 2nd parameter (shorter syntax).
+   *
+   * @param string $name
+   * @param string|array $url
+   * @param array $config
+   * @return Module
+   */
+  public function installModule($name, $options = []) {
+    $opt = $this->wire(new WireData()); /** @var WireData $opt */
+    $opt->setArray([
+      'url' => '',
+      'conf' => [],
+
+      // a setting of true forces the module to be installed even if
+      // dependencies are not met
+      'force' => false,
+    ]);
+    $opt->setArray($options);
+
+    // if the module is already installed we return it
+    $module = $this->modules->get((string)$name);
+    if(!$module) {
+      // if an url was provided, download the module
+      if($opt->url) $this->downloadModule($opt->url);
+
+      // install the module
+      $module = $this->modules->install($name, ['force' => $opt->force]);
+    }
+    if(count($opt->conf)) $this->setModuleConfig($module, $opt->conf);
+    return $module;
+  }
+
+  /**
+   * @return bool
+   */
+  public function isDebug() {
+    return $this->outputLevel == self::outputLevelDebug;
+  }
+
+  /**
+   * @return bool
+   */
+  public function isVerbose() {
+    return $this->outputLevel == self::outputLevelVerbose;
   }
 
   /**
@@ -142,61 +567,35 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
-   * Migrate data
+   * Log message
    *
-   * If the second parameter is FALSE we use proxy to $rm->migrateNew()
-   * With version 1.0.0 the second parameter will be removed and only the new
-   * method will stay!
+   * Usage:
+   * $rm->log("some message");
    *
-   * @return mixed
+   * try {
+   *   // do something
+   * } catch($th) {
+   *   $rm->log($th->getMessage(), false);
+   * }
+   *
+   * @param string $msg
+   * @param bool $throwException
+   * @return void
    */
-  public function migrate(array $data, $vars = []) {
-    if($vars === true) return $this->migrateNew($data);
-    return $this->rm1()->migrate($data, $vars);
+  public function log($msg, $throwException = true) {
+    if($this->isVerbose()) $this->wire->log($msg);
+    elseif($this->isDebug()) {
+      if($throwException) throw new WireException($msg);
+    }
   }
 
   /**
-   * New version of migrate()
-   *
-   * This method will be renamed to migrate() on version 1.0.0
-   *
+   * Log but throw no exception
+   * @param string $msg
    * @return void
    */
-  public function migrateNew($data) {
-
-    if($fields = $this->val($data, 'fields')) {
-      foreach($fields as $name=>$fielddata) {
-        // prepend the "name" property from fields array key
-        // otherwise you aways need to write it twice
-        $fielddata = ['name' => $name]+$fielddata;
-
-        // write changes back to original array
-        $data['fields'][$name] = $fielddata;
-      }
-    }
-
-    if($templates = $this->val($data, 'templates')) {
-      foreach($templates as $name=>$tpldata) {
-        // prepend "name" and "fields" properties
-        $tpldata = [
-          'name' => $name,
-
-          // add the "fields" property to the array
-          // this is an RM-internal property used for migrating fields of a tpl
-          // if "fields" property is set we take it as new value
-          // otherwise take the "fieldgroupContexts" of export data
-          'fields' => $this->val($tpldata, "fields")
-            ?: $this->val($tpldata, 'fieldgroupContexts'),
-        ]+$tpldata;
-
-        $data['templates'][$name] = $tpldata;
-      }
-    }
-
-    unset($data['fieldgroupFields']);
-    unset($data['fieldgroupContexts']);
-
-    $this->rm1()->migrate($data);
+  public function logOnly($msg) {
+    $this->log($msg, false);
   }
 
   /**
@@ -209,42 +608,111 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Migrate PW setup based on config array
+   *
+   * The method returns the used config so that you can do actions after migration
+   * eg adding custom tags to all fields or templates that where migrated
+   *
+   * @return WireData
+   */
+  public function migrate($config) {
+    $config = $this->getConfigObject($config);
+
+    // create fields+templates
+    foreach($config->fields as $name=>$data) {
+      // if no type is set this means that only field data was set
+      // for example to update only label or icon of an existing field
+      if(array_key_exists('type', $data)) $this->createField($name, $data['type']);
+    }
+    foreach($config->templates as $name=>$data) $this->createTemplate($name, false);
+    foreach($config->roles as $name=>$data) $this->createRole($name);
+
+    // set field+template data after they have been created
+    foreach($config->fields as $name=>$data) $this->setFieldData($name, $data);
+    foreach($config->templates as $name=>$data) $this->setTemplateData($name, $data);
+    foreach($config->roles as $role=>$data) {
+      // set permissions for this role
+      if(array_key_exists("permissions", $data)) $this->setRolePermissions($role, $data['permissions']);
+      if(array_key_exists("access", $data)) {
+        foreach($data['access'] as $tpl=>$access) $this->setTemplateAccess($tpl, $role, $access);
+      }
+    }
+
+    // setup pages
+    foreach($config->pages as $name=>$data) {
+      if(isset($data['name'])) {
+        $name = $data['name'];
+      } elseif(is_int($name)) {
+        // no name provided
+        $name = uniqid();
+      }
+
+      $d = $this->wire(new WireData()); /** @var WireData $d */
+      $d->setArray($data);
+      $this->createPage(
+        $d->title ?: $name,
+        $name,
+        $d->template,
+        $d->parent,
+        $d->status,
+        $d->data);
+    }
+
+    // trigger after callback
+    if(is_callable($config->after)) {
+      $config->after->__invoke($this);
+    }
+
+    return $config;
+  }
+
+  /**
+   * Call $module::migrate() on modules::refresh
+   * @return void
+   */
+  public function migrateOnRefresh(Module $module) {
+    $this->fireOnRefresh($module);
+  }
+
+  /**
    * Run migrations of all watchfiles
    * @return void
    */
-  public function migrateWatchfiles() {
+  public function migrateWatchfiles($force = false) {
     $lastmodified = $this->lastmodified();
-    if($this->lastrun < $lastmodified OR self::debug) {
-      $this->log('Running migrations...');
-      $this->updateLastrun();
-      // bd($this->watchlist);
-      foreach($this->watchlist as $file) {
-        if(!$file->migrate) continue;
 
-        // if it is a module we call $module->migrate()
-        if($module = $file->module) {
-          if(method_exists($module, "migrate")) {
-            $this->log("Triggering $module::migrate()");
-            $module->migrate();
-          }
-          else {
-            $this->log("Skipping $module::migrate() - method does not exist");
-          }
-          continue;
-        }
+    $run = ($force OR self::debug OR $this->lastrun < $lastmodified);
+    if(!$run) return;
 
-        // we have a regular file
-        $migrate = $this->wire->files->render($file->path, $file->vars, [
-          'allowedPaths' => [dirname($file->path)],
-        ]);
-        if(is_string($migrate)) $migrate = $this->yaml($migrate);
-        if(is_array($migrate)) {
-          $this->log("Migrating {$file->path}");
-          $this->migrate($migrate, $file->useNewMigrate);
+    $this->log('Running migrations...');
+    $this->updateLastrun();
+    // bd($this->watchlist);
+    foreach($this->watchlist as $file) {
+      if(!$file->migrate) continue;
+
+      // if it is a module we call $module->migrate()
+      if($module = $file->module) {
+        if(method_exists($module, "migrate")) {
+          $this->log("Triggering $module::migrate()");
+          $module->migrate();
         }
         else {
-          $this->log("Skipping {$file->path} (no config)");
+          $this->log("Skipping $module::migrate() - method does not exist");
         }
+        continue;
+      }
+
+      // we have a regular file
+      $migrate = $this->wire->files->render($file->path, [], [
+        'allowedPaths' => [dirname($file->path)],
+      ]);
+      if(is_string($migrate)) $migrate = $this->yaml($migrate);
+      if(is_array($migrate)) {
+        $this->log("Migrating {$file->path}");
+        $this->migrate($migrate);
+      }
+      else {
+        $this->log("Skipping {$file->path} (no config)");
       }
     }
   }
@@ -278,6 +746,34 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Remove Field from Template
+   *
+   * @param Field|string $field
+   * @param Template|string $template
+   * @param bool $force
+   * @return void
+   */
+  public function removeFieldFromTemplate($field, $template, $force = false) {
+    $field = $this->getField($field);
+    if(!$field) return;
+    $template = $this->getTemplate($template);
+    if(!$template) return;
+
+    $fg = $template->fieldgroup; /** @var Fieldgroup $fg */
+    if($force) $field->flags = 0;
+
+    $fg->remove($field);
+    $fg->save();
+  }
+
+  /**
+   * See method above
+   */
+  public function removeFieldsFromTemplate($fields, $template, $force = false) {
+    foreach($fields as $field) $this->removeFieldFromTemplate($field, $template, $force);
+  }
+
+  /**
    * Reset "lastrun" cache to force migrations
    * @return void
    */
@@ -286,12 +782,283 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
-   * Return old version of RockMigrations
-   * Will be dropped with RM v1.0.0!
-   * @return RockMigrations1
+   * Set the logo url of the backend logo (AdminThemeUikit)
+   * @return void
    */
-  public function rm1() {
-    return $this->wire->modules->get("RockMigrations1");
+  public function setAdminLogoUrl($url) {
+    $this->setModuleConfig("AdminThemeUikit", ['logoURL' => $url]);
+  }
+
+  /**
+   * Set default options for several things in PW
+   */
+  public function setDefaults($options = []) {
+    $opt = $this->wire(new WireData()); /** @var WireData $opt */
+    $opt->setArray([
+      'pagenameReplacements' => 'de',
+      'toggleBehavior' => 1,
+    ]);
+    $opt->setArray($options);
+
+    // set german pagename replacements
+    $this->setPagenameReplacements($opt->pagenameReplacements);
+
+    // AdminThemeUikit settings
+    $this->setModuleConfig("AdminThemeUikit", [
+      // use consistent inputfield clicks
+      // see https://github.com/processwire/processwire/pull/169
+      'toggleBehavior' => $opt->toggleBehavior,
+    ]);
+
+  }
+
+  /**
+   * Set data of a field
+   *
+   * If a template is provided the data is set in template context only.
+   *
+   * Multilang is also possible:
+   * $rm->setFieldData('yourfield', [
+   *   'label' => 'foo', // default language
+   *   'label1021' => 'bar', // other language
+   * ]);
+   *
+   * @param Field|string $field
+   * @param array $data
+   * @param Template|string $template
+   * @return void
+   */
+  public function setFieldData($field, $data, $template = null) {
+    $field = $this->getField($field);
+    if(!$field) return; // logging in getField()
+
+    // prepare data array
+    foreach($data as $key=>$val) {
+
+      // this makes it possible to set the template via name
+      if($key === "template_id") {
+        $data[$key] = $this->templates->get($val)->id;
+      }
+
+      // support repeater field array
+      $contexts = [];
+      if($key === "repeaterFields") {
+        $fields = $data[$key];
+        $addFields = [];
+        $index = 0;
+        foreach($fields as $i=>$_field) {
+          if(is_string($i)) {
+            // we've got a field with field context info here
+            $fieldname = $i;
+            $fielddata = $_field;
+            $contexts[] = [
+              $fieldname,
+              $fielddata,
+              $this->getRepeaterTemplate($field),
+            ];
+          }
+          else {
+            // field without field context info
+            $fieldname = $_field;
+          }
+          $addFields[$index] = $this->fields->get((string)$fieldname)->id;
+          $index++;
+        }
+        $data[$key] = $addFields;
+
+        // add fields to repeater template
+        if($tpl = $this->getRepeaterTemplate($field)) {
+          $this->addFieldsToTemplate($addFields, $tpl);
+        }
+
+        // set field contexts now that the fields are present
+        foreach($contexts as $c) {
+          $this->setFieldData($c[0], $c[1], $c[2]);
+        }
+
+      }
+
+      // add support for setting options of a select field
+      // this will remove non-existing options from the field!
+      if($key === "options") {
+        $options = $data[$key];
+        $this->setOptions($field, $options, true);
+
+        // this prevents setting the "options" property directly to the field
+        // if not done, the field shows raw option values when rendered
+        unset($data['options']);
+      }
+
+    }
+
+    // set data
+    if(!$template) {
+      // set field data directly
+      foreach($data as $k=>$v) $field->set($k, $v);
+    }
+    else {
+      // make sure the template is set as array of strings
+      if(!is_array($template)) $template = [(string)$template];
+
+      foreach($template as $t) {
+        $tpl = $this->templates->get((string)$t);
+        if(!$tpl) throw new WireException("Template $t not found");
+
+        // set field data in template context
+        $fg = $tpl->fieldgroup;
+        $current = $fg->getFieldContextArray($field->id);
+        $fg->setFieldContextArray($field->id, array_merge($current, $data));
+        $fg->saveContext();
+      }
+    }
+
+    // Make sure Table field actually updates database schema
+    if ($field->type == "FieldtypeTable") {
+      $fieldtypeTable = $field->getFieldtype();
+      $fieldtypeTable->_checkSchema($field, true); // Commit changes
+    }
+
+    $field->save();
+    return $field;
+  }
+
+  /**
+   * Set module config data
+   *
+   * By default this will remember old settings and only set the ones that are
+   * specified as $data parameter. If you want to reset old parameters
+   * set the $reset param to true.
+   *
+   * @param string|Module $module
+   * @param array $data
+   * @param bool $merge
+   * @return Module|false
+   */
+  public function setModuleConfig($module, $data, $reset = false) {
+    /** @var Module $module */
+    $name = (string)$module;
+    $module = $this->modules->get($name);
+    if(!$module) {
+      if($this->config->debug) $this->log("Module $name not found");
+      return false;
+    }
+
+    // now we merge the new config data over the old config
+    // if reset is TRUE we skip this step which means we may lose old config!
+    if(!$reset) {
+      $old = $this->wire->modules->getConfig($module);
+      $data = array_merge($old, $data);
+    }
+
+    $this->modules->saveConfig($module, $data);
+    return $module;
+  }
+
+  /**
+   * Set options of an options field as array
+   *
+   * Usage:
+   * $rm->setOptions($field, [
+   *   // never use key 0 !!
+   *   1 => 'foo|My foo option',
+   *   2 => 'bar|My bar option',
+   * ]);
+   *
+   * @param Field|string $field
+   * @param array $options
+   * @param bool $removeOthers
+   * @return Field|null
+   */
+  public function setOptions($field, $options, $removeOthers = false) {
+    $string = "";
+    foreach($options as $k=>$v) {
+      if($k===0) $this->log("Option with key 0 skipped");
+      else $string.="\n$k=$v";
+    }
+    return $this->setOptionsString($field, $string, $removeOthers);
+  }
+
+  /**
+   * Set options of an options field via string
+   *
+   * Better use $rm->setOptions($field, $options) to set an array of options!
+   *
+   * $rm->setOptionsString("yourfield", "
+   *   1=foo|My Foo Option
+   *   2=bar|My Bar Option
+   * ");
+   *
+   * @param Field|string $name
+   * @param string $options
+   * @param bool $removeOthers
+   * @return void
+   */
+  public function setOptionsString($name, $options, $removeOthers = false) {
+    $field = $this->getField($name);
+
+    $manager = $this->wire(new SelectableOptionManager());
+
+    // now set the options
+    $manager->setOptionsString($field, $options, $removeOthers);
+    $field->save();
+
+    return $field;
+  }
+
+  /**
+   * Set output level
+   * @return void
+   */
+  public function setOutputLevel($level) {
+    $this->outputLevel = $level;
+  }
+
+  /**
+   * Set page name replacements as array or by filename
+   *
+   * This will update the 'replacements' setting of InputfieldPageName module
+   *
+   * Usage: $rm->setPagenameReplacements("de");
+   * Usage: $rm->setPagenameReplacements(['ä'=>'ae']);
+   *
+   * @param mixed $data
+   * @return void
+   */
+  public function setPagenameReplacements($data) {
+    if(is_string($data)) {
+      $file = __DIR__."/replacements/$data.txt";
+      if(!is_file($file)) {
+        return $this->log("File $file not found");
+      }
+      $replacements = explode("\n", $this->wire->files->render($file));
+      $arr = [];
+      foreach($replacements as $row) {
+        $items = explode("=", $row);
+        $arr[$items[0]] = $items[1];
+      }
+    }
+    elseif(is_array($data)) $arr = $data;
+    if(!is_array($arr)) return;
+    $this->setModuleConfig("InputfieldPageName", ['replacements' => $arr]);
+  }
+
+  /**
+   * Set parent child family settings for two templates
+   */
+  public function setParentChild($parent, $child, $onlyOneParent = true) {
+    $noParents = 0; // many parents are allowed
+    if($onlyOneParent) $noParents = -1;
+    $this->setTemplateData($child, [
+      'noChildren' => 1, // may not have children
+      'noParents' => '', // can be used for new pages
+      'parentTemplates' => [(string)$parent],
+    ]);
+    $this->setTemplateData($parent, [
+      'noChildren' => 0, // may have children
+      'noParents' => $noParents, // only one page
+      'childTemplates' => [(string)$child],
+      'childNameFormat' => 'title',
+    ]);
   }
 
   /**
@@ -317,6 +1084,102 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     // we remove this hook because we have already set the flag
     $event->removeHook(null);
+  }
+
+  /**
+   * Set data of a template
+   *
+   * Only the properties provided will be set on the template. It will not touch
+   * any properties that are not specified in $data
+   *
+   * Usage:
+   * $rm->setTemplateData('yourtemplate', [
+   *   'label' => 'foo',
+   * ]);
+   *
+   * Multilang:
+   * $rm->setTemplateData('yourtemplate', [
+   *   'label' => 'foo', // default language
+   *   'label1021' => 'bar', // other language
+   * ]);
+   *
+   * @param Template|Page|string $template
+   * @param array $data
+   * @return Template
+   */
+  public function setTemplateData($name, $data) {
+    if($name instanceof Page) $template = $name->template;
+    $template = $this->templates->get((string)$name);
+    if(!$template) return $this->log("Template $name not found");
+
+    // loop template data
+    foreach($data as $k=>$v) {
+
+      // the "fields" property is a special property from RockMigrations
+      // templates have "fieldgroupFields" and "fieldgroupContexts"
+      if(($k === 'fields' || $k === 'fields-')) {
+        if(is_array($v)) {
+          $removeOthers = ($k==='fields-');
+          $this->setTemplateFields($template, $v, $removeOthers);
+        }
+        else {
+          $this->log("Value of property 'fields' must be an array");
+        }
+        continue;
+      }
+
+      // set property of template
+      $template->set($k, $v);
+    }
+    $template->save();
+    return $template;
+  }
+
+  /**
+   * Set fields of template via array
+   * @return void
+   */
+  public function setTemplateFields($template, $fields, $removeOthers = false) {
+    $template = $this->getTemplate($template);
+    if(!$template) return; // logging happens in getTemplate()
+
+    $last = null;
+    $names = [];
+    foreach($fields as $name=>$data) {
+      if(is_int($name) AND is_int($data)) {
+        $name = $this->getField((string)$data)->name;
+        $data = [];
+      }
+      if(is_int($name)) {
+        $name = $data;
+        $data = [];
+      }
+      $names[] = $name;
+      $this->addFieldToTemplate($name, $template, $last);
+      $this->setFieldData($name, $data, $template);
+      $last = $name;
+    }
+
+    if(!$removeOthers) return;
+    foreach($template->fields as $field) {
+      $name = (string)$field;
+      if(!in_array($name, $names)) {
+        // remove this field from the template
+        // global fields like the title field are also removed
+        $this->removeFieldFromTemplate($name, $template, true);
+      }
+    }
+  }
+
+  /**
+   * Change current user to superuser
+   * When bootstrapped sometimes we get permission conflicts
+   * See https://processwire.com/talk/topic/458-superuser-when-bootstrapping/
+   * @return void
+   */
+  public function sudo() {
+    $id = $this->wire->config->superUserPageID;
+    $this->wire->users->setCurrentUser($this->wire->users->get($id));
   }
 
   /**
@@ -375,10 +1238,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Uninstall module
+   *
+   * @param string|Module $name
+   * @return void
+   */
+  public function uninstallModule($name) {
+    $this->modules->uninstall((string)$name);
+  }
+
+  /**
    * Add file to watchlist
    *
    * Usage:
-   * $rm->watch(__FILE__);
+   * $rm->watch( file or path );
    *
    * If you dont specify an extension it will watch all available extensions:
    * $rm->watch('/path/to/module'); // watches module.[yaml|json|php]
@@ -396,20 +1269,23 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Note that migrations will only run when you are logged in as superuser!
    * This
    *
-   * @param string $file Path to file or directory to be watched for changes
+   * @param mixed $what File, directory or Module to be watched
    * @param bool $migrate Does the file return an array for $rm->migrate() ?
    * @param array $options Array of options
    * @return void
    */
-  public function watch($file, $migrate = true, $options = []) {
+  public function watch($what, $migrate = true, $options = []) {
     if(!$this->wire->user->isSuperuser()) return;
+    $file = $what;
 
     $module = false;
-    if($file instanceof Module) {
-      $module = $file;
+    if($what instanceof Module) {
+      $module = $what;
       $file = $this->wire->modules->getModuleFile($module);
     }
-    elseif(is_dir($file)) {
+    elseif(is_dir($what)) {
+      $dir = $what;
+
       // setup the recursive option
       // by default we do not recurse into subdirectories
       $recursive = false;
@@ -421,27 +1297,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         'extensions'=>['php'],
         'recursive' => $recursive,
       ];
-      foreach($this->wire->files->find($file, $opt) as $f) {
+      foreach($this->wire->files->find($dir, $opt) as $f) {
         $this->watch($f, $migrate, $options);
       }
     }
-    if(!$path = $this->file($file)) return;
-    $useNewMigrate = $options===true;
 
-    // setup variables array that will be passed to file->render()
-    $vars = ['rm' => $this];
-    if(is_array($options) AND array_key_exists('vars', $options)) {
-      $vars = array_merge($vars, $options['vars']);
-    }
+    // if we got no file until now we exit early
+    if(!$path = $this->file($file)) return;
+
 
     require_once($this->path."WatchFile.php");
     $data = $this->wire(new WatchFile()); /** @var WatchFile $data */
     $data->setArray([
       'path' => $path,
-      'migrate' => $migrate,
-      'vars' => $vars,
-      'useNewMigrate' => $useNewMigrate,
       'module' => $module,
+      'migrate' => $migrate,
     ]);
     $this->watchlist->add($data);
   }
