@@ -3,7 +3,8 @@
 use DirectoryIterator;
 use RockMigrations\RecorderFile;
 use RockMigrations\WatchFile;
-use RockMigrations\WireArrayDump;
+use RockMigrations\WireArray;
+use RockMigrations\WireArray as WireArrayRM;
 use RockMigrations\YAML;
 
 /**
@@ -37,10 +38,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    */
   public $record = false;
 
-  /** @var WireArrayDump */
+  /** @var WireArrayRM */
   private $recorders;
 
-  /** @var WireArrayDump */
+  /** @var WireArrayRM */
   private $watchlist;
 
   /** @var YAML */
@@ -49,7 +50,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.2.0',
+      'version' => '0.3.0',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -62,9 +63,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public function __construct() {
     parent::__construct();
     $this->path = $this->wire->config->paths($this);
-    require_once($this->path."WireArrayDump.php");
-    $this->recorders = $this->wire(new WireArrayDump());
-    $this->watchlist = $this->wire(new WireArrayDump());
+    require_once($this->path."WireArray.php");
+    $this->recorders = $this->wire(new WireArrayRM());
+    $this->watchlist = $this->wire(new WireArrayRM());
     $this->lastrun = (int)$this->wire->cache->get(self::cachename);
   }
 
@@ -84,7 +85,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->record($config->paths->site."migrate.yaml", [], !$this->saveToMigrate);
 
     // hooks
-    $this->addHookAfter("Modules::refresh", $this, "resetCache");
+    $this->addHookAfter("Modules::refresh", $this, "triggerMigrations");
     $this->addHookAfter("ProcessPageView::finished", $this, "triggerRecorder");
 
     // add hooks for recording changes
@@ -357,21 +358,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function fireOnRefresh($module, $method = null, $priority = []) {
-    // If flags are present dont attach hooks to Modules::refresh
-    // See the readme for more information!
-    if(defined("DontFireOnRefresh")) return;
-    if($this->wire->config->DontFireOnRefresh) return;
-
-    // attach the hook
-    if(is_int($priority)) $priority = ['priority'=>$priority];
-    if($module instanceof Module) {
-      if(!$method) $method = "migrate";
-      $this->wire->addHookAfter("Modules::refresh", $module, $method, $priority);
-    }
-    elseif(is_callable($module)) {
-      $callback = $module;
-      $this->wire->addHookAfter("Modules::refresh", $callback, null, $priority);
-    }
+    $trace = debug_backtrace()[0];
+    $trace = $trace['file'].":".$trace['line'];
+    $this->warning("fireOnRefresh is DEPRECATED and does not work any more!
+      RockMigrations will migrate all watched files on Modules::refresh automatically. $trace");
+    return;
   }
 
   /**
@@ -560,7 +551,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public function lastmodified() {
     $last = 0;
     foreach($this->watchlist as $file) {
-      $m = filemtime($file->path);
+      // remove the hash from file path
+      // hashes are needed for multiple callbacks living on the same file
+      $path = explode(":", $file->path)[0];
+      $m = filemtime($path);
       if($m>$last) $last=$m;
     }
     return $last;
@@ -658,11 +652,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         $d->data);
     }
 
-    // trigger after callback
-    if(is_callable($config->after)) {
-      $config->after->__invoke($this);
-    }
-
     return $config;
   }
 
@@ -671,6 +660,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function migrateOnRefresh(Module $module) {
+    $trace = debug_backtrace()[0];
+    $trace = $trace['file'].":".$trace['line'];
+    $this->warning("fireOnRefresh is DEPRECATED and does not work any more!
+      RockMigrations will migrate all watched files on Modules::refresh automatically. $trace");
+    return;
     $this->fireOnRefresh($module);
   }
 
@@ -684,11 +678,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $run = ($force OR self::debug OR $this->lastrun < $lastmodified);
     if(!$run) return;
 
-    $this->log('Running migrations...');
+    $this->log('Running migrations from watchfiles...');
     $this->updateLastrun();
     // bd($this->watchlist);
     foreach($this->watchlist as $file) {
       if(!$file->migrate) continue;
+
+      // if it is a callback we execute it
+      if($callback = $file->callback) {
+        $callback->__invoke($this);
+        continue;
+      }
 
       // if it is a module we call $module->migrate()
       if($module = $file->module) {
@@ -779,6 +779,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    */
   public function resetCache(HookEvent $event) {
     $this->updateLastrun(0);
+  }
+
+  /**
+   * Run migrations that have been attached via watch()
+   * @return void
+   */
+  public function run() {
+    $this->migrateWatchfiles(true);
   }
 
   /**
@@ -1183,6 +1191,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Trigger migrations after Modules::refresh
+   * @return void
+   */
+  public function triggerMigrations(HookEvent $event) {
+    // If flags are present dont attach hooks to Modules::refresh
+    // See the readme for more information!
+    if(defined("DontFireOnRefresh")) return;
+    if($this->wire->config->DontFireOnRefresh) return;
+    $this->run();
+  }
+
+  /**
    * This will trigger the recorder if the flag is set
    * @return void
    */
@@ -1251,7 +1271,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Add file to watchlist
    *
    * Usage:
-   * $rm->watch( file or path );
+   * $rm->watch( file, path or object );
    *
    * If you dont specify an extension it will watch all available extensions:
    * $rm->watch('/path/to/module'); // watches module.[yaml|json|php]
@@ -1266,23 +1286,44 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * watchlist:
    * $rm->watch('/site/modules/MyModule.module.php', false);
    *
+   * You an set a priority as second parameter. Default will be 1.
+   * Higher numbers have higher priority and therefore run earlier than others.
+   *
    * Note that migrations will only run when you are logged in as superuser!
-   * This
    *
    * @param mixed $what File, directory or Module to be watched
-   * @param bool $migrate Does the file return an array for $rm->migrate() ?
+   * @param bool|float $migrate Execute migration? Float = priority (high=earlier, 1=default)
    * @param array $options Array of options
    * @return void
    */
   public function watch($what, $migrate = true, $options = []) {
     if(!$this->wire->user->isSuperuser()) return;
     $file = $what;
+    $migrate = (float)$migrate;
 
     $module = false;
+    $callback = false;
+    $hash = false;
+
+    $trace = debug_backtrace()[1];
+    $tracefile = $trace['file'];
+    $traceline = $trace['line'];
+
+    // instance of module
     if($what instanceof Module) {
       $module = $what;
       $file = $this->wire->modules->getModuleFile($module);
     }
+    // callback
+    elseif(!is_string($what) AND is_callable($what)) {
+      $trace = debug_backtrace()[0];
+      $tracefile = $trace['file'];
+      $traceline = $trace['line'];
+      $callback = $what;
+      $file = $tracefile;
+      $hash = ":".uniqid();
+    }
+    // path to folder
     elseif(is_dir($what)) {
       $dir = $what;
 
@@ -1305,15 +1346,34 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     // if we got no file until now we exit early
     if(!$path = $this->file($file)) return;
 
+    // set migrate to false if extension is not valid
+    // this can happen on $rm->watch("/my/file.js");
+    if($migrate) {
+      $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+      $allowed = ['php', 'yaml'];
+      if(!in_array($ext, $allowed)) $migrate = false;
+    }
+
+    // if path already exists we skip adding this file
+    $exists = $this->watchlist->get("path=$path");
+    if($exists) {
+      $this->log("Did not add $path to watchlist because it already exists. Called in $tracefile:$traceline");
+      return;
+    }
 
     require_once($this->path."WatchFile.php");
     $data = $this->wire(new WatchFile()); /** @var WatchFile $data */
     $data->setArray([
-      'path' => $path,
+      'path' => $path.$hash,
       'module' => $module,
-      'migrate' => $migrate,
+      'callback' => $callback,
+      'migrate' => (float)$migrate,
+      'trace' => "$tracefile:$traceline",
     ]);
-    $this->watchlist->add($data);
+
+    // add item to watchlist and sort watchlist by migrate priority
+    // see https://github.com/processwire/processwire-issues/issues/1528
+    $this->watchlist->add($data)->sortFloat('migrate');
   }
 
   /**
