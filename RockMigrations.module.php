@@ -50,7 +50,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.2',
+      'version' => '0.3.3',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -130,6 +130,39 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     }
 
     $fg->save();
+  }
+
+  /**
+   * Add a permission to given role
+   *
+   * @param string|int $permission
+   * @param string|int $role
+   * @return boolean
+   */
+  public function addPermissionToRole($permission, $role) {
+    $role = $this->getRole($role);
+    if(!$role) return $this->log("Role $role not found");
+    $role->of(false);
+    $role->addPermission($permission);
+    return $role->save();
+  }
+
+  /**
+   * Add role to user
+   *
+   * @param string $role
+   * @param User|string $user
+   * @return void
+   */
+  public function addRoleToUser($role, $user) {
+    $role = $this->getRole($role);
+    $user = $this->getUser($user);
+    $msg = "Cannot add role to user";
+    if(!$role) return $this->log("$msg - role not found");
+    if(!$user) return $this->log("$msg - user not found");
+    $user->of(false);
+    $user->addRole($role);
+    $user->save();
   }
 
   /**
@@ -254,6 +287,25 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Create role with given name
+   *
+   * @param string $name
+   * @param array $permissions
+   * @return void
+   */
+  public function createRole($name, $permissions = []) {
+    if(!$name) return $this->log("Define a name for the role!");
+
+    $role = $this->getRole($name);
+    if(!$role) $role = $this->roles->add($name);
+    foreach($permissions as $permission) {
+      $this->addPermissionToRole($permission, $role);
+    }
+
+    return $role;
+  }
+
+  /**
    * Create a new ProcessWire Template
    *
    * @param string $name
@@ -279,6 +331,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if($addTitlefield) $this->addFieldToTemplate('title', $t);
 
     return $t;
+  }
+
+  /**
+   * Create or return a PW user
+   *
+   * Usage:
+   * $rm->createUser('demo', [
+   * ]);
+   *
+   * @param string $username
+   * @param array $data
+   * @return User
+   */
+  public function createUser($username, $data = []) {
+    $user = $this->users->get($username);
+    if(!$user->id) $user = $this->wire->users->add($username);
+    $this->setUserData($user, $data);
+    return $user;
   }
 
   /**
@@ -441,6 +511,34 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public function getPage($data) {
     if($data instanceof Page) return $data;
     return $this->wire->pages->get($data);
+  }
+
+  /**
+   * Get role
+   * Returns false if the role does not exist
+   * @param Role|string $name
+   * @return mixed
+   */
+  public function getRole($name) {
+    if(!$name) return false;
+    $role = $this->wire->roles->get((string)$name);
+    if($role AND $role->id) return $role;
+    $this->log("Role $name not found");
+    return false;
+  }
+
+  /**
+   * Get user
+   * Returns false if the user does not exist
+   * @param User|string $name
+   * @return mixed
+   */
+  public function getUser($name) {
+    if(!$name) return false;
+    $role = $this->wire->users->get((string)$name);
+    if($role AND $role->id) return $role;
+    $this->log("User $name not found");
+    return false;
   }
 
   /**
@@ -1220,6 +1318,51 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         $this->removeFieldFromTemplate($name, $template, true);
       }
     }
+  }
+
+  /**
+   * Set user data
+   *
+   * Usage:
+   * $rm->setUserData('demo', 'mySecretPassword');
+   *
+   * @param mixed $user
+   * @param array $data
+   * @return User
+   */
+  public function setUserData($user, array $data) {
+    $user = $this->getUser($user);
+    if(!$user) return; // logging above
+    $user->of(false);
+
+    // setup options
+    $opt = $this->wire(new WireData()); /** @var WireData $opt */
+    $opt->setArray([
+      'roles' => [],
+      'password' => null,
+      'admintheme' => 'AdminThemeUikit',
+    ]);
+    $opt->setArray($data);
+
+    // set roles
+    foreach($opt->roles as $role) $this->addRoleToUser($role, $user);
+
+    // setup password
+    $password = $opt->password;
+    $rand = $this->wire(new WireRandom()); /** @var WireRandom $rand */
+    if(is_array($opt->password)) $password = $rand->alphanumeric($opt->password);
+    if(!$password) $password = $rand->alphanumeric(null, [
+      'minLength' => 10,
+      'maxLength' => 20,
+    ]);
+    $user->pass = $password;
+
+    // save admin theme in 2 steps
+    // otherwise the admin theme will not update (PW issue)
+    if($opt->admintheme) $user->set('admin_theme', $opt->admintheme);
+
+    $user->save();
+    return $user;
   }
 
   /**
