@@ -50,7 +50,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.0',
+      'version' => '0.3.1',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -164,7 +164,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    */
   public function createField($name, $type, $options = null) {
     $field = $this->getField($name);
-    return;
 
     // field does not exist
     if(!$field) {
@@ -480,6 +479,41 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if($namespace) $class = "\\$namespace\\$class";
       $tmp = new $class();
       if(method_exists($tmp, "init")) $tmp->init();
+
+      if(method_exists($tmp, "editForm")) {
+        $this->wire->addHookAfter("ProcessPageEdit::buildForm", function($event) use($tmp) {
+          $page = $event->object->getPage();
+          if($page->template !== $tmp->template) return;
+          $form = $event->return;
+          $page->editForm($form, $page);
+        });
+      }
+
+      if(method_exists($tmp, "editFormContent")) {
+        $this->wire->addHookAfter("ProcessPageEdit::buildFormContent", function($event) use($tmp) {
+          $page = $event->object->getPage();
+          if($page->template !== $tmp->template) return;
+          $form = $event->return;
+          $page->editFormContent($form, $page);
+        });
+      }
+
+      if(method_exists($tmp, "onSaveReady")) {
+        $this->wire->addHookAfter("Pages::saveReady", function($event) use($tmp) {
+          $page = $event->arguments(0);
+          if($page->template !== $tmp->template) return;
+          $page->onSaveReady();
+        });
+      }
+
+      if(method_exists($tmp, "onCreate")) {
+        $this->wire->addHookAfter("Pages::saveReady", function($event) use($tmp) {
+          $page = $event->arguments(0);
+          if($page->id) return;
+          if($page->template !== $tmp->template) return;
+          $page->onCreate();
+        });
+      }
     }
   }
 
