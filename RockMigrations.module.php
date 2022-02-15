@@ -50,7 +50,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.1',
+      'version' => '0.3.2',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -495,6 +495,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
           if($page->template !== $tmp->template) return;
           $form = $event->return;
           $page->editFormContent($form, $page);
+        });
+      }
+
+      if(method_exists($tmp, "editFormSettings")) {
+        $this->wire->addHookAfter("ProcessPageEdit::buildFormSettings", function($event) use($tmp) {
+          $page = $event->object->getPage();
+          if($page->template !== $tmp->template) return;
+          $form = $event->return;
+          $page->editFormSettings($form, $page);
         });
       }
 
