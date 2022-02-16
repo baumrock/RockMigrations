@@ -50,7 +50,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.3',
+      'version' => '0.3.4',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -95,6 +95,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->addHookAfter("Templates::deleted", $this, "setRecordFlag");
     $this->addHookAfter("Modules::refresh", $this, "setRecordFlag");
     $this->addHookAfter("Modules::saveConfig", $this, "setRecordFlag");
+
+    // files on demand feature
+    $this->loadFilesOnDemand();
   }
 
   public function ready() {
@@ -699,6 +702,48 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if($m>$last) $last=$m;
     }
     return $last;
+  }
+
+  /**
+   * Load files on demand on local installation
+   *
+   * Usage: set $config->filesOnDemand = 'your.hostname.com' in your config file
+   *
+   * Make sure that this setting is only used on your local test config and not
+   * on a live system!
+   *
+   * @return void
+   */
+  public function loadFilesOnDemand() {
+    if(!$host = $this->wire->config->filesOnDemand) return;
+    $hook = function(HookEvent $event) use($host) {
+      $config = $this->wire->config;
+      $file = $event->return;
+
+      // this makes it possible to prevent downloading at runtime
+      if(!$this->wire->config->filesOnDemand) return;
+
+      // convert url to disk path
+      if($event->method == 'url') {
+        $file = $config->paths->root.substr($file, strlen($config->urls->root));
+      }
+
+      // load file from remote if it does not exist
+      if(!file_exists($file)) {
+        $host = rtrim($host, "/");
+        $src = "$host/site/assets/files/";
+        $url = str_replace($config->paths->files, $src, $file);
+        $http = $this->wire(new WireHttp()); /** @var WireHttp $http */
+        try {
+          $http->download($url, $file);
+        } catch (\Throwable $th) {
+          // do not throw exception, show error message instead
+          $this->error($th->getMessage());
+        }
+      }
+    };
+    $this->addHookAfter("Pagefile::url", $hook);
+    $this->addHookAfter("Pagefile::filename", $hook);
   }
 
   /**
