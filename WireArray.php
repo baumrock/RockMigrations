@@ -7,7 +7,9 @@ class WireArray extends \ProcessWire\WireArray {
    */
   public function sortFloat($p) {
     $list = $this->getArray();
-    usort($list, function($a, $b) use($p) { return $b->$p > $a->$p; });
+    usort($list, function($a, $b) use($p) {
+      return $b->$p > $a->$p ? 1 : -1;
+    });
     $this->removeAll()->import($list);
   }
 
