@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.7',
+      'version' => '0.3.8',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -506,6 +506,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->warning("fireOnRefresh is DEPRECATED and does not work any more!
       RockMigrations will migrate all watched files on Modules::refresh automatically. $trace");
     return;
+  }
+
+  /**
+   * Get changed watchfiles
+   * @return array
+   */
+  public function getChangedFiles() {
+    $changed = [];
+    foreach($this->watchlist as $file) {
+      // remove the hash from file path
+      // hashes are needed for multiple callbacks living on the same file
+      $path = explode(":", $file->path)[0];
+      $m = filemtime($path);
+      if($m>$this->lastrun) $changed[] = $file->path;
+    }
+    return $changed;
   }
 
   /**
@@ -996,11 +1012,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function migrateWatchfiles($force = false) {
-    $lastmodified = $this->lastmodified();
 
-    $run = ($force OR self::debug OR $this->lastrun < $lastmodified);
+    $changed = $this->getChangedFiles();
+    $run = ($force OR self::debug OR count($changed));
     if(!$run) return;
 
+    $this->wire->log->delete($this->className);
+    foreach($changed as $file) $this->log("Detected change in $file");
     $this->log('Running migrations from watchfiles...');
     $this->updateLastrun();
     // bd($this->watchlist);
@@ -1146,8 +1164,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function run() {
-    $this->wire->log->delete($this->className);
-    $this->log("Cleared Logfile, running migrations...");
     $this->migrateWatchfiles(true);
   }
 
