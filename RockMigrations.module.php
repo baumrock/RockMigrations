@@ -411,23 +411,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
-   * This will add a hook after Modules::refresh
-   *
-   * Usage:
-   * In your module's init() use
-   * $rm->fireOnRefresh($this, "migrate");
-   *
-   * In ready.php you can use it with a callback function:
-   * $rm->fireOnRefresh(function($event) use($rm) {
-   *   $rm->deleteField(...);
-   * });
-   *
-   * @param Module $module module or callback
-   * @param string $method the method name to invoke
-   * @param int|array $priority options array for the hook; if you provide
-   * an integer value it will be casted to the hook priority ['priority'=>xxx]
-   *
-   * @return void
+   * DEPRECATED
    */
   public function fireOnRefresh($module, $method = null, $priority = []) {
     $trace = debug_backtrace()[0];
