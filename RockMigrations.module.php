@@ -50,7 +50,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.5',
+      'version' => '0.3.6',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -133,6 +133,39 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     }
 
     $fg->save();
+  }
+
+  /**
+   * Install the languagesupport module
+   * @return Languages
+   */
+  public function addLanguageSupport() {
+    if($this->modules->isInstalled("LanguageSupport")) return;
+    $this->installModule("LanguageSupport");
+    return $this->wire->languages;
+  }
+
+  /**
+   * Add a new language or return existing
+   *
+   * Also installs language support if missing.
+   *
+   * @param string $name Name of the language
+   * @param string $title Optional title of the language
+   * @return Language Language that was created
+   */
+  public function addLanguage(string $name, string $title = null) {
+    // Make sure Language Support is installed
+    $languages = $this->addLanguageSupport();
+    if(!$languages) return $this->log("Failed installing LanguageSupport");
+
+    $lang = $this->getLanguage($name);
+    if(!$lang->id) {
+      $lang = $languages->add($name);
+      $languages->reloadLanguages();
+    }
+    if($title) $lang->setAndSave('title', $title);
+    return $lang;
   }
 
   /**
@@ -489,6 +522,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     $this->log("No fieldtype found for $type (also tried $fname)");
     return false;
+  }
+
+  /**
+   * Get language
+   * @return Language
+   */
+  public function getLanguage($data) {
+    return $this->wire->languages->get((string)$data);
   }
 
   /**
@@ -885,6 +926,32 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         $this->log("Skipping {$file->path} (no config)");
       }
     }
+  }
+
+  /**
+   * Move one page on top of another one
+   * @return void
+   */
+  public function movePageAfter($page, $reference) {
+    $page = $this->getPage($page);
+    $ref = $this->getPage($reference);
+    if(!$page->id) return $this->log("Page does not exist");
+    if(!$ref->id) return $this->log("Reference does not exist");
+    if($page->parent !== $ref->parent) return $this->log("Both pages must have the same parent");
+    $this->wire->pages->sort($page, $ref->sort+1);
+  }
+
+  /**
+   * Move one page on top of another one
+   * @return void
+   */
+  public function movePageBefore($page, $reference) {
+    $page = $this->getPage($page);
+    $ref = $this->getPage($reference);
+    if(!$page->id) return $this->log("Page does not exist");
+    if(!$ref->id) return $this->log("Reference does not exist");
+    if($page->parent !== $ref->parent) return $this->log("Both pages must have the same parent");
+    $this->wire->pages->sort($page, $ref->sort);
   }
 
   /**
