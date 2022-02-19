@@ -6,6 +6,7 @@ use RockMigrations\WatchFile;
 use RockMigrations\WireArray;
 use RockMigrations\WireArray as WireArrayRM;
 use RockMigrations\YAML;
+use TracyDebugger;
 
 /**
  * @author Bernhard Baumrock, 19.01.2022
@@ -50,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.6',
+      'version' => '0.3.7',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -140,8 +141,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return Languages
    */
   public function addLanguageSupport() {
-    if($this->modules->isInstalled("LanguageSupport")) return;
-    $this->installModule("LanguageSupport");
+    if(!$this->modules->isInstalled("LanguageSupport")) {
+      $this->installModule("LanguageSupport");
+    }
     return $this->wire->languages;
   }
 
@@ -199,6 +201,31 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $user->of(false);
     $user->addRole($role);
     $user->save();
+  }
+
+  /**
+   * Add given permission to given template for given role
+   *
+   * Example for single template:
+   * $rm->addTemplateAccess("my-template", "my-role", "edit");
+   *
+   * Example for multiple templates:
+   * $rm->addTemplateAccess([
+   *   'home',
+   *   'basic-page',
+   * ], "guest", "view");
+   *
+   * @return void
+   */
+  public function addTemplateAccess($templates, $role, $acc) {
+    if(!$role = $this->getRole($role)) return;
+    if(!is_array($templates)) $templates = [$templates];
+    foreach($templates as $tpl) {
+      $tpl = $this->getTemplate($tpl);
+      if(!$tpl) continue; // log is done above
+      $tpl->addRole($role, $acc);
+      $tpl->save();
+    }
   }
 
   /**
@@ -323,6 +350,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Create permission with given name
+   *
+   * @param string $name
+   * @param string $description
+   * @return Permission
+   */
+  public function createPermission($name, $description = null) {
+    if(!$perm = $this->getPermission($name)) {
+      $perm = $this->wire->permissions->add($name);
+      $this->log("Created permission $name");
+    }
+    $perm->setAndSave('title', $description);
+    return $perm;
+  }
+
+  /**
    * Create role with given name
    *
    * @param string $name
@@ -389,18 +432,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
   /**
    * Delete the given field
-   *
    * @param string $name
+   * @param bool $quiet
    * @return void
    */
-  public function deleteField($name) {
-    $field = $this->getField($name);
+  public function deleteField($name, $quiet = false) {
+    $field = $this->getField($name, $quiet);
     if(!$field) return; // logging in getField()
 
     // delete _END field for fieldsets first
     if($field->type instanceof FieldtypeFieldsetOpen) {
       $closer = $field->type->getFieldsetCloseField($field, false);
-      $this->deleteField($closer);
+      $this->deleteField($closer, $quiet);
     }
 
     // make sure we can delete the field by removing all flags
@@ -415,6 +458,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     }
 
     return $this->fields->delete($field);
+  }
+
+  /**
+   * Delete the given role
+   * @param Role|string $role
+   * @param bool $quiet
+   * @return void
+   */
+  public function deleteRole($role, $quiet = false) {
+    if(!$role = $this->getRole($role, $quiet)) return;
+    $this->roles->delete($role);
   }
 
   /**
@@ -474,15 +528,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
   /**
    * Get field by name
-   *
    * @param Field|string $name
+   * @param bool $quiet
    * @return mixed
    */
-  public function getField($name) {
+  public function getField($name, $quiet = false) {
     if(!$name) return false; // for addfieldtotemplate
     $field = $this->fields->get((string)$name);
     if($field) return $field;
-    $this->log("Field $name not found");
+    if(!$quiet) $this->log("Field $name not found");
     return false;
   }
 
@@ -542,17 +596,59 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Get permission
+   * Returns FALSE if permission does not exist
+   * @return Permission|false
+   */
+  public function getPermission($data) {
+    $permission = $this->permissions->get((string)$data);
+    if($permission AND $permission->id) return $permission;
+    $this->log("Permission $data not found");
+    return false;
+  }
+
+  /**
    * Get role
    * Returns false if the role does not exist
    * @param Role|string $name
+   * @param bool $quiet
    * @return mixed
    */
-  public function getRole($name) {
+  public function getRole($name, $quiet = false) {
     if(!$name) return false;
     $role = $this->wire->roles->get((string)$name);
     if($role AND $role->id) return $role;
-    $this->log("Role $name not found");
+    if(!$quiet) $this->log("Role $name not found");
     return false;
+  }
+
+  /**
+   * Get trace and return last entry from trace that is within the site folder
+   * @return string
+   */
+  public function getTrace($msg = null) {
+    $self = Paths::normalizeSeparators(__FILE__);
+    $trace = debug_backtrace();
+    $paths = $this->wire->config->paths;
+    $trace = array_filter($trace, function($item) use($paths, $self) {
+      $file = $item['file'];
+      if($file === $self) {
+        if($item['function']=='getTrace') return false;
+      }
+      if($file === $paths->templates."admin.php") return false;
+      if($file === $paths->root."index.php") return false;
+      if(strpos($file, $paths->wire)===0) return false;
+      return true;
+    });
+    // bd($trace, $msg);
+
+    // return first trace entry that does not come from RockMigrations.module.php
+    $first = null;
+    foreach($trace as $k=>$v) {
+      if(!$first) $first = $v;
+      if($v['file'] !== $self) return $v;
+    }
+    return $first;
   }
 
   /**
@@ -572,13 +668,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   /**
    * Get template by name
    *
+   * Returns FALSE if template is not found
+   *
    * @param Template|string $name
-   * @return Template|null
+   * @return Template|false
    */
   public function getTemplate($name) {
     $template = $this->templates->get((string)$name);
-    if($template) return $template;
+    if($template AND $template->id) return $template;
     $this->log("Template $name not found");
+    return false;
   }
 
   /**
@@ -788,9 +887,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function log($msg, $throwException = true) {
-    if($this->isVerbose()) $this->wire->log($msg);
+    $trace = $this->getTrace($msg);
+    $file = $trace['file'];
+    $line = $trace['line'];
+    $filename = pathinfo($file, PATHINFO_FILENAME);
+    $trace = "$filename:$line";
+    if($this->isVerbose()) {
+      try {
+        $url = TracyDebugger::createEditorLink($file, $line, $trace);
+        $opt = ['url' => $url];
+      } catch (\Throwable $th) {
+        $opt = [];
+      }
+      $this->wire->log->save("RockMigrations", $msg, $opt);
+    }
     elseif($this->isDebug()) {
-      if($throwException) throw new WireException($msg);
+      if($throwException) throw new WireException("$msg in $trace");
     }
   }
 
@@ -1011,6 +1123,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Remove access from template for given role
+   * @return void
+   */
+  public function removeTemplateAccess($tpl, $role) {
+    if(!$role = $this->getRole($role)) return;
+    if(!$tpl = $this->getTemplate($tpl)) return;
+    $tpl->removeRole($role, "all");
+    $tpl->save();
+  }
+
+  /**
    * Reset "lastrun" cache to force migrations
    * @return void
    */
@@ -1023,6 +1146,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function run() {
+    $this->wire->log->delete($this->className);
+    $this->log("Cleared Logfile, running migrations...");
     $this->migrateWatchfiles(true);
   }
 
@@ -1332,6 +1457,31 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Set settings of a template's access tab
+   *
+   * This will by default only ADD permissions and not remove them!
+   * This is to be consistent with other SET methods (setData, migrate, etc)
+   *
+   * Usage:
+   * $rm->setTemplateAccess("my-tpl", "my-role", ["view", "edit"]);
+   *
+   * Thx @apeisa https://bit.ly/2QU1b8e
+   *
+   * @param mixed $tpl Template
+   * @param mixed $role Role
+   * @param array $access Permissions, eg ['view', 'edit']
+   * @param bool $remove Reset Permissions for this role?
+   * @return void
+   */
+  public function setTemplateAccess($tpl, $role, $access, $remove = false) {
+    $tpl = $this->getTemplate($tpl);
+    $role = $this->getRole($role);
+    if($remove) $this->removeTemplateAccess($tpl, $role);
+    $this->setTemplateData($tpl, ['useRoles'=>1]);
+    foreach($access as $acc) $this->addTemplateAccess($tpl, $role, $acc);
+  }
+
+  /**
    * Set data of a template
    *
    * Only the properties provided will be set on the template. It will not touch
@@ -1422,14 +1572,30 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Usage:
    * $rm->setUserData('demo', 'mySecretPassword');
    *
+   * $rm->setUserData('demo', 50); // 50 char random string
+   *
+   * $rm->setUserData('demo', [
+   *   'roles' => [...],
+   *   'password' => ...,
+   *   'adminTheme' => ...,
+   * ]);
+   *
    * @param mixed $user
-   * @param array $data
+   * @param mixed $data
    * @return User
    */
-  public function setUserData($user, array $data) {
+  public function setUserData($user, $data) {
     $user = $this->getUser($user);
     if(!$user) return; // logging above
     $user->of(false);
+
+    // setup data
+    if(is_int($data)) {
+      $rand = $this->wire(new WireRandom()); /** @var WireRandom $rand */
+      $data = $rand->alphanumeric($data);
+    }
+
+    if(is_string($data)) $data = ['password' => $data];
 
     // setup options
     $opt = $this->wire(new WireData()); /** @var WireData $opt */
