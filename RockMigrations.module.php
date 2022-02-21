@@ -907,10 +907,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $file = $trace['file'];
     $line = $trace['line'];
     $filename = pathinfo($file, PATHINFO_FILENAME);
-    $trace = "$filename:$line";
+    $traceStr = "$filename:$line";
     if($this->isVerbose()) {
       try {
-        $url = TracyDebugger::createEditorLink($file, $line, $trace);
+        $url = TracyDebugger::createEditorLink($file, $line, $traceStr);
         $opt = ['url' => $url];
       } catch (\Throwable $th) {
         $opt = [];
@@ -918,7 +918,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       $this->wire->log->save("RockMigrations", $msg, $opt);
     }
     elseif($this->isDebug()) {
-      if($throwException) throw new WireException("$msg in $trace");
+      if($throwException) throw new WireException("$msg in $traceStr");
     }
   }
 
