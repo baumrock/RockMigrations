@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.8',
+      'version' => '0.3.9',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -461,6 +461,37 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Delete the given page including all children.
+   *
+   * @param Page|string $page
+   * @return void
+   */
+  public function deletePage($page, $quiet = false) {
+    if(!$page = $this->getPage($page, $quiet)) return;
+
+    // temporarily disable filesOnDemand feature
+    // this prevents PW from downloading files that are deleted from a local dev
+    // system but only exist on the live system
+    $ondemand = $this->wire->config->filesOnDemand;
+    $this->wire->config->filesOnDemand = false;
+
+    // make sure we can delete the page and delete it
+    // we also need to make sure that all descendants of this page are deletable
+    // todo: make this recursive?
+    $all = $this->wire(new PageArray());
+    $all->add($page);
+    $all->add($this->wire->pages->find("has_parent=$page, include=all"));
+    foreach($all as $p) {
+      $p->addStatus(Page::statusSystemOverride);
+      $p->status = 1;
+      $p->save();
+    }
+    $this->wire->pages->delete($page, true);
+
+    $this->wire->config->filesOnDemand = $ondemand;
+  }
+
+  /**
    * Delete the given role
    * @param Role|string $role
    * @param bool $quiet
@@ -469,6 +500,33 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public function deleteRole($role, $quiet = false) {
     if(!$role = $this->getRole($role, $quiet)) return;
     $this->roles->delete($role);
+  }
+
+  /**
+   * Delete a ProcessWire Template
+   * @param mixed $tpl
+   * @param bool $quiet
+   * @return void
+   */
+  public function deleteTemplate($tpl, $quiet = false) {
+    $template = $this->getTemplate($tpl, $quiet);
+    if(!$template) return;
+
+    // remove all pages having this template
+    foreach($this->pages->find("template=$template, include=all") as $p) {
+      $this->deletePage($p);
+    }
+
+    // make sure we can delete the template by removing all flags
+    $template->flags = Template::flagSystemOverride;
+    $template->flags = 0;
+
+    // delete the template
+    $this->templates->delete($template);
+
+    // delete the fieldgroup
+    $fg = $this->fieldgroups->get((string)$tpl);
+    if($fg) $this->fieldgroups->delete($fg);
   }
 
   /**
@@ -604,11 +662,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
   /**
    * Get page
-   * @return Page
+   * Returns FALSE if page is not found
+   * @return Page|false
    */
-  public function getPage($data) {
+  public function getPage($data, $quiet = false) {
     if($data instanceof Page) return $data;
-    return $this->wire->pages->get($data);
+    $page = $this->wire->pages->get($data);
+    if($page->id) return $page;
+    if(!$quiet) $this->log("Page not found");
+    return false;
   }
 
   /**
@@ -689,10 +751,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param Template|string $name
    * @return Template|false
    */
-  public function getTemplate($name) {
+  public function getTemplate($name, $quiet = false) {
     $template = $this->templates->get((string)$name);
     if($template AND $template->id) return $template;
-    $this->log("Template $name not found");
+    if(!$quiet) $this->log("Template $name not found");
     return false;
   }
 
@@ -748,6 +810,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         });
       }
 
+      // execute onSaveReady on every save
+      // this will also fire when id=0
       if(method_exists($tmp, "onSaveReady")) {
         $this->wire->addHookAfter("Pages::saveReady", function($event) use($tmp) {
           $page = $event->arguments(0);
@@ -756,6 +820,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         });
       }
 
+      // execute onCreate on saveReady when id=0
       if(method_exists($tmp, "onCreate")) {
         $this->wire->addHookAfter("Pages::saveReady", function($event) use($tmp) {
           $page = $event->arguments(0);
