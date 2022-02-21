@@ -1019,6 +1019,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     $this->wire->log->delete($this->className);
     foreach($changed as $file) $this->log("Detected change in $file");
+    $this->log('-------------------------------------');
     $this->log('Running migrations from watchfiles...');
     $this->updateLastrun();
     // bd($this->watchlist);
