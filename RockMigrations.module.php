@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.9',
+      'version' => '0.3.10',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -492,6 +492,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Delete the given permission
+   *
+   * @param Permission|string $permission
+   * @return void
+   */
+  public function deletePermission($permission, $quiet = false) {
+    if(!$permission = $this->getPermission($permission, $quiet)) return;
+    $this->permissions->delete($permission);
+  }
+
+  /**
    * Delete the given role
    * @param Role|string $role
    * @param bool $quiet
@@ -676,12 +687,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   /**
    * Get permission
    * Returns FALSE if permission does not exist
+   * @param mixed $data
+   * @param bool $quiet
    * @return Permission|false
    */
-  public function getPermission($data) {
+  public function getPermission($data, $quiet = false) {
     $permission = $this->permissions->get((string)$data);
     if($permission AND $permission->id) return $permission;
-    $this->log("Permission $data not found");
+    if(!$quiet) $this->log("Permission $data not found");
     return false;
   }
 
