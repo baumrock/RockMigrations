@@ -187,22 +187,120 @@ $rm->yaml('/path/to/file.yaml', ['foo'=>'bar']);
 
 ## Migration Examples
 
-### Ckeditor Field
+### Field migrations
+
+CKEditor field
 
 ```php
-'mytextfield' => [
-  'type' => 'textarea',
-  'tags' => 'MyTags',
-  'inputfieldClass' => 'InputfieldCKEditor',
-  'contentType' => FieldtypeTextarea::contentTypeHTML,
-  'rows' => 5,
-  'formatTags' => "h2;p;",
-  'contentsCss' => "/site/templates/main.css?m=".time(),
-  'stylesSet' => "mystyles:/site/templates/mystyles.js",
-  'toggles' => [
-    InputfieldCKEditor::toggleCleanDIV, // convert <div> to <p>
-    InputfieldCKEditor::toggleCleanP, // remove empty paragraphs
-    InputfieldCKEditor::toggleCleanNBSP, // remove &nbsp;
+$rm->migrate([
+  'fields' => [
+    'yourckefield' => [
+      'type' => 'textarea',
+      'tags' => 'MyTags',
+      'inputfieldClass' => 'InputfieldCKEditor',
+      'contentType' => FieldtypeTextarea::contentTypeHTML,
+      'rows' => 5,
+      'formatTags' => "h2;p;",
+      'contentsCss' => "/site/templates/main.css?m=".time(),
+      'stylesSet' => "mystyles:/site/templates/mystyles.js",
+      'toggles' => [
+        InputfieldCKEditor::toggleCleanDIV, // convert <div> to <p>
+        InputfieldCKEditor::toggleCleanP, // remove empty paragraphs
+        InputfieldCKEditor::toggleCleanNBSP, // remove &nbsp;
+      ],
+    ],
   ],
-],
+]);
+```
+
+Image field
+
+```php
+$rm->migrate([
+  'fields' => [
+    'yourimagefield' => [
+      'type' => 'image',
+      'tags' => 'YourTags',
+      'maxFiles' => 0,
+      'descriptionRows' => 1,
+      'extensions' => "jpg jpeg gif png svg",
+      'okExtensions' => ['svg'],
+      'icon' => 'picture-o',
+      'outputFormat' => FieldtypeFile::outputFormatSingle,
+      'maxSize' => 3, // max 3 megapixels
+    ],
+  ],
+]);
+```
+
+Files field
+
+```php
+$rm->migrate([
+  'fields' => [
+    'yourfilefield' => [
+      'type' => 'file',
+      'tags' => 'YourTags',
+      'maxFiles' => 1,
+      'descriptionRows' => 0,
+      'extensions' => "pdf",
+      'icon' => 'file-o',
+      'outputFormat' => FieldtypeFile::outputFormatSingle,
+    ],
+  ],
+]);
+```
+
+Options field
+
+```php
+$rm->migrate([
+  'fields' => [
+    'yourfield' => [
+      'type' => 'options',
+      'tags' => 'YourTags',
+      'label' => 'Options example',
+      'options' => [
+        1 => 'ONE|This is option one',
+        2 => 'TWO',
+        3 => 'THREE',
+      ],
+    ],
+  ],
+]);
+```
+
+Page Reference field
+
+```php
+$rm->migrate([
+  'fields' => [
+    'yourfield' => [
+      'type' => 'page',
+      'label' => __('Select a page'),
+      'tags' => 'YourModule',
+      'derefAsPage' => FieldtypePage::derefAsPageArray,
+      'inputfield' => 'InputfieldSelect',
+      'findPagesSelector' => 'foo=bar',
+      'labelFieldName' => 'title',
+    ],
+  ],
+]);
+```
+
+Date field
+
+```php
+$rm->migrate([
+  'fields' => [
+    'yourfield' => [
+      'type' => 'datetime',
+      'label' => __('Enter date'),
+      'tags' => 'YourModule',
+      'dateInputFormat' => 'j.n.y',
+      'datepicker' => InputfieldDatetime::datepickerFocus,
+      'defaultToday' => 1,
+    ],
+  ],
+]);
 ```
