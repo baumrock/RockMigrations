@@ -129,10 +129,10 @@ RockMigrations will run migrations automatically when a watched file was changed
  **/
 chdir(__DIR__);
 
-// IMPORTANT: set forceWatch to true before booting ProcessWire!
+// IMPORTANT: set RockMigrationsCLI to true before booting ProcessWire!
 // By default RockMigrations will only watch files if you are logged in as
 // superuser (for better performance and security)
-define('forceWatch', true);
+define('RockMigrationsCLI', true);
 
 include('../../../index.php');
 if(!isset($wire)) die("SH... Bootstrapping ProcessWire failed!");

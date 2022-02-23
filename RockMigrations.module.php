@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.13',
+      'version' => '0.3.14',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1092,20 +1092,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function migrateWatchfiles($force = false) {
-    // prevent auto-migrate when forceWatch is enabled (CLI)
+    // prevent auto-migrate when CLI mode is enabled
     // $rm->run() will run either way because it sets force=true
-    if(defined('forceWatch') AND !$force) return;
+    $cli = defined('RockMigrationsCLI');
+    if($cli AND !$force) return;
 
     $changed = $this->getChangedFiles();
     $run = ($force OR self::debug OR count($changed));
     if(!$run) return;
 
+    // logging
     $this->wire->log->delete($this->className);
-    $this->log('-------------------------------------');
-    foreach($changed as $file) $this->log("Detected change in $file");
-    $this->log('Running migrations from watchfiles...');
+    if(!$cli) {
+      $this->log('-------------------------------------');
+      foreach($changed as $file) $this->log("Detected change in $file");
+      $this->log('Running migrations from watchfiles...');
+    }
+
     $this->updateLastrun();
-    // bd($this->watchlist);
     foreach($this->watchlist as $file) {
       if(!$file->migrate) continue;
 
@@ -1851,7 +1855,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public function watch($what, $migrate = true, $options = []) {
     $watch = false;
     if($this->wire->user->isSuperuser()) $watch = true;
-    if(defined('forceWatch')) $watch = true;
+    if(defined('RockMigrationsCLI')) $watch = true;
     if(!$watch) return;
 
     $file = $what;
