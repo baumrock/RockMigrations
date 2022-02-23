@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.10',
+      'version' => '0.3.11',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -722,6 +722,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $trace = debug_backtrace();
     $paths = $this->wire->config->paths;
     $trace = array_filter($trace, function($item) use($paths, $self) {
+      if(!array_key_exists('file', $item)) return false; // when run from CLI
       $file = $item['file'];
       if($file === $self) {
         if($item['function']=='getTrace') return false;
@@ -993,6 +994,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       } catch (\Throwable $th) {
         $opt = [];
       }
+      if($this->wire->config->external) echo "$msg\n";
       $this->wire->log->save("RockMigrations", $msg, $opt);
     }
     elseif($this->isDebug()) {
@@ -1210,6 +1212,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     $fg->remove($field);
     $fg->save();
+
+    $this->log("Removed field $field from template $template");
   }
 
   /**
@@ -1729,8 +1733,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function sudo() {
-    $id = $this->wire->config->superUserPageID;
-    $this->wire->users->setCurrentUser($this->wire->users->get($id));
+    $role = $this->wire->roles->get('superuser');
+    $su = $this->wire->users->get("sort=id,roles=$role");
+    if(!$su->id) return $this->log("No superuser found");
+    $this->wire->users->setCurrentUser($su);
   }
 
   /**
@@ -1840,7 +1846,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function watch($what, $migrate = true, $options = []) {
-    if(!$this->wire->user->isSuperuser()) return;
+    $watch = false;
+    if($this->wire->user->isSuperuser()) $watch = true;
+    if(defined('forceWatch')) $watch = true;
+    if(!$watch) return;
+
     $file = $what;
     $migrate = (float)$migrate;
 

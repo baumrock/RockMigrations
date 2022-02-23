@@ -118,6 +118,32 @@ $rm->watch(__DIR__."/foo");
 
 Note that you need to define `FALSE` as second parameter if the file should not be migrated but only watched for changes. If you set it to `TRUE` the file will be included and executed as if it was a migration script (see examples below).
 
+## Running migrations
+
+RockMigrations will run migrations automatically when a watched file was changed. In case you want to trigger the migrations manually (eg after deployment) you need to do some additional steps:
+
+```php
+<?php namespace ProcessWire;
+/**
+ * Usage: php site/modules/YourSite/migrate.php
+ **/
+chdir(__DIR__);
+
+// IMPORTANT: set forceWatch to true before booting ProcessWire!
+// By default RockMigrations will only watch files if you are logged in as
+// superuser (for better performance and security)
+define('forceWatch', true);
+
+include('../../../index.php');
+if(!isset($wire)) die("SH... Bootstrapping ProcessWire failed!");
+
+/** @var ProcessWire $wire */
+/** @var RockMigrations $rm */
+$rm = $wire->modules->get('RockMigrations');
+$rm->sudo(); // log in as sudo user to prevent permission issues
+$rm->run();
+```
+
 #### YAML
 
 ```php
