@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.14',
+      'version' => '0.3.15',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -665,10 +665,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
   /**
    * Get language
-   * @return Language
+   * Returns FALSE if language is not found
+   * @return Language|false
    */
-  public function getLanguage($data) {
-    return $this->wire->languages->get((string)$data);
+  public function getLanguage($data, $quiet = false) {
+    if($lang = $this->wire->languages->get((string)$data)) return $lang;
+    if(!$quiet) $this->log("Language $data not found");
+    return false;
+  }
+
+  /**
+   * Get language zip url
+   * @param string $code 2-Letter Language Code
+   * @return string
+   */
+  public function getLanguageZip($code) {
+    if(strtoupper($code) == 'DE') return "https://github.com/jmartsch/pw-lang-de/archive/refs/heads/main.zip";
+    if(strtoupper($code) == 'FI') return "https://github.com/apeisa/Finnish-ProcessWire/archive/refs/heads/master.zip";
+    return $code;
   }
 
   /**
@@ -1396,6 +1410,52 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     $field->save();
     return $field;
+  }
+
+  /**
+   * Set language translations from zip file to a language
+   * Removes old translation files and installs LanguageSupport.
+   *
+   * Usage:
+   * // use german translation files for default language
+   * $rm->setLanguageTranslations('DE');
+   *
+   * @param string $translations Url to language zip OR 2-letter-code (eg DE)
+   * @param string|Language $lang PW Language to update
+   * @return Language $language
+   */
+  public function setLanguageTranslations($translations, $lang = null) {
+    $zip = $this->getLanguageZip($translations);
+
+    // Make sure Language Support is installed
+    $this->addLanguageSupport();
+    if($lang) {
+      $language = $this->getLanguage($lang);
+      if(!$language) return; // logging above
+    }
+    else $language = $this->languages->getDefault();
+    if(!$language->id) return $this->log("No language found");
+
+    $this->log("Downloading $zip");
+    $cache = $this->wire->config->paths->cache;
+    $http = new WireHttp();
+    $zipTemp = $cache . $lang . "_temp.zip";
+    $http->download($zip, $zipTemp);
+
+    // Unzip files and add .json files to language
+    $items = $this->wire->files->unzip($zipTemp, $cache);
+    if($cnt = count($items)) {
+      $this->log("Adding $cnt new language files to language $language");
+      $language->language_files->deleteAll();
+      $language->save();
+      foreach($items as $item) {
+        if(strpos($item, ".json") === false) continue;
+        $language->language_files->add($cache . $item);
+      }
+    }
+    $language->save();
+
+    return $language;
   }
 
   /**
