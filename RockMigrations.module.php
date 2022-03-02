@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.15',
+      'version' => '0.3.16',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -541,6 +541,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Delete a PW user
+   *
+   * @param string $username
+   * @return void
+   */
+  public function deleteUser($username, $quiet = false) {
+    if(!$user = $this->getUser($username, $quiet)) return;
+    $this->wire->users->delete($user);
+  }
+
+  /**
    * Enable all languages for given page
    *
    * @param mixed $page
@@ -761,13 +772,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Get user
    * Returns false if the user does not exist
    * @param User|string $name
+   * @param bool $quiet
    * @return mixed
    */
-  public function getUser($name) {
+  public function getUser($name, $quiet = false) {
     if(!$name) return false;
     $role = $this->wire->users->get((string)$name);
     if($role AND $role->id) return $role;
-    $this->log("User $name not found");
+    if(!$quiet) $this->log("User $name not found");
     return false;
   }
 
