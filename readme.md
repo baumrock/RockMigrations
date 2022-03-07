@@ -120,28 +120,10 @@ Note that you need to define `FALSE` as second parameter if the file should not 
 
 ## Running migrations
 
-RockMigrations will run migrations automatically when a watched file was changed. In case you want to trigger the migrations manually (eg after deployment) you need to do some additional steps:
+RockMigrations will run migrations automatically when a watched file was changed. In case you want to trigger the migrations manually (eg after deployment) you can use the `migrate.php` file:
 
 ```php
-<?php namespace ProcessWire;
-/**
- * Usage: php site/modules/YourSite/migrate.php
- **/
-chdir(__DIR__);
-
-// IMPORTANT: set RockMigrationsCLI to true before booting ProcessWire!
-// By default RockMigrations will only watch files if you are logged in as
-// superuser (for better performance and security)
-define('RockMigrationsCLI', true);
-
-include('../../../index.php');
-if(!isset($wire)) die("SH... Bootstrapping ProcessWire failed!");
-
-/** @var ProcessWire $wire */
-/** @var RockMigrations $rm */
-$rm = $wire->modules->get('RockMigrations');
-$rm->sudo(); // log in as sudo user to prevent permission issues
-$rm->run();
+php site/modules/RockMigrations/migrate.php
 ```
 
 #### YAML
