@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.17',
+      'version' => '0.3.18',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -328,7 +328,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       'parent' => $parent,
     ]);
 
-    if($page->id) {
+    if($page AND $page->id) {
       $page->status($status);
       $page->setAndSave($data);
       return $page;
