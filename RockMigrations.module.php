@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.18',
+      'version' => '0.3.19',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -259,7 +259,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return Field|false
    */
   public function createField($name, $type, $options = null) {
-    $field = $this->getField($name);
+    $field = $this->getField($name, true);
 
     // field does not exist
     if(!$field) {
@@ -666,7 +666,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     // prepend Fieldtype (page --> FieldtypePage)
     // now we try to get the module and install it
-    $fname = "Fieldtype".ucfirst($name);
+    $fname = $name;
+    if(strpos($fname, "Fieldtype") !== 0) $fname = "Fieldtype".ucfirst($fname);
+    if(!$modules->isInstalled($fname)) @$modules->install($fname);
     $module = $modules->get($fname);
     if($module) return $module;
 
@@ -1334,6 +1336,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $field = $this->getField($field);
     if(!$field) return; // logging in getField()
 
+    // check if the field type has changed
+    if(array_key_exists('type', $data)) {
+      $type = $this->getFieldtype($data['type']);
+      if((string)$type !== (string)$field->type) {
+        $field->type = $type;
+        // if we do not save the field here it will lose some data (eg icon)
+        $field->save();
+      }
+    }
+
     // prepare data array
     foreach($data as $key=>$val) {
 
@@ -1415,7 +1427,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     }
 
     // Make sure Table field actually updates database schema
-    if ($field->type == "FieldtypeTable") {
+    if($field->type == "FieldtypeTable") {
       $fieldtypeTable = $field->getFieldtype();
       $fieldtypeTable->_checkSchema($field, true); // Commit changes
     }
