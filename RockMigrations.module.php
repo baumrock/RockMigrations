@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.19',
+      'version' => '0.3.20',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -538,6 +538,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     // delete the fieldgroup
     $fg = $this->fieldgroups->get((string)$tpl);
     if($fg) $this->fieldgroups->delete($fg);
+  }
+
+  /**
+   * Delete templates
+   *
+   * Usage
+   * $rm->deleteTemplates("tags=YourModule");
+   *
+   * @param string $selector
+   */
+  public function deleteTemplates($selector, $quiet = false) {
+    $templates = $this->wire->templates->find($selector);
+    foreach($templates as $tpl) $this->deleteTemplate($tpl, $quiet);
   }
 
   /**
