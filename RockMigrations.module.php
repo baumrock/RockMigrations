@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.20',
+      'version' => '0.3.21',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -458,6 +458,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     }
 
     return $this->fields->delete($field);
+  }
+
+  /**
+   * Delete module
+   * This deletes the module files and then removes the entry in the modules
+   * table. Removing the module via uninstall() did cause an endless loop.
+   * @param mixed $name
+   * @return void
+   */
+  public function deleteModule($name, $path = null) {
+    $name = (string)$name;
+    if($this->wire->modules->isInstalled($name)) $this->uninstallModule($name);
+    if(!$path) $path = $this->wire->config->paths->siteModules.$name;
+    if(is_dir($path)) $this->wire->files->rmdir($path, true);
+    $this->wire->database->exec("DELETE FROM modules WHERE class = '$name'");
   }
 
   /**
