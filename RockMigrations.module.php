@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.22',
+      'version' => '0.3.23',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -432,7 +432,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
   /**
    * Delete the given field
-   * @param string $name
+   * @param mixed $name
    * @param bool $quiet
    * @return void
    */
@@ -458,6 +458,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     }
 
     return $this->fields->delete($field);
+  }
+
+  /**
+   * Deletes a language
+   * @param mixed $language
+   * @return void
+   */
+  public function deleteLanguage($language, $quiet = false) {
+    if(!$lang = $this->getLanguage($language, $quiet)) return;
+    $this->wire->languages->delete($lang);
   }
 
   /**
@@ -710,7 +720,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return Language|false
    */
   public function getLanguage($data, $quiet = false) {
-    if($lang = $this->wire->languages->get((string)$data)) return $lang;
+    $lang = $this->wire->languages->get((string)$data);
+    if($lang and $lang->id) return $lang;
     if(!$quiet) $this->log("Language $data not found");
     return false;
   }
