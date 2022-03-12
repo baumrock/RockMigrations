@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.21',
+      'version' => '0.3.22',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1487,6 +1487,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     }
     else $language = $this->languages->getDefault();
     if(!$language->id) return $this->log("No language found");
+    $language->of(false);
 
     $this->log("Downloading $zip");
     $cache = $this->wire->config->paths->cache;
