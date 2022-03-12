@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.3.23',
+      'version' => '0.4.0',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -168,6 +168,62 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     }
     if($title) $lang->setAndSave('title', $title);
     return $lang;
+  }
+
+  /**
+   * Add magic methods to this page object
+   * @param Page $obj
+   * @return void
+   */
+  public function addMagicMethods($obj) {
+
+    if(method_exists($obj, "editForm")) {
+      $this->wire->addHookAfter("ProcessPageEdit::buildForm", function($event) use($obj) {
+        $page = $event->object->getPage();
+        if($page->template !== $obj->template) return;
+        $form = $event->return;
+        $page->editForm($form, $page);
+      });
+    }
+
+    if(method_exists($obj, "editFormContent")) {
+      $this->wire->addHookAfter("ProcessPageEdit::buildFormContent", function($event) use($obj) {
+        $page = $event->object->getPage();
+        if($page->template !== $obj->template) return;
+        $form = $event->return;
+        $page->editFormContent($form, $page);
+      });
+    }
+
+    if(method_exists($obj, "editFormSettings")) {
+      $this->wire->addHookAfter("ProcessPageEdit::buildFormSettings", function($event) use($obj) {
+        $page = $event->object->getPage();
+        if($page->template !== $obj->template) return;
+        $form = $event->return;
+        $page->editFormSettings($form, $page);
+      });
+    }
+
+    // execute onSaveReady on every save
+    // this will also fire when id=0
+    if(method_exists($obj, "onSaveReady")) {
+      $this->wire->addHookAfter("Pages::saveReady", function($event) use($obj) {
+        $page = $event->arguments(0);
+        if($page->template !== $obj->template) return;
+        $page->onSaveReady();
+      });
+    }
+
+    // execute onCreate on saveReady when id=0
+    if(method_exists($obj, "onCreate")) {
+      $this->wire->addHookAfter("Pages::saveReady", function($event) use($obj) {
+        $page = $event->arguments(0);
+        if($page->id) return;
+        if($page->template !== $obj->template) return;
+        $page->onCreate();
+      });
+    }
+
   }
 
   /**
@@ -863,53 +919,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if($namespace) $class = "\\$namespace\\$class";
       $tmp = new $class();
       if(method_exists($tmp, "init")) $tmp->init();
-
-      if(method_exists($tmp, "editForm")) {
-        $this->wire->addHookAfter("ProcessPageEdit::buildForm", function($event) use($tmp) {
-          $page = $event->object->getPage();
-          if($page->template !== $tmp->template) return;
-          $form = $event->return;
-          $page->editForm($form, $page);
-        });
-      }
-
-      if(method_exists($tmp, "editFormContent")) {
-        $this->wire->addHookAfter("ProcessPageEdit::buildFormContent", function($event) use($tmp) {
-          $page = $event->object->getPage();
-          if($page->template !== $tmp->template) return;
-          $form = $event->return;
-          $page->editFormContent($form, $page);
-        });
-      }
-
-      if(method_exists($tmp, "editFormSettings")) {
-        $this->wire->addHookAfter("ProcessPageEdit::buildFormSettings", function($event) use($tmp) {
-          $page = $event->object->getPage();
-          if($page->template !== $tmp->template) return;
-          $form = $event->return;
-          $page->editFormSettings($form, $page);
-        });
-      }
-
-      // execute onSaveReady on every save
-      // this will also fire when id=0
-      if(method_exists($tmp, "onSaveReady")) {
-        $this->wire->addHookAfter("Pages::saveReady", function($event) use($tmp) {
-          $page = $event->arguments(0);
-          if($page->template !== $tmp->template) return;
-          $page->onSaveReady();
-        });
-      }
-
-      // execute onCreate on saveReady when id=0
-      if(method_exists($tmp, "onCreate")) {
-        $this->wire->addHookAfter("Pages::saveReady", function($event) use($tmp) {
-          $page = $event->arguments(0);
-          if($page->id) return;
-          if($page->template !== $tmp->template) return;
-          $page->onCreate();
-        });
-      }
+      $this->addMagicMethods($tmp);
     }
   }
 
