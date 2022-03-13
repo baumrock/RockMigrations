@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.4.0',
+      'version' => '0.4.1',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -297,6 +297,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       $file = "$path/$name.php";
       if(is_file($file)) require_once($file);
     });
+  }
+
+  /**
+   * Get basename of file or object
+   * @return string
+   */
+  public function basename($file) {
+    return basename($this->filePath($file));
   }
 
   /**
@@ -669,6 +677,37 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if(is_file($f = "$path.$ext")) return $f;
     }
     return false;
+  }
+
+  /**
+   * Get IDE edit link for file
+   * @return string
+   */
+  public function fileEditLink($file) {
+    $file = $this->filePath($file);
+    $tracy = $this->wire->config->tracy;
+    if(is_array($tracy) and array_key_exists('localRootPath', $tracy))
+      $root = $tracy['localRootPath'];
+    else $root = $this->wire->config->paths->root;
+    return "vscode://file/"
+      .str_replace($this->wire->config->paths->root, $root, $file);
+  }
+
+  /**
+   * Get filepath of file or object
+   * @return string
+   */
+  public function filePath($file, $relative = false) {
+    if(is_object($file)) {
+      $reflector = new \ReflectionClass($file);
+      $file = $reflector->getFileName();
+    }
+    if($relative) $file = str_replace(
+      $this->wire->config->paths->root,
+      $this->wire->config->urls->root,
+      $file
+    );
+    return $file;
   }
 
   /**
