@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.4.2',
+      'version' => '0.5.0',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -96,6 +96,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->addHookAfter("Templates::deleted", $this, "setRecordFlag");
     $this->addHookAfter("Modules::refresh", $this, "setRecordFlag");
     $this->addHookAfter("Modules::saveConfig", $this, "setRecordFlag");
+    $this->addHookBefore("InputfieldForm::render", $this, "showEditInfo");
 
     // files on demand feature
     $this->loadFilesOnDemand();
@@ -921,6 +922,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Get trace log for field/template log
+   *
+   * This log will be shown on fields/templates that are under control of RM
+   *
+   * @return string
+   */
+  public function getTraceLog() {
+    $trace = date("--- Y-m-d H:i:s ---")."\n";
+    // bd(debug_backtrace());
+    foreach(debug_backtrace() as $line) {
+      if(strpos($line['file'], $this->wire->config->paths->wire) !== false) continue;
+      $base = basename($line['file']);
+      if($base == 'index.php') continue;
+      if($base == 'admin.php') continue;
+      if($base == 'RockMigrations.module.php') continue;
+      $trace .= "$base::".$line['function']." (".$line['line'].")\n";
+    }
+    return $trace;
+  }
+
+  /**
    * Get user
    * Returns false if the user does not exist
    * @param User|string $name
@@ -1450,6 +1472,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       }
     }
 
+    // save trace of migration to field
+    // this is shown on field edit screen
+    $field->rockmigrations = $this->getTraceLog();
+
     // prepare data array
     foreach($data as $key=>$val) {
 
@@ -1802,6 +1828,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $template = $this->templates->get((string)$name);
     if(!$template) return $this->log("Template $name not found");
 
+    // save trace of migration to field
+    // this is shown on field edit screen
+    $template->rockmigrations = $this->getTraceLog();
+
     // loop template data
     foreach($data as $k=>$v) {
 
@@ -1920,6 +1950,41 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     $user->save();
     return $user;
+  }
+
+  /**
+   * Show edit info on field and template edit screen
+   * @return void
+   */
+  public function showEditInfo(HookEvent $event) {
+    $form = $event->object;
+    if(!$id = $this->wire->input->get('id', 'int')) return;
+
+    if($event->process == 'ProcessField') {
+      $existing = $form->get('field_label');
+      $item = $this->wire->fields->get($id);
+    }
+    elseif($event->process == 'ProcessTemplate') {
+      $existing = $form->get('fieldgroup_fields');
+      $item = $this->wire->templates->get($id);
+    }
+    else return;
+
+    $form->add([
+      'name' => '_RockMigrations',
+      'type' => 'markup',
+      'label' => 'RockMigrations',
+      'description' => '<div class="uk-alert uk-alert-danger">
+        ATTENTION - This item is under control of RockMigrations
+        </div>
+        <div>If you make any changes they might be overwritten
+        by the next migration! Here is the backtrace of the last migration:</div>',
+      'value' => "<small>".nl2br($item->get('rockmigrations'))."</small>",
+    ]);
+    $f = $form->get('_RockMigrations');
+    $f->entityEncodeText = false;
+    $form->remove($f);
+    $form->insertBefore($f, $existing);
   }
 
   /**
