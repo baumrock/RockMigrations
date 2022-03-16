@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.5.0',
+      'version' => '0.5.1',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1251,6 +1251,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $cli = defined('RockMigrationsCLI');
     if($cli AND !$force) return;
 
+    if($this->wire->session->noMigrate) {
+      $this->log('Not running migrations du to noMigrate setting');
+      return;
+    }
+
     $changed = $this->getChangedFiles();
     $run = ($force OR self::debug OR count($changed));
     if(!$run) return;
@@ -1352,6 +1357,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     ]);
     $data->setArray($options);
     $this->recorders->add($data);
+  }
+
+  /**
+   * Refresh modules
+   */
+  public function refresh() {
+    $this->wire->session->noMigrate = true;
+    $this->wire->modules->refresh();
+    $this->wire->session->noMigrate = false;
   }
 
   /**

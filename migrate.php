@@ -11,4 +11,5 @@ if(!isset($wire)) die("SH... Bootstrapping ProcessWire failed!");
 /** @var RockMigrations $rm */
 $rm = $wire->modules->get('RockMigrations');
 $rm->sudo();
+$rm->refresh();
 $rm->run();
