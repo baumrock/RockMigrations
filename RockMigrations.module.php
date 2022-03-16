@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.4.1',
+      'version' => '0.4.2',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -522,6 +522,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     }
 
     return $this->fields->delete($field);
+  }
+
+  /**
+   * Delete given fields
+   *
+   * If parameter is a string we use it as selector for $fields->find()
+   *
+   * Usage:
+   * $rm->deleteFields("tags=MyModule");
+   *
+   * @param array|string $fields
+   * @return void
+   */
+  public function deleteFields($fields, $quiet = false) {
+    if(is_string($fields)) $fields = $this->wire->fields->find($fields);
+    foreach($fields as $field) $this->deleteField($field, $quiet);
   }
 
   /**
