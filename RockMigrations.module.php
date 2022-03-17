@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.5.2',
+      'version' => '0.5.3',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1386,9 +1386,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $fg = $template->fieldgroup; /** @var Fieldgroup $fg */
     if($force) $field->flags = 0;
 
+    if(!$fg->get($field->name)) return;
+
     $fg->remove($field);
     $fg->save();
-
     $this->log("Removed field $field from template $template");
   }
 
