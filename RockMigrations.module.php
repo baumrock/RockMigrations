@@ -1252,7 +1252,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if($cli AND !$force) return;
 
     if($this->wire->session->noMigrate) {
-      $this->log('Not running migrations du to noMigrate setting');
+      $this->log('Skipping migration...');
       return;
     }
 
@@ -1364,6 +1364,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    */
   public function refresh() {
     $this->wire->session->noMigrate = true;
+    $this->log('Refreshing modules...');
     $this->wire->modules->refresh();
     $this->wire->session->noMigrate = false;
   }
