@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.5.1',
+      'version' => '0.5.2',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -181,7 +181,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if(method_exists($obj, "editForm")) {
       $this->wire->addHookAfter("ProcessPageEdit::buildForm", function($event) use($obj) {
         $page = $event->object->getPage();
-        if($page->template !== $obj->template) return;
+        if($obj->className !== $page->className) return;
         $form = $event->return;
         $page->editForm($form, $page);
       });
@@ -190,7 +190,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if(method_exists($obj, "editFormContent")) {
       $this->wire->addHookAfter("ProcessPageEdit::buildFormContent", function($event) use($obj) {
         $page = $event->object->getPage();
-        if($page->template !== $obj->template) return;
+        if($obj->className !== $page->className) return;
         $form = $event->return;
         $page->editFormContent($form, $page);
       });
@@ -199,7 +199,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if(method_exists($obj, "editFormSettings")) {
       $this->wire->addHookAfter("ProcessPageEdit::buildFormSettings", function($event) use($obj) {
         $page = $event->object->getPage();
-        if($page->template !== $obj->template) return;
+        if($obj->className !== $page->className) return;
         $form = $event->return;
         $page->editFormSettings($form, $page);
       });
@@ -210,7 +210,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if(method_exists($obj, "onSaveReady")) {
       $this->wire->addHookAfter("Pages::saveReady", function($event) use($obj) {
         $page = $event->arguments(0);
-        if($page->template !== $obj->template) return;
+        if($obj->className !== $page->className) return;
         $page->onSaveReady();
       });
     }
@@ -220,7 +220,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       $this->wire->addHookAfter("Pages::saveReady", function($event) use($obj) {
         $page = $event->arguments(0);
         if($page->id) return;
-        if($page->template !== $obj->template) return;
+        if($obj->className !== $page->className) return;
         $page->onCreate();
       });
     }
