@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.5.3',
+      'version' => '0.5.4',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -78,7 +78,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     // always watch + migrate /site/migrate.[yaml|json|php]
     // the third parameter makes it use the migrateNew() method
     // this will be the first file that is watched!
-    $this->watch($config->paths->site."migrate", true, true);
+    $this->watch($config->paths->site."migrate", true);
     $this->watchModules();
 
     // add recorders based on module settings (true=add, false=remove)
@@ -1256,6 +1256,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       return;
     }
 
+    // always refresh modules before running migrations
+    // this makes sure that $rm->installModule() etc will catch all new files
+    $this->refresh();
+
     $changed = $this->getChangedFiles();
     $run = ($force OR self::debug OR count($changed));
     if(!$run) return;
@@ -1291,16 +1295,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       }
 
       // we have a regular file
+      // first we render the file
+      // this will already execute commands inside the file if it is PHP
+      $this->log("Loading {$file->path}...");
       $migrate = $this->wire->files->render($file->path, [], [
         'allowedPaths' => [dirname($file->path)],
       ]);
+      // if rendering the file returned a string we state that it is YAML code
       if(is_string($migrate)) $migrate = $this->yaml($migrate);
       if(is_array($migrate)) {
-        $this->log("Migrating {$file->path}");
+        $this->log("Returned an array - trigger migrate() of "
+          .print_r($migrate, true));
         $this->migrate($migrate);
-      }
-      else {
-        $this->log("Skipping {$file->path} (no config)");
       }
     }
   }
