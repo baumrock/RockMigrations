@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.5.6',
+      'version' => '0.5.7',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -671,6 +671,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Download module from url
+   *
+   * @param string $url
+   * @return void
+   */
+  public function downloadModule($url) {
+    if(!class_exists('ProcessWire\ProcessModuleInstall')) {
+      require $this->config->paths->modules
+        ."Process/ProcessModule/ProcessModuleInstall.php";
+    }
+    $install = $this->wire(new ProcessModuleInstall());
+    $install->downloadModule($url);
+  }
+
+  /**
    * Enable all languages for given page
    *
    * @param mixed $page
@@ -1004,20 +1019,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Install module
    *
    * If an URL is provided the module will be downloaded before installation.
+   * You can provide module settings as 3rd parameter.
    *
-   * You can provide module settings as 3rd parameter. If no url is provided
-   * you can submit config data as 2nd parameter (shorter syntax).
+   * Usage:
+   * $rm->installModule("MyModule", "https://...", ['setting'=>'foo']);
    *
    * @param string $name
    * @param string|array $url
    * @param array $config
    * @return Module
    */
-  public function installModule($name, $options = []) {
+  public function installModule($name, $options = [], $conf = []) {
+    if(is_string($options)) $options = ['url' => $options];
+    if(!$options) $options = [];
+
     $opt = $this->wire(new WireData()); /** @var WireData $opt */
     $opt->setArray([
       'url' => '',
-      'conf' => [],
+      'conf' => $conf,
 
       // a setting of true forces the module to be installed even if
       // dependencies are not met
