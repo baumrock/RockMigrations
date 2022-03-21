@@ -1033,6 +1033,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
       // install the module
       $module = $this->modules->install($name, ['force' => $opt->force]);
+      $this->log("Installed module $module");
     }
     if(count($opt->conf)) $this->setModuleConfig($module, $opt->conf);
     return $module;
@@ -2030,7 +2031,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     chdir($cwd);
     $this->refresh();
     $this->installModule($name);
-    $this->log("Installed Module $name");
   }
 
   /**
