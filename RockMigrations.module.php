@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.5.4',
+      'version' => '0.5.5',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1251,14 +1251,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $cli = defined('RockMigrationsCLI');
     if($cli AND !$force) return;
 
+    // if the noMigrate flag is set we do not run migrations
+    // this makes it possible to refresh modules without triggering another
+    // run of migrations!
     if($this->wire->session->noMigrate) {
-      $this->log('Skipping migration...');
+      $this->wire->session->noMigrate = false;
       return;
     }
-
-    // always refresh modules before running migrations
-    // this makes sure that $rm->installModule() etc will catch all new files
-    $this->refresh();
 
     $changed = $this->getChangedFiles();
     $run = ($force OR self::debug OR count($changed));
@@ -1271,6 +1270,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       foreach($changed as $file) $this->log("Detected change in $file");
       $this->log('Running migrations from watchfiles...');
     }
+
+    // always refresh modules before running migrations
+    // this makes sure that $rm->installModule() etc will catch all new files
+    $this->refresh();
 
     $this->updateLastrun();
     foreach($this->watchlist as $file) {
@@ -1430,6 +1433,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function run() {
+    $this->sudo();
     $this->migrateWatchfiles(true);
   }
 
@@ -2010,6 +2014,26 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Add submodule to project
+   * This will only add the submodule if the destination path does not exist!
+   * @return void
+   */
+  public function submodule($name, $url = null, $dst = null) {
+    $url = $url ?: 'git@github.com:baumrock';
+    $dst = $dst ?: "site/modules/$name";
+    $dst = $this->wire->config->paths->root.$dst;
+    if(is_dir($dst)) return;
+    $cwd = getcwd();
+    ob_start();
+    chdir($this->wire->config->paths->root);
+    shell_exec("git submodule add $url/$name.git $dst");
+    chdir($cwd);
+    $this->refresh();
+    $this->installModule($name);
+    $this->log("Installed Module $name");
+  }
+
+  /**
    * Change current user to superuser
    * When bootstrapped sometimes we get permission conflicts
    * See https://processwire.com/talk/topic/458-superuser-when-bootstrapping/
@@ -2096,7 +2120,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function uninstallModule($name) {
+    $this->wire->session->noMigrate = true;
     $this->modules->uninstall((string)$name);
+    $this->wire->session->noMigrate = false;
   }
 
   /**
