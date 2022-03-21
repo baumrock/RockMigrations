@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.5.5',
+      'version' => '0.5.6',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -2019,18 +2019,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * This will only add the submodule if the destination path does not exist!
    * @return void
    */
-  public function submodule($name, $url = null, $dst = null) {
+  public function submodule($name, $config = [], $url = null, $dst = null) {
     $url = $url ?: 'git@github.com:baumrock';
     $dst = $dst ?: "site/modules/$name";
-    $dst = $this->wire->config->paths->root.$dst;
-    if(is_dir($dst)) return;
+    $this->setModuleConfig($name, $config);
+    if(is_dir($this->wire->config->paths->root.$dst)) return;
     $cwd = getcwd();
     ob_start();
     chdir($this->wire->config->paths->root);
     shell_exec("git submodule add $url/$name.git $dst");
     chdir($cwd);
     $this->refresh();
-    $this->installModule($name);
+    $this->installModule($name, $config);
   }
 
   /**
