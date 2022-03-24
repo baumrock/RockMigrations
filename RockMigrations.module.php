@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.5.7',
+      'version' => '0.6.0',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -88,6 +88,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     // hooks
     $this->addHookAfter("Modules::refresh", $this, "triggerMigrations");
     $this->addHookAfter("ProcessPageView::finished", $this, "triggerRecorder");
+    $this->addHookBefore("Field::getInputfield", $this, "addSourceCodeButton");
 
     // add hooks for recording changes
     $this->addHookAfter("Fields::saved", $this, "setRecordFlag");
@@ -105,6 +106,145 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public function ready() {
     $this->migrateWatchfiles();
   }
+
+  /** ########## tools ########## */
+
+  // ckeditor settings
+  const cke_formatTags = 'p;h2;h3;h4;';
+  const cke_contentCss = '/site/templates/bundle/main.css';
+  const cke_stylesSet = 'customstyles:/site/templates/customstyles.js';
+  const cke_customOptions = '{"bodyClass":"p-4 prose max-w-full"}';
+  const cke_toggles = [
+    InputfieldCKEditor::toggleCleanDIV, // convert <div> to <p>
+    InputfieldCKEditor::toggleCleanP, // remove empty paragraphs
+    InputfieldCKEditor::toggleCleanNBSP, // remove &nbsp;
+  ];
+  const cke_toolbarLinks = "PWLink, Unlink, Anchor";
+  const cke_toolbarMinimal = "Format, Styles,
+    Bold, Italic, RemoveFormat";
+  const cke_toolbarSimple = "Format, Styles,
+    JustifyLeft, JustifyCenter, JustifyRight,
+    Bold, Italic, RemoveFormat,
+    NumberedList, BulletedList, Blockquote,
+    PWLink, Unlink, Anchor";
+  const cke_toolbarDefault = "Format, Styles
+    JustifyLeft, JustifyCenter, JustifyRight, JustifyBlock
+    Bold, Italic, Underline, RemoveFormat
+    NumberedList, BulletedList, Blockquote
+    PWLink, Unlink, Anchor
+    PWImage, Table, HorizontalRule, SpecialChar";
+  const cke_toolbarFull = "Format, Styles,
+    Bold, Italic, Underline, RemoveFormat
+    JustifyLeft, JustifyCenter, JustifyRight, JustifyBlock
+    TransformTextToLowercase,TransformTextToUppercase,TransformTextCapitalize
+    TextColor,BGColor
+    NumberedList, BulletedList, Blockquote
+    PWLink, Unlink, Anchor
+    PWImage, Table, HorizontalRule, SpecialChar
+    PasteText, PasteFromWord
+    Scayt, -, Source
+    facebookvideo";
+
+  /**
+   * Add sourcecode button to ckeditor fields for superuser
+   * @return void
+   */
+  public function addSourceCodeButton(HookEvent $event) {
+    if(!$this->wire->user->isSuperuser()) return;
+    $field = $event->object;
+    if(!$field->toolbar) return;
+    $field->toolbar .= ",Source";
+  }
+
+  /**
+   * Set page name from page title
+   *
+   * Usage:
+   * $rm->setPageNameFromTitle("basic-page");
+   *
+   * Make sure to install Page Path History module!
+   *
+   * @param mixed $object
+   */
+  public function setPageNameFromTitle($template) {
+    $template = $this->wire->templates->get((string)$template);
+    if(!$template) return;
+    $tpl = "template=$template";
+    $this->addHookAfter("Pages::saveReady($tpl,id>0)", function(HookEvent $event) {
+      /** @var Page $page */
+      $page = $event->arguments(0);
+      $langs = $this->wire->languages;
+      if($langs) {
+        foreach($langs as $lang) {
+          $prop = $lang->isDefault() ? "name" : "name$lang";
+          $old = $page->get($prop);
+          $new = $page->getLanguageValue($lang, "title");
+          $new = $event->sanitizer->pageNameTranslate($new);
+          if($new AND $old!=$new) {
+            $new = $event->wire->pages->names()->uniquePageName($new, $page);
+            $page->set($prop, $new);
+            $this->message($this->_("Page name updated to $new ($lang->name)"));
+          }
+        }
+      }
+      else {
+        $old = $page->name;
+        $new = $event->sanitizer->pageNameTranslate($page->title);
+        if($new AND $old!=$new) {
+          $new = $event->wire->pages->names()->uniquePageName($new, $page);
+          $page->name = $new;
+          $this->message($this->_("Page name updated to $new"));
+        }
+      }
+    });
+    $this->addHookAfter("ProcessPageEdit::buildForm", function(HookEvent $event) use($template) {
+      $page = $event->object->getPage();
+      if($page->template != $template) return;
+      $form = $event->return;
+      if($f = $form->get('_pw_page_name')) {
+        $f->notes = $this->_('Page name will be set automatically from page title on save.');
+      }
+    });
+  }
+
+  /**
+   * Wrap fields of a form into a fieldset
+   *
+   * Usage:
+   * $rm->wrapFields($form, ['foo', 'bar'], [
+   *   'label' => 'your fieldset label',
+   *   'icon' => 'bolt',
+   * ]);
+   *
+   * @return InputfieldFieldset
+   */
+  public function wrapFields(InputfieldWrapper $form, array $fields, array $fieldset) {
+    $_fields = [];
+    $last = false;
+    foreach($fields as $field) {
+      $f = $form->get((string)$field);
+      if($f instanceof Inputfield) {
+        $_fields[] = $f;
+        $last = $f;
+      }
+    }
+    if(!$last) return;
+
+    /** @var InputfieldFieldset $f */
+    $fs = $this->wire('modules')->get('InputfieldFieldset');
+    foreach($fieldset as $k=>$v) $fs->$k = $v;
+    $form->insertAfter($fs, $last);
+
+    // now remove fields from the form and add them to the fieldset
+    foreach($_fields as $f) {
+      $form->remove($f);
+      $fs->add($f);
+    }
+
+    return $fs;
+  }
+
+  /** ########## end tools ########## */
 
   /**
    * Add field to template
@@ -1830,7 +1970,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * This is to be consistent with other SET methods (setData, migrate, etc)
    *
    * Usage:
-   * $rm->setTemplateAccess("my-tpl", "my-role", ["view", "edit"]);
+   * $rm->setTemplateAccess("my-tpl", "my-role", ["view", "edit", "create", "add"]);
    *
    * Thx @apeisa https://bit.ly/2QU1b8e
    *
