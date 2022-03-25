@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.6.0',
+      'version' => '0.6.1',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -275,6 +275,32 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     }
 
     $fg->save();
+  }
+
+  /**
+   * Add fields to template.
+   *
+   * Simple:
+   * $rm->addFieldsToTemplate(['field1', 'field2'], 'yourtemplate');
+   *
+   * Add fields at special positions:
+   * $rm->addFieldsToTemplate([
+   *   'field1',
+   *   'field4' => 'field3', // this will add field4 after field3
+   * ], 'yourtemplate');
+   *
+   * @param array $fields
+   * @param string $template
+   * @param bool $sortFields
+   * @return void
+   */
+  public function addFieldsToTemplate($fields, $template, $sortFields = false) {
+    foreach($fields as $k=>$v) {
+      // if the key is an integer, it's a simple field
+      if(is_int($k)) $this->addFieldToTemplate((string)$v, $template);
+      else $this->addFieldToTemplate((string)$k, $template, $v);
+    }
+    if($sortFields) $this->setFieldOrder($fields, $template);
   }
 
   /**
@@ -1013,7 +1039,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if($data instanceof Page) return $data;
     $page = $this->wire->pages->get($data);
     if($page->id) return $page;
-    if(!$quiet) $this->log("Page not found");
+    if(!$quiet) $this->log("Page $data not found");
     return false;
   }
 
@@ -1750,6 +1776,29 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     $field->save();
     return $field;
+  }
+
+  /**
+   * Set field order at given template
+   *
+   * The first field is always the reference for all other fields.
+   *
+   * @param array $fields
+   * @param Template|string $name
+   * @return void
+   */
+  public function setFieldOrder($fields, $name) {
+    if(!$template = $this->getTemplate($name)) return;
+
+    // make sure that all fields exist
+    foreach($fields as $i=>$field) {
+      if(!$this->getField($field)) unset($fields[$i]);
+    }
+    $fields = array_values($fields); // reset indices
+    foreach($fields as $i => $field) {
+      if(!$i) continue;
+      $this->addFieldToTemplate($field, $template, $fields[$i-1]);
+    }
   }
 
   /**
