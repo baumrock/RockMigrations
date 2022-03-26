@@ -3,6 +3,7 @@
  * Script to trigger migrations from the commandline
  * Usage: php site/modules/RockMigrations/migrate.php
  **/
+opcache_reset();
 chdir(__DIR__);
 define('RockMigrationsCLI', true);
 include('../../../index.php');
