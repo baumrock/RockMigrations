@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.6.2',
+      'version' => '0.6.3',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1500,6 +1500,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         continue;
       }
 
+      // if it is a pageclass we load it and call migrate()
+      if($pageClass = $file->pageClass) {
+        if(!class_exists($pageClass)) require_once $file->path;
+        $tmp = new $pageClass();
+        if(method_exists($tmp, 'migrate')) {
+          $this->log("Triggering $pageClass::migrate()");
+          $tmp->migrate();
+        }
+        else {
+          $this->log("Skipping $pageClass::migrate() - method does not exist");
+        }
+        continue;
+      }
+
       // we have a regular file
       // first we render the file
       // this will already execute commands inside the file if it is PHP
@@ -2381,16 +2395,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function watch($what, $migrate = true, $options = []) {
-    $watch = false;
-    if($this->wire->user->isSuperuser()) $watch = true;
-    if(defined('RockMigrationsCLI')) $watch = true;
-    if(!$watch) return;
+    if(!$this->watchEnabled()) return;
 
     $file = $what;
     $migrate = (float)$migrate;
 
     $module = false;
     $callback = false;
+    $pageClass = false;
     $hash = false;
 
     $trace = debug_backtrace()[1];
@@ -2449,19 +2461,32 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       return;
     }
 
+    // is it a pageclass file?
+    if(array_key_exists('pageClass', $options)) {
+      $pageClass = $options['pageClass'];
+    }
+
     require_once($this->path."WatchFile.php");
     $data = $this->wire(new WatchFile()); /** @var WatchFile $data */
     $data->setArray([
       'path' => $path.$hash,
       'module' => $module,
       'callback' => $callback,
+      'pageClass' => $pageClass,
       'migrate' => (float)$migrate,
       'trace' => "$tracefile:$traceline",
     ]);
+    // bd($data, $data->path);
 
     // add item to watchlist and sort watchlist by migrate priority
     // see https://github.com/processwire/processwire-issues/issues/1528
     $this->watchlist->add($data)->sortFloat('migrate');
+  }
+
+  public function watchEnabled() {
+    if($this->wire->user->isSuperuser()) return true;
+    if(defined('RockMigrationsCLI')) return true;
+    return false;
   }
 
   /**
@@ -2483,6 +2508,35 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       $this->watch("$migrateFile.json");
       $this->watch("$migrateFile.php");
     }
+  }
+
+  /**
+   * Add a single pageclass file to watchlist
+   * @return void
+   */
+  public function watchPageClass($file, $namespace = "ProcessWire", $options = [], $migrate = true) {
+    $name = pathinfo($file, PATHINFO_FILENAME);
+    $class = "$namespace\\$name";
+    $options = array_merge([
+      'pageClass' => $class,
+    ], $options);
+    $this->watch($file, $migrate, $options);
+  }
+
+  /**
+   * Watch pageClasses and trigger migrate() on change
+   * @return void
+   */
+  public function watchPageClasses($path, $namespace = "ProcessWire", $options = [], $migrate = true) {
+    if(!$this->watchEnabled()) return;
+    if(is_dir($path)) {
+      $opt = ['extensions' => ['php'], 'recursive' => 1];
+      foreach($this->wire->files->find($path, $opt) as $file) {
+        $this->watchPageClass($file, $namespace, $options, $migrate);
+      }
+    }
+    elseif(is_file($path)) $this->watchPageClass($path, $namespace, $options, $migrate);
+    else $this->log("Nothing to watch in $path");
   }
 
   /**
