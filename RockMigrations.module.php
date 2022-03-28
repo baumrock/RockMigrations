@@ -51,7 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.6.1',
+      'version' => '0.6.2',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -598,10 +598,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
   /**
    * Create role with given name
-   *
    * @param string $name
    * @param array $permissions
-   * @return void
+   * @return Role|null
    */
   public function createRole($name, $permissions = []) {
     if(!$name) return $this->log("Define a name for the role!");
@@ -613,6 +612,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     }
 
     return $role;
+  }
+
+  /**
+   * Helper to create webmaster role
+   * @return Role
+   */
+  public function createRoleWebmaster($name = 'webmaster', $permissions = null) {
+    if(!$permissions) $permissions = [
+      'page-edit',
+      'page-delete',
+      'page-move',
+      'page-sort',
+    ];
+    return $this->createRole($name, $permissions);
   }
 
   /**
@@ -647,7 +660,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Create or return a PW user
    *
    * Usage:
+   * $rm->createUser('demo', 'password');
+   *
    * $rm->createUser('demo', [
+   *   'roles' => ['webmaster'],
+   *   'password' => 'MySecretPassword',
    * ]);
    *
    * @param string $username
@@ -2184,6 +2201,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if($opt->admintheme) $user->set('admin_theme', $opt->admintheme);
 
     $user->save();
+    $this->log("Set user data for user $user ({$user->name})");
     return $user;
   }
 
