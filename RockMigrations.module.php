@@ -13,6 +13,7 @@ use TracyDebugger;
  * @license COMMERCIAL DO NOT DISTRIBUTE
  * @link https://www.baumrock.com
  */
+require_once __DIR__ . "/PageClass.php";
 class RockMigrations extends WireData implements Module, ConfigurableModule {
 
   const debug = false;
@@ -51,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.6.3',
+      'version' => '0.7.0',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1507,9 +1508,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         if(method_exists($tmp, 'migrate')) {
           $this->log("Triggering $pageClass::migrate()");
           $tmp->migrate();
-        }
-        else {
-          $this->log("Skipping $pageClass::migrate() - method does not exist");
         }
         continue;
       }
