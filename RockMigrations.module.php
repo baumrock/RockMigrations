@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.7.1',
+      'version' => '0.7.2',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1691,6 +1691,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       // use consistent inputfield clicks
       // see https://github.com/processwire/processwire/pull/169
       'toggleBehavior' => $opt->toggleBehavior,
+    ]);
+
+    $this->setModuleConfig("ProcessPageList", [
+      'useTrash' => true, // show trash in tree for non superusers
     ]);
 
   }
