@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.7.2',
+      'version' => '0.7.3',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1382,10 +1382,28 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   /**
    * Migrate PW setup based on config array
    *
-   * The method returns the used config so that you can do actions after migration
-   * eg adding custom tags to all fields or templates that where migrated
+   * Usage:
+   * $rm->migrate([
+   *   'fields' => [
+   *     'myfield1' => [
+   *       'type' => 'text',
+   *       'label' => 'My Field One',
+   *     ],
+   *   ],
+   *   'templates' => [
+   *     'mytpl' => [
+   *       'fields' => [
+   *         'title' => [
+   *           'label' => 'Page Title',
+   *           'required' => false,
+   *         ],
+   *         'myfield1',
+   *       ],
+   *     ],
+   *   ],
+   * ]);
    *
-   * @return WireData
+   * @return void
    */
   public function migrate($config) {
     $config = $this->getConfigObject($config);
@@ -1429,8 +1447,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         $d->status,
         $d->data);
     }
-
-    return $config;
   }
 
   /**
