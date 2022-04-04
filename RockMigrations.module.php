@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.7.3',
+      'version' => '0.7.4',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -83,7 +83,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->watchModules();
 
     // add recorders based on module settings (true=add, false=remove)
-    $this->record($config->paths->site."project.yaml", [], !$this->saveToProject);
+    $time = date("Y-m-d--H:i:s");
+    $this->record($config->paths->assets.$this->className."/$time.yaml", [], !$this->saveToProject);
     $this->record($config->paths->site."migrate.yaml", [], !$this->saveToMigrate);
 
     // hooks
@@ -2053,18 +2054,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function setRecordFlag(HookEvent $event) {
-    if($event->object instanceof Modules) {
-      // module was saved
-      $config = $this->wire->config;
-      $module = $event->arguments(0);
-      if($module != 'RockMigrations') return;
-      // set runtime properties to submitted values so that migrations
-      // fire immediately on module save
-      $this->record($config->paths->site."project.yaml", [],
-        !$this->wire->input->post('saveToProject', 'int'));
-      $this->record($config->paths->site."migrate.yaml", [],
-        !$this->wire->input->post('saveToMigrate', 'int'));
-    }
+    // remove this part as of 2022-04-04
+    // there is no project.yaml any more
+    // we store migrations with timestamps in /site/assets/RockMigrations
+    // if($event->object instanceof Modules) {
+    //   // module was saved
+    //   $config = $this->wire->config;
+    //   $module = $event->arguments(0);
+    //   if($module != 'RockMigrations') return;
+    //   // set runtime properties to submitted values so that migrations
+    //   // fire immediately on module save
+    //   $this->record($config->paths->site."project.yaml", [],
+    //     !$this->wire->input->post('saveToProject', 'int'));
+    //   $this->record($config->paths->site."migrate.yaml", [],
+    //     !$this->wire->input->post('saveToMigrate', 'int'));
+    // }
 
     // set the flag to write recorders after pageview::finished
     $this->record = true;
@@ -2588,7 +2592,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     require_once('YAML.php');
     $yaml = $this->yaml ?: new YAML();
     if($path AND $data===null) return $yaml->load($path);
-    elseif($path AND $data!==null) return $yaml->save($path, $data);
+    elseif($path AND $data!==null) {
+      $dir = dirname($path);
+      if(!is_dir($dir)) $this->wire->files->mkdir($dir, true);
+      return $yaml->save($path, $data);
+    }
     return $yaml;
   }
 
@@ -2602,19 +2610,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $inputfields->add([
       'name' => 'saveToProject',
       'type' => 'toggle',
-      'label' => 'Save migration data to /site/project.yaml?',
+      'label' => 'Save migration data to /site/assets/RockMigrations/[timestamp].yaml?',
       'value' => !!$this->saveToProject,
-      'columnWidth' => 50,
-      'description' => 'This file will NOT be watched for changes! Think of it as a read-only dump of your project config.',
+      'columnWidth' => 100,
+      'description' => 'These files will NOT be watched for changes! Think of them as a read-only dumps of your project\'s config at the given time.',
     ]);
-    $inputfields->add([
-      'name' => 'saveToMigrate',
-      'type' => 'toggle',
-      'label' => 'Save migration data to /site/migrate.yaml?',
-      'value' => !!$this->saveToMigrate,
-      'columnWidth' => 50,
-      'description' => 'This file will automatically be watched for changes! That means you can record changes and then edit migrate.yaml in your IDE and the changes will automatically be applied on the next reload.',
-    ]);
+    // $inputfields->add([
+    //   'name' => 'saveToMigrate',
+    //   'type' => 'toggle',
+    //   'label' => 'Save migration data to /site/migrate.yaml?',
+    //   'value' => !!$this->saveToMigrate,
+    //   'columnWidth' => 50,
+    //   'description' => 'This file will automatically be watched for changes! That means you can record changes and then edit migrate.yaml in your IDE and the changes will automatically be applied on the next reload.',
+    // ]);
 
     return $inputfields;
   }
