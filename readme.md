@@ -126,6 +126,18 @@ RockMigrations will run migrations automatically when a watched file was changed
 php site/modules/RockMigrations/migrate.php
 ```
 
+## File On Demand
+
+You can instruct RockMigrations to download files on demand from a remote server. This makes it possible to create content on the remote system (eg on the live server), pull data from the database to your local machine and as soon as you open a page RockMigrations will fetch the missing files from your remote server.
+
+```php
+// without authentication
+$config->filesOnDemand = 'https://example.com';
+
+// with http basic authentication
+$config->filesOnDemand = 'https://user:password@example.com';
+```
+
 #### YAML
 
 ```php

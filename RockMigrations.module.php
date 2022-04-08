@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.7.4',
+      'version' => '0.7.5',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1288,19 +1288,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *
    * Usage: set $config->filesOnDemand = 'your.hostname.com' in your config file
    *
+   * Usage with basic authentication:
+   * $config->filesOnDemand = 'https://user:password@example.com';
+   *
    * Make sure that this setting is only used on your local test config and not
    * on a live system!
    *
    * @return void
    */
   public function loadFilesOnDemand() {
-    if(!$host = $this->wire->config->filesOnDemand) return;
-    $hook = function(HookEvent $event) use($host) {
+    if(!$this->wire->config->filesOnDemand) return;
+    $hook = function(HookEvent $event) {
       $config = $this->wire->config;
       $file = $event->return;
 
       // this makes it possible to prevent downloading at runtime
-      if(!$this->wire->config->filesOnDemand) return;
+      if(!$host = $this->wire->config->filesOnDemand) return;
 
       // convert url to disk path
       if($event->method == 'url') {
