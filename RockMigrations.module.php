@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.7.7',
+      'version' => '0.7.8',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -100,6 +100,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->addHookAfter("Modules::refresh", $this, "setRecordFlag");
     $this->addHookAfter("Modules::saveConfig", $this, "setRecordFlag");
     $this->addHookBefore("InputfieldForm::render", $this, "showEditInfo");
+    $this->addHookBefore("InputfieldForm::render", $this, "showCopyCode");
 
     // files on demand feature
     $this->loadFilesOnDemand();
@@ -957,6 +958,38 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Get code (export data)
+   * @return string
+   */
+  public function getCode($item) {
+    if($item instanceof Field) {
+      ob_start();
+      $data = $item->getExportData();
+      unset($data['id']);
+      unset($data['name']);
+
+      // we have a different syntax for options of an options field
+      if($item->type instanceof FieldtypeOptions) {
+        $options = [];
+        foreach($item->type->manager->getOptions($item) as $opt) {
+          $options[$opt->id] =
+            ($opt->value ? $opt->value."|" : "").
+            "{$opt->title}";
+        }
+        unset($data['export_options']);
+        $data['options'] = $options;
+      }
+    }
+    elseif($item instanceof Template) {
+      unset($data['id']);
+      unset($data['name']);
+      $arr = $item->getExportData();
+    }
+    $code = $this->varexport($data);
+    return "'{$item->name}' => $code,";
+  }
+
+  /**
    * Convert an array into a WireData config object
    * @return WireData
    */
@@ -1421,12 +1454,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       // for example to update only label or icon of an existing field
       if(array_key_exists('type', $data)) $this->createField($name, $data['type']);
     }
-    foreach($config->templates as $name=>$data) $this->createTemplate($name, false);
+    foreach($config->templates as $name=>$data) {
+      // this check makes it possible to define templates without data
+      // that means the defined templates will be created but not changed
+      if(is_int($name)) $name = $data;
+      $this->createTemplate($name, false);
+    }
     foreach($config->roles as $name=>$data) $this->createRole($name);
 
     // set field+template data after they have been created
     foreach($config->fields as $name=>$data) $this->setFieldData($name, $data);
-    foreach($config->templates as $name=>$data) $this->setTemplateData($name, $data);
+    foreach($config->templates as $name=>$data) {
+      // this check makes it possible to define templates without data
+      // that means the defined templates will be created but not changed
+      if(!is_int($name)) $this->setTemplateData($name, $data);
+    }
     foreach($config->roles as $role=>$data) {
       // set permissions for this role
       if(array_key_exists("permissions", $data)) $this->setRolePermissions($role, $data['permissions']);
@@ -1754,7 +1796,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     // save trace of migration to field
     // this is shown on field edit screen
-    $field->rockmigrations = $this->getTraceLog();
+    $field->_rockmigrations_log = $this->getTraceLog();
 
     // prepare data array
     foreach($data as $key=>$val) {
@@ -2129,14 +2171,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param array $data
    * @return Template
    */
-  public function setTemplateData($name, $data) {
+  public function setTemplateData($name, array $data) {
     if($name instanceof Page) $template = $name->template;
     $template = $this->templates->get((string)$name);
     if(!$template) return $this->log("Template $name not found");
 
+    // it is possible to define templates without data:
+    // rm->migrate('templates' => ['foo', 'bar'])
+    if(!$data) return $template;
+
     // save trace of migration to field
     // this is shown on field edit screen
-    $template->rockmigrations = $this->getTraceLog();
+    $template->_rockmigrations_log = $this->getTraceLog();
 
     // loop template data
     foreach($data as $k=>$v) {
@@ -2263,6 +2309,37 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Show edit info on field and template edit screen
    * @return void
    */
+  public function showCopyCode(HookEvent $event) {
+    $form = $event->object;
+    if(!$id = $this->wire->input->get('id', 'int')) return;
+
+    if($event->process == 'ProcessField') {
+      $existing = $form->get('field_label');
+      $item = $this->wire->fields->get($id);
+    }
+    elseif($event->process == 'ProcessTemplate') {
+      $existing = $form->get('fieldgroup_fields');
+      $item = $this->wire->templates->get($id);
+    }
+    else return;
+
+    $form->add([
+      'name' => '_RockMigrationsCopyInfo',
+      'type' => 'markup',
+      'label' => 'RockMigrations Code',
+      'description' => 'This is the code you can use for your migrations:',
+      'value' => "<pre><code>" . $this->getCode($item) . "</code></pre>",
+      'collapsed' => Inputfield::collapsedYes,
+    ]);
+    $f = $form->get('_RockMigrationsCopyInfo');
+    $form->remove($f);
+    $form->insertBefore($f, $existing);
+  }
+
+  /**
+   * Show edit info on field and template edit screen
+   * @return void
+   */
   public function showEditInfo(HookEvent $event) {
     $form = $event->object;
     if(!$id = $this->wire->input->get('id', 'int')) return;
@@ -2286,7 +2363,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         </div>
         <div>If you make any changes they might be overwritten
         by the next migration! Here is the backtrace of the last migration:</div>',
-      'value' => "<small>".nl2br($item->get('rockmigrations'))."</small>",
+      'value' => "<small>".nl2br($item->get('_rockmigrations_log'))."</small>",
     ]);
     $f = $form->get('_RockMigrations');
     $f->entityEncodeText = false;
@@ -2406,6 +2483,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * PHP var_export() with short array syntax (square brackets) indented 2 spaces.
+   *
+   * NOTE: The only issue is when a string value has `=>\n[`, it will get converted to `=> [`
+   * @link https://www.php.net/manual/en/function.var-export.php
+   */
+  function varexport($expression, $return=TRUE) {
+    $export = var_export($expression, TRUE);
+    $patterns = [
+        "/array \(/" => '[',
+        "/^([ ]*)\)(,?)$/m" => '$1]$2',
+        "/=>[ ]?\n[ ]+\[/" => '=> [',
+        "/([ ]*)(\'[^\']+\') => ([\[\'])/" => '$1$2 => $3',
+    ];
+    $export = preg_replace(array_keys($patterns), array_values($patterns), $export);
+    if((bool)$return) return $export; else echo $export;
+  }
+
+  /**
    * Add file to watchlist
    *
    * Usage:
@@ -2449,8 +2544,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $tracefile = $trace['file'];
     $traceline = $trace['line'];
 
+    if($what instanceof Page) {
+      throw new WireException("Cant watch page objects! Use watchPageClass instead...");
+    }
     // instance of module
-    if($what instanceof Module) {
+    elseif($what instanceof Module) {
       $module = $what;
       $file = $this->wire->modules->getModuleFile($module);
     }
@@ -2554,7 +2652,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Add a single pageclass file to watchlist
    * @return void
    */
-  public function watchPageClass($file, $namespace = "ProcessWire", $options = [], $migrate = true) {
+  public function watchPageClass(string $file, $namespace = "ProcessWire", $options = [], $migrate = true) {
     $name = pathinfo($file, PATHINFO_FILENAME);
     $class = "$namespace\\$name";
     $options = array_merge([
