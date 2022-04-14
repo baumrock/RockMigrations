@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.7.8',
+      'version' => '0.7.10',
       'summary' => 'Brings easy Migrations/GIT support to ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -981,9 +981,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       }
     }
     elseif($item instanceof Template) {
+      $data = $item->getExportData();
       unset($data['id']);
       unset($data['name']);
-      $arr = $item->getExportData();
     }
     $code = $this->varexport($data);
     return "'{$item->name}' => $code,";
@@ -1540,7 +1540,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       foreach($changed as $file) $this->log("Detected change in $file");
       $this->log('Running migrations from watchfiles...');
     }
-
     // always refresh modules before running migrations
     // this makes sure that $rm->installModule() etc will catch all new files
     $this->refresh();
@@ -1568,7 +1567,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       }
 
       // if it is a pageclass we load it and call migrate()
-      if($pageClass = $file->pageClass) {
+      // the homepage get's special treatment because it is always loaded
+      // by PW since it is needed for all other pages as root element
+      $pageClass = $file->pageClass;
+      if($file->path == $this->wire->config->paths->classes."HomePage.php") {
+        // fixes Cannot declare class ProcessWire\HomePage, because the name is already in use
+        $pageClass = "\\ProcessWire\\HomePage";
+      }
+      if($pageClass) {
         if(!class_exists($pageClass)) require_once $file->path;
         $tmp = new $pageClass();
         if(method_exists($tmp, 'migrate')) {
