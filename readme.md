@@ -412,9 +412,38 @@ jobs:
       # syntax: branch => path
       # use paths without trailing slash!
       PATHS: '{
-        "dev": "/path/to/your/staging/webroot",
         "main": "/path/to/your/production/webroot"
+        "dev": "/path/to/your/staging/webroot",
       }'
+    secrets:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+```
+
+If you are using submodules just set the `SUBMODULES` input variable and add a `CI_TOKEN` to your repo secrets:
+
+```yaml
+# .github/workflows/deploy.yaml
+name: Deploy via RockMigrations
+on:
+  push:
+    branches:
+      - main
+      - dev
+jobs:
+  deploy:
+    uses: baumrock/RockMigrations/.github/workflows/deploy.yaml@main
+    with:
+      # specify paths for deployment as JSON
+      # syntax: branch => path
+      # use paths without trailing slash!
+      PATHS: '{
+        "main": "/path/to/your/production/webroot"
+        "dev": "/path/to/your/staging/webroot",
+      }'
+      SUBMODULES: true
     secrets:
       CI_TOKEN: ${{ secrets.CI_TOKEN }}
       SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -422,3 +451,5 @@ jobs:
       SSH_KEY: ${{ secrets.SSH_KEY }}
       KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
 ```
+
+See https://bit.ly/3ru8a7e how to setup a Personal Access Token for Github. You need to *create* this token only once for your Github Account, not for every project, but you need to add it to every project that should be able to access private submodules!
