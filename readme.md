@@ -464,3 +464,7 @@ $deploy->run($deploy->branch == 'dev' ? 6 : 3);
 ```
 
 Note that you must set a path as second argument when creating a new instance of `Deployment`. This path ensures that if you run your deployment script on another machine (for example on a local DDEV environment) it will run "dry" and will not execute any commands. This only works if your local path is different from your remote path of course!
+
+This is how it looks like if everything worked well:
+
+![img](https://i.imgur.com/hSML6Ym.png)

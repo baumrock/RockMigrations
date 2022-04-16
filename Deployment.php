@@ -12,6 +12,7 @@ class Deployment extends WireData {
   public $branch;
   public $delete = [];
   public $dry = false;
+  private $isVerbose = false;
   public $paths;
   public $share = [];
 
@@ -317,20 +318,24 @@ class Deployment extends WireData {
               rm -rf $toAbs
               mkdir -p $toDir
               mv $from $toDir
-            ");
+            ", $this->isVerbose);
           }
           else {
             $this->exec("
               mkdir -p $toAbs
               rm -rf $from
               ln -snf $to $from
-            ");
+            ", $this->isVerbose);
           }
         }
       }
 
       $this->echo("Done");
     }
+  }
+
+  public function verbose() {
+    $this->isVerbose = true;
   }
 
 }
