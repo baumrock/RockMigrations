@@ -1,12 +1,16 @@
 # RockMigrations
 
-    WARNING
+---
 
-    Use this module at your own risk!
+## WARNING
 
-    It is public as of 2022-04-16 because it ships with github workflows that can be used for easy deployment and need to be publicly accessible.
+Use this module at your own risk!
 
-    The readme is not finished yet and some concepts might change until I release RockMigrations officially.
+It is public as of 2022-04-16 because it ships with github workflows that can be used for easy deployment and need to be publicly accessible.
+
+The readme is not finished yet and some concepts might change until I release RockMigrations officially.
+
+---
 
 ### Module Description
 
