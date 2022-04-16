@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.8.0',
+      'version' => '0.8.1',
       'summary' => 'The ultimate Deployment and Automation-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -104,6 +104,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     // files on demand feature
     $this->loadFilesOnDemand();
+    $this->changeFooter();
   }
 
   public function ready() {
@@ -477,6 +478,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    */
   public function basename($file) {
     return basename($this->filePath($file));
+  }
+
+  /**
+   * Add deployment info to backend pages
+   */
+  public function changeFooter() {
+    if($this->wire->page->template != 'admin') return;
+    $str = $this->wire->config->httpHost;
+    $time = date("Y-m-d H:i:s", filemtime($this->wire->config->paths->root));
+    if($this->wire->user->isSuperuser()) {
+      $dir = $this->wire->config->paths->root;
+      $str = "<span title='$dir @ $time' uk-tooltip>$str</span>";
+    }
+    $this->wire->addHookAfter('AdminThemeUikit::renderFile', function($event) use($str) {
+      $file = $event->arguments(0); // full path/file being rendered
+      if(basename($file) !== '_footer.php') return;
+      $event->return = str_replace("ProcessWire", $str, $event->return);
+    });
   }
 
   /**
