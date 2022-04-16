@@ -96,7 +96,8 @@ class Deployment extends WireData {
     $folders = glob($this->paths->root."/release-*");
     rsort($folders);
     $cnt = 0;
-    $revert = "You can revert like this:\n";
+    $revert = "You can revert like this:";
+    $revert .= "\n  cd {$this->paths->root}";
     foreach($folders as $folder) {
       $cnt++;
       $base = basename($folder);
@@ -110,7 +111,7 @@ class Deployment extends WireData {
           $arrow = str_pad(">", 10-$cnt, " ", STR_PAD_LEFT);
           $this->echo("rename $base $arrow $base-", 2);
           $date = date("Y-m-d H:i:s", filemtime($folder));
-          $revert .= "  $date >> ln -snf $base- current\n";
+          $revert .= "\n  $date >> ln -snf $base- current";
           $this->exec("mv $folder $folder-");
           $folder = "$folder-";
           $base = "$base-";
