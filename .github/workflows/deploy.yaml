@@ -60,7 +60,7 @@ jobs:
       - name: 🚚 Deploy via RSYNC
         run: rsync -avz --delete --exclude '.git' ${{ env.SRC }}/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ env.DEPLOY_FOLDER }}
 
-      - name: 🌟 Trigger RockDeploy PHP
+      - name: 🌟 Trigger RockMigrations Deployment
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} -p22 "php ${{ env.DEPLOY_FOLDER }}/site/rockdeploy.php ${{steps.branch.outputs.ref}}"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} -p22 "php ${{ env.DEPLOY_FOLDER }}/site/deploy.php ${{steps.branch.outputs.ref}}"
 
