@@ -11,8 +11,10 @@ on:
         required: false
         default: false
       SSH_USER:
+        type: string
         required: true
       SSH_HOST:
+        type: string
         required: true
     secrets:
       CI_TOKEN:
