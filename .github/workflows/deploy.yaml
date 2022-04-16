@@ -27,11 +27,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
+        if: ${{ !inputs.SUBMODULES }}
+        uses: actions/checkout@v3
+        with:
+          submodules: false
+
+      - name: Checkout with Submodules
+        if: ${{ inputs.SUBMODULES }}
         uses: actions/checkout@v3
         with:
           # use github PAT https://bit.ly/3xvOvrF
           token: ${{ secrets.CI_TOKEN }}
-          submodules: ${{ inputs.SUBMODULES }}
+          submodules: true
 
       - name: 📋 List files in the repository
         run: ls ${{ github.workspace }}
