@@ -334,6 +334,9 @@ class Deployment extends WireData {
     }
   }
 
+  /**
+   * Make output more verbose
+   */
   public function verbose() {
     $this->isVerbose = true;
   }

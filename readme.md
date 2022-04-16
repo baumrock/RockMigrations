@@ -468,3 +468,13 @@ Note that you must set a path as second argument when creating a new instance of
 This is how it looks like if everything worked well:
 
 ![img](https://i.imgur.com/hSML6Ym.png)
+
+## Debugging
+
+Debugging can be hard when using CI/CD pipelines. If you get unexpected results during the PHP deployment you can make the script more verbose like this:
+
+```php
+...
+$deploy->verbose();
+$deploy->run();
+```
