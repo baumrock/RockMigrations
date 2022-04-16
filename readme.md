@@ -338,11 +338,6 @@ You can use RockMigrations to easily create fully automated CI/CD pipelines for 
 
 To use this workflow you need to set the referenced secrets in your git repo.
 
-Set `SSH_USER` and `SSH_HOST`, example:
-
-    SSH_USER = youruser
-    SSH_HOST = your.server.com
-
 Create a keypair for your deploy workflow. Note that we are using a custom name `id_rockmigrations` instead of the default `id_rsa` to ensure that we do not overwrite an existing key. If you are using RockMigrations on multiple projects you can simply overwrite the key as you will only need it once during setup:
 
     ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rockmigrations -C "rockmigrations-[project]"
@@ -383,9 +378,10 @@ on:
 jobs:
   test:
     uses: baumrock/RockMigrations/.github/workflows/test-ssh.yaml@main
+    with:
+      SSH_HOST: your.server.com
+      SSH_USER: youruser
     secrets:
-      SSH_HOST: ${{ secrets.SSH_HOST }}
-      SSH_USER: ${{ secrets.SSH_USER }}
       SSH_KEY: ${{ secrets.SSH_KEY }}
       KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
 ```
