@@ -104,11 +104,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     // files on demand feature
     $this->loadFilesOnDemand();
-    $this->changeFooter();
   }
 
   public function ready() {
     $this->migrateWatchfiles();
+    $this->changeFooter();
   }
 
   /** ########## tools ########## */
