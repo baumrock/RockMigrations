@@ -109,7 +109,8 @@ class Deployment extends WireData {
         if($cnt>1) {
           $arrow = str_pad(">", 10-$cnt, " ", STR_PAD_LEFT);
           $this->echo("rename $base $arrow $base-", 2);
-          $revert .= "  ln -snf $base- current\n";
+          $date = date("Y-m-d H:i:s", filemtime($folder));
+          $revert .= "  $date: ln -snf $base- current\n";
           $this->exec("mv $folder $folder-");
           $folder = "$folder-";
           $base = "$base-";
