@@ -411,9 +411,9 @@ jobs:
         "main": "/path/to/your/production/webroot",
         "dev": "/path/to/your/staging/webroot",
       }'
+      SSH_HOST: your.server.com
+      SSH_USER: youruser
     secrets:
-      SSH_HOST: ${{ secrets.SSH_HOST }}
-      SSH_USER: ${{ secrets.SSH_USER }}
       SSH_KEY: ${{ secrets.SSH_KEY }}
       KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
 ```
@@ -440,10 +440,10 @@ jobs:
         "dev": "/path/to/your/staging/webroot",
       }'
       SUBMODULES: true
+      SSH_HOST: your.server.com
+      SSH_USER: youruser
     secrets:
       CI_TOKEN: ${{ secrets.CI_TOKEN }}
-      SSH_HOST: ${{ secrets.SSH_HOST }}
-      SSH_USER: ${{ secrets.SSH_USER }}
       SSH_KEY: ${{ secrets.SSH_KEY }}
       KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
 ```
