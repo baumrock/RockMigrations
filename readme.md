@@ -460,7 +460,8 @@ Your workflow should copy files but fail at step `Trigger RockMigrations Deploym
 <?php namespace RockMigrations;
 require_once __DIR__."/modules/RockMigrations/Deployment.php";
 $deploy = new Deployment($argv, "/path/to/your/deployments");
-$deploy->run($deploy->branch == 'dev' ? 6 : 3);
+// custom settings go here
+$deploy->run();
 ```
 
 Note that you must set a path as second argument when creating a new instance of `Deployment`. This path ensures that if you run your deployment script on another machine (for example on a local DDEV environment) it will run "dry" and will not execute any commands. This only works if your local path is different from your remote path of course!
