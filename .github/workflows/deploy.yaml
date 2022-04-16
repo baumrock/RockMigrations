@@ -61,12 +61,12 @@ jobs:
           echo "DEPLOY_FOLDER=$ROOT_PATH/tmp-$DEPLOY_NAME" >> $GITHUB_ENV
           echo "SRC=${{ github.workspace }}" >> $GITHUB_ENV
 
-      - name: 🕵 Install SSH key
+      - name: 🕵 Install SSH key and create deployment folder
         run: |
           install -m 600 -D /dev/null ~/.ssh/id_rsa
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} -p22 "pwd"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} -p22 "mkdir -p ${{ env.DEPLOY_FOLDER }}"
 
       - name: 🚚 Deploy via RSYNC
         run: rsync -avz --delete --exclude '.git' ${{ env.SRC }}/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ env.DEPLOY_FOLDER }}
