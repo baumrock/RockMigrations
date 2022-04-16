@@ -10,13 +10,13 @@ on:
         type: boolean
         required: false
         default: false
-    secrets:
-      CI_TOKEN:
-        required: false
       SSH_USER:
         required: true
       SSH_HOST:
         required: true
+    secrets:
+      CI_TOKEN:
+        required: false
       SSH_KEY:
         required: true
       KNOWN_HOSTS:
@@ -66,12 +66,12 @@ jobs:
           install -m 600 -D /dev/null ~/.ssh/id_rsa
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} -p22 "mkdir -p ${{ env.DEPLOY_FOLDER }}"
+          ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "mkdir -p ${{ env.DEPLOY_FOLDER }}"
 
       - name: 🚚 Deploy via RSYNC
-        run: rsync -avz --delete --exclude '.git' ${{ env.SRC }}/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ env.DEPLOY_FOLDER }}
+        run: rsync -avz --delete --exclude '.git' ${{ env.SRC }}/ ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }}:${{ env.DEPLOY_FOLDER }}
 
       - name: 🌟 Trigger RockMigrations Deployment
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} -p22 "php ${{ env.DEPLOY_FOLDER }}/site/deploy.php ${{steps.branch.outputs.ref}}"
+          ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "php ${{ env.DEPLOY_FOLDER }}/site/deploy.php ${{steps.branch.outputs.ref}}"
 
