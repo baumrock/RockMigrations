@@ -1,6 +1,18 @@
 # RockMigrations
 
-RockMigrations has an easy API to do all the things you can do in the PW backend via code. This means you can fully version control your site or app simply by adding all the necessary fields and templates not via clicking but via writing simple scripts that do that tasks for you.
+    WARNING
+
+    Use this module at your own risk!
+
+    It is public as of 2022-04-16 because it ships with github workflows that can be used for easy deployment and need to be publicly accessible.
+
+    The readme is not finished yet and some concepts might change until I release RockMigrations officially.
+
+### Module Description
+
+RockMigrations has an easy API to do all the things you can do in the PW backend via code. This means you can **fully version control your site** or app simply by adding all the necessary fields and templates not via clicking but via writing simple scripts that do that tasks for you.
+
+The module also contains several helpers that make it extremely easy to implement **fully automated CI/CD pipelines**.
 
 ## QuickStart
 
@@ -117,6 +129,21 @@ $rm->watch(__DIR__."/foo");
 ```
 
 Note that you need to define `FALSE` as second parameter if the file should not be migrated but only watched for changes. If you set it to `TRUE` the file will be included and executed as if it was a migration script (see examples below).
+
+### Watching PageClasses
+
+If you are using custom page classes you can watch them like this:
+
+```php
+public function init() {
+  /** @var RockMigrations $rm */
+  $rm = $this->wire->modules->get('RockMigrations');
+  $rm->watchPageClass(__FILE__);
+}
+public function migrate() {
+  bd('migrate page class');
+}
+```
 
 ## Running migrations
 
