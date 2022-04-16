@@ -439,9 +439,9 @@ jobs:
         "main": "/path/to/your/production/webroot",
         "dev": "/path/to/your/staging/webroot",
       }'
-      SUBMODULES: true
       SSH_HOST: your.server.com
       SSH_USER: youruser
+      SUBMODULES: true
     secrets:
       CI_TOKEN: ${{ secrets.CI_TOKEN }}
       SSH_KEY: ${{ secrets.SSH_KEY }}
