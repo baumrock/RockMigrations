@@ -6,9 +6,13 @@ on:
       PATHS:
         type: string
         required: true
+      SUBMODULES:
+        type: boolean
+        required: false
+        default: false
     secrets:
       CI_TOKEN:
-        required: true
+        required: false
       SSH_USER:
         required: true
       SSH_HOST:
@@ -27,7 +31,7 @@ jobs:
         with:
           # use github PAT https://bit.ly/3xvOvrF
           token: ${{ secrets.CI_TOKEN }}
-          submodules: true
+          submodules: ${{ inputs.SUBMODULES }}
 
       - name: 📋 List files in the repository
         run: ls ${{ github.workspace }}

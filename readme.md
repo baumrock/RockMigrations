@@ -328,12 +328,22 @@ $rm->migrate([
 
 # Deployments
 
-Set secrets `SSH_USER` and `SSH_HOST`
+You can use RockMigrations to easily create fully automated CI/CD pipelines for Github. It only takes these simple steps:
 
-    SSH_USER = example
+* Setup SSH keys and add secrets to your repository
+* Create workflow yaml file
+* Push to your repo
+
+## Setup SSH keys and add secrets to your repo
+
+To use this workflow you need to set the referenced secrets in your git repo.
+
+Set `SSH_USER` and `SSH_HOST`, example:
+
+    SSH_USER = youruser
     SSH_HOST = your.server.com
 
-Create a keypair for your deploy workflow:
+Create a keypair for your deploy workflow. Note that we are using a custom name `id_rockmigrations` instead of the default `id_rsa` to ensure that we do not overwrite an existing key. If you are using RockMigrations on multiple projects you can simply overwrite the key as you will only need it once during setup:
 
     ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rockmigrations -C "rockmigrations-[project]"
 
@@ -352,3 +362,63 @@ Add the public key to your remote user:
 Try to ssh into your server without using a password:
 
     ssh -i ~/.ssh/id_rockmigrations user@your.server.com
+
+## Create the workflow yaml
+
+Now create the following yaml file in your repo:
+
+```yaml
+# .github/workflows/deploy.yaml
+name: Deploy via RockMigrations
+
+# Specify when this workflow will run.
+# Change the branch according to your setup!
+# The example will run on all pushes to main and dev branch.
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  test:
+    uses: baumrock/RockMigrations/.github/workflows/test-ssh.yaml@main
+    secrets:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+```
+
+Commit the change and push to your repo. You should see the workflow showing up in Github's Actions tab:
+
+![img](https://i.imgur.com/JFvMqkE.png)
+
+Once you got your SSH connection up and running you can setup the deployment. Remove or comment the job "test" and uncomment or add the job "deploy" to your `deploy.yaml`:
+
+```yaml
+# .github/workflows/deploy.yaml
+name: Deploy via RockMigrations
+on:
+  push:
+    branches:
+      - main
+      - dev
+jobs:
+  deploy:
+    uses: baumrock/RockMigrations/.github/workflows/deploy.yaml@main
+    with:
+      # specify paths for deployment as JSON
+      # syntax: branch => path
+      # use paths without trailing slash!
+      PATHS: '{
+        "dev": "/path/to/your/staging/webroot",
+        "main": "/path/to/your/production/webroot"
+      }'
+    secrets:
+      CI_TOKEN: ${{ secrets.CI_TOKEN }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+```
