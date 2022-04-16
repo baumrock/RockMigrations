@@ -412,7 +412,7 @@ jobs:
       # syntax: branch => path
       # use paths without trailing slash!
       PATHS: '{
-        "main": "/path/to/your/production/webroot"
+        "main": "/path/to/your/production/webroot",
         "dev": "/path/to/your/staging/webroot",
       }'
     secrets:
@@ -440,7 +440,7 @@ jobs:
       # syntax: branch => path
       # use paths without trailing slash!
       PATHS: '{
-        "main": "/path/to/your/production/webroot"
+        "main": "/path/to/your/production/webroot",
         "dev": "/path/to/your/staging/webroot",
       }'
       SUBMODULES: true
@@ -453,3 +453,14 @@ jobs:
 ```
 
 See https://bit.ly/3ru8a7e how to setup a Personal Access Token for Github. You need to *create* this token only once for your Github Account, not for every project, but you need to add it to every project that should be able to access private submodules!
+
+Your workflow should copy files but fail at step `Trigger RockMigrations Deployment`. That is because you need to create a `site/deploy.php` file:
+
+```php
+<?php namespace RockMigrations;
+require_once __DIR__."/modules/RockMigrations/Deployment.php";
+$deploy = new Deployment($argv, "/path/to/your/deployments");
+$deploy->run($deploy->branch == 'dev' ? 6 : 3);
+```
+
+Note that you must set a path as second argument when creating a new instance of `Deployment`. This path ensures that if you run your deployment script on another machine (for example on a local DDEV environment) it will run "dry" and will not execute any commands. This only works if your local path is different from your remote path of course!
