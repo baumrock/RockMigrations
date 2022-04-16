@@ -132,13 +132,17 @@ class Deployment extends WireData {
    */
   public function dumpDB() {
     if($this->dry) return $this->echo("Dry run - skipping dumpDB()...");
+    $current = $this->paths->root."/current";
+    $configFile = "$current/site/config.php";
+    if(!is_file($configFile)) {
+      return $this->echo("No current release - skipping dumpDB()...");
+    }
     try {
       $this->echo("Trying to create a DB dump of old release...");
 
       // load config
       $config = new Config();
-      $current = $this->paths->root."/current";
-      include "$current/site/config.php";
+      include $configFile;
       $dir = "$current/site/assets/backups/database";
       $sql = "$dir/rm-deploy.sql";
       $this->exec("
