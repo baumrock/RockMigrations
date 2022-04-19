@@ -195,7 +195,8 @@ class Deployment extends WireData {
    * and updates the "current" symlink
    * @return void
    */
-  public function finish($keep = 3) {
+  public function finish($keep = null) {
+    if(!$keep) $keep = 3;
     if($this->dry) {
       $this->echo("Dry run - skipping finish()...");
       return;
