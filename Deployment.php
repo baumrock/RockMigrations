@@ -72,7 +72,7 @@ class Deployment extends WireData {
   public function delete($files = null, $reset = false) {
     if(is_array($files)) {
       if($reset) $this->delete = [];
-      $this->delete = $files+$this->delete;
+      $this->delete = array_merge($files, $this->delete);
     }
     elseif($files === null) {
       // execute deletion
@@ -155,8 +155,8 @@ class Deployment extends WireData {
       $sql = "$dir/rm-deploy.sql";
       $this->exec("
         mkdir -p $dir
-        mysqldump -u'{$config->dbUser}' -p'{$config->dbPass}' {$config->dbName} > $sql
-      ");
+        mysqldump -h'{$config->dbHost}' -P'{$config->dbPort}' -u'{$config->dbUser}' -p'{$config->dbPass}' {$config->dbName} > $sql
+        ");
       $this->echo("old: ".realpath($sql), 2);
       $this->echo("new: ".str_replace("/site/", "-/site/", realpath($sql)), 2);
       $this->echo("Done");
@@ -270,7 +270,7 @@ class Deployment extends WireData {
   }
 
   /**
-   * Share files and folders
+   * Share files and folders across releases
    *
    * Usage:
    * $deploy->share([
@@ -281,13 +281,14 @@ class Deployment extends WireData {
   public function share($files = null, $reset = false) {
     if(is_array($files)) {
       if($reset) $this->share = [];
-      $this->share = $files+$this->share;
+      $this->share = array_merge($files, $this->share);
     }
     elseif($files === null) {
       $this->echo("Setting up shared files...");
 
       $release = $this->paths->release;
       $shared = $this->paths->shared;
+      $this->echo($this->share);
       foreach($this->share as $k=>$v) {
         $file = $v;
 
