@@ -71,7 +71,7 @@ jobs:
           ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "mkdir -p ${{ env.DEPLOY_FOLDER }}"
 
       - name: 🚚 Deploy via RSYNC
-        run: rsync -avz --delete --exclude '.git' ${{ env.SRC }}/ ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }}:${{ env.DEPLOY_FOLDER }}
+        run: rsync -avz --exclude '.git' ${{ env.SRC }}/ ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }}:${{ env.DEPLOY_FOLDER }}
 
       - name: 🌟 Trigger RockMigrations Deployment
         run: |
