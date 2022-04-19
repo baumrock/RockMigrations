@@ -264,8 +264,7 @@ class Deployment extends WireData {
       find $release -type d -exec chmod 755 {} \;
       find $release -type f -exec chmod 644 {} \;
       chmod 440 $release/site/config.php
-      chmod 440 $shared/site/config-local.php
-    ", true);
+      chmod 440 $shared/site/config-local.php", true);
     $this->echo("Done");
   }
 
