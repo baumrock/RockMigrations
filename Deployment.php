@@ -120,6 +120,13 @@ class Deployment extends WireData {
         else $this->echo("create $base", 2);
       }
     }
+    $folders = glob($this->paths->root."/tmp-release-*");
+    if(count($folders)) $this->echo("Deleting tmp folders...");
+    foreach($folders as $folder) {
+      $base = basename($folder);
+      $this->echo("delete $base", 2);
+      $this->exec("rm -rf $folder");
+    }
     $this->echo($revert);
     $this->echo("Done");
   }
