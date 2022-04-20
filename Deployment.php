@@ -89,12 +89,12 @@ class Deployment extends WireData {
   /**
    * Cleanup old releases and keep given number
    *
-   * keep=3 means we keep current + 3 old releases (overall 4)
+   * keep=2 means we keep current + 2 old releases (overall 3)
    *
    * This does also rename old release folders to make symlinks aware of the
    * change without rebooting the server or reloading php-fpm
    */
-  public function deleteOldReleases($keep = 3, $rename = true) {
+  public function deleteOldReleases($keep = 2, $rename = true) {
     $this->echo("Cleaning up old releases...");
     $folders = glob($this->paths->root."/release-*");
     rsort($folders);
