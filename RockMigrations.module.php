@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.8.1',
+      'version' => '0.8.2',
       'summary' => 'The ultimate Deployment and Automation-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -91,6 +91,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->addHookAfter("Modules::refresh", $this, "triggerMigrations");
     $this->addHookAfter("ProcessPageView::finished", $this, "triggerRecorder");
     $this->addHookBefore("Field::getInputfield", $this, "addSourceCodeButton");
+    $this->addHookAfter("Pages::saved", $this, "addPageSavedTimestamp");
 
     // add hooks for recording changes
     $this->addHookAfter("Fields::saved", $this, "setRecordFlag");
@@ -412,6 +413,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $role->of(false);
     $role->addPermission($permission);
     return $role->save();
+  }
+
+  /**
+   * Update page saved timestamp
+   * @return void
+   */
+  public function addPageSavedTimestamp() {
+    $file = $this->wire->config->paths->cache."rm-pagesaved.txt";
+    $this->wire->files->filePutContents($file, time());
   }
 
   /**
