@@ -89,6 +89,8 @@ class Deployment extends WireData {
   /**
    * Cleanup old releases and keep given number
    *
+   * keep=3 means we keep current + 3 old releases (overall 4)
+   *
    * This does also rename old release folders to make symlinks aware of the
    * change without rebooting the server or reloading php-fpm
    */
@@ -102,7 +104,7 @@ class Deployment extends WireData {
     foreach($folders as $folder) {
       $cnt++;
       $base = basename($folder);
-      if($cnt>$keep) {
+      if($cnt>$keep+1) {
         $this->echo("delete $base", 2);
         $this->exec("rm -rf $folder");
         continue;
