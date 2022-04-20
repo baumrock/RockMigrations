@@ -9,6 +9,8 @@ chdir(dirname(dirname(dirname(__DIR__))));
 require_once "wire/core/ProcessWire.php";
 class Deployment extends WireData {
 
+  const keep = 2;
+
   public $branch;
   public $delete = [];
   public $dry = false;
@@ -94,7 +96,8 @@ class Deployment extends WireData {
    * This does also rename old release folders to make symlinks aware of the
    * change without rebooting the server or reloading php-fpm
    */
-  public function deleteOldReleases($keep = 2, $rename = true) {
+  public function deleteOldReleases($keep = null, $rename = true) {
+    if(!$keep) $keep = self::keep;
     $this->echo("Cleaning up old releases...");
     $folders = glob($this->paths->root."/release-*");
     rsort($folders);
@@ -198,7 +201,6 @@ class Deployment extends WireData {
    * @return void
    */
   public function finish($keep = null) {
-    if(!$keep) $keep = 3;
     if($this->dry) {
       $this->echo("Dry run - skipping finish()...");
       return;
