@@ -380,7 +380,7 @@ on:
       - dev
 
 jobs:
-  test:
+  test-ssh:
     uses: baumrock/RockMigrations/.github/workflows/test-ssh.yaml@main
     with:
       SSH_HOST: your.server.com
