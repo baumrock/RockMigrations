@@ -367,7 +367,7 @@ Try to ssh into your server without using a password:
 Now create the following yaml file in your repo:
 
 ```yaml
-# .github/workflows/deploy.yaml
+# code .github/workflows/deploy.yaml
 name: Deploy via RockMigrations
 
 # Specify when this workflow will run.
