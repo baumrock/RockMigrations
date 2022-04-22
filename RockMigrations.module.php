@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.8.3',
+      'version' => '0.8.4',
       'summary' => 'The ultimate Deployment and Automation-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -719,6 +719,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if(!$user->id) $user = $this->wire->users->add($username);
     $this->setUserData($user, $data);
     return $user;
+  }
+
+  /**
+   * Create view file for template (if it does not exist already)
+   * @return void
+   */
+  public function createViewFile($template, $content = "\n") {
+    $template = $this->getTemplate($template);
+    $file = $this->wire->config->paths->templates.$template->name.".php";
+    if(is_file($content)) $content = file_get_contents($content);
+    if(!is_file($file)) $this->wire->files->filePutContents($file, $content);
   }
 
   /**
