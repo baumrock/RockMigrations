@@ -450,6 +450,7 @@ See https://bit.ly/3ru8a7e how to setup a Personal Access Token for Github. You 
 Your workflow should copy files but fail at step `Trigger RockMigrations Deployment`. That is because you need to create a `site/deploy.php` file:
 
 ```php
+// code site/deploy.php
 <?php namespace RockMigrations;
 require_once __DIR__."/modules/RockMigrations/Deployment.php";
 $deploy = new Deployment($argv, "/path/to/your/deployments");
