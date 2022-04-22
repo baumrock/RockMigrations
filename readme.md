@@ -397,13 +397,6 @@ Commit the change and push to your repo. You should see the workflow showing up 
 Once you got your SSH connection up and running you can setup the deployment. Remove or comment the job "test" and uncomment or add the job "deploy" to your `deploy.yaml`:
 
 ```yaml
-# .github/workflows/deploy.yaml
-name: Deploy via RockMigrations
-on:
-  push:
-    branches:
-      - main
-      - dev
 jobs:
   deploy:
     uses: baumrock/RockMigrations/.github/workflows/deploy.yaml@main
