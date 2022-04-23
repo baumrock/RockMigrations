@@ -233,7 +233,7 @@ class Deployment extends WireData {
     $file = "$release/site/modules/RockMigrations/migrate.php";
     if(!is_file($file)) return $this->echo("RockMigrations not found...");
     $this->echo("Trigger RockMigrations...");
-    $this->exec("php $file");
+    $this->exec("php $file", true);
   }
 
   /**
