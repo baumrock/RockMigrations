@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.8.5',
+      'version' => '0.8.6',
       'summary' => 'The ultimate Deployment and Automation-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -233,11 +233,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         $field = $k;
         $fieldData = $v;
       }
-      $f = $form->get((string)$field);
-      if($fieldData) $f->setArray($fieldData);
-      if($f instanceof Inputfield) {
-        $_fields[] = $f;
-        $last = $f;
+
+      if(is_array($field)) {
+        $form->add($field);
+        $field = $form->children()->last();
+      }
+
+      if(!$field instanceof Inputfield) $field = $form->get((string)$field);
+      if($fieldData) $field->setArray($fieldData);
+      if($field instanceof Inputfield) {
+        $_fields[] = $field;
+        $last = $field;
       }
     }
     if(!$last) return;
