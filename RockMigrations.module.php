@@ -1029,6 +1029,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       $data = $item->getExportData();
       unset($data['id']);
       unset($data['name']);
+      unset($data['rockmigrations']);
 
       // we have a different syntax for options of an options field
       if($item->type instanceof FieldtypeOptions) {
@@ -1046,6 +1047,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       $data = $item->getExportData();
       unset($data['id']);
       unset($data['name']);
+      unset($data['rockmigrations']);
     }
     $code = $this->varexport($data);
     return "'{$item->name}' => $code,";
