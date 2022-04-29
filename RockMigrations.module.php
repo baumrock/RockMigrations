@@ -677,6 +677,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public function createRoleWebmaster($name = 'webmaster', $permissions = null) {
     if(!$permissions) $permissions = [
       'page-edit',
+      'page-edit-front',
       'page-delete',
       'page-move',
       'page-sort',
