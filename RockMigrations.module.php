@@ -681,6 +681,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       'page-delete',
       'page-move',
       'page-sort',
+      'rockfrontend-alfred',
     ];
     return $this->createRole($name, $permissions);
   }
