@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.8.7',
+      'version' => '0.8.8',
       'summary' => 'The ultimate Deployment and Automation-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -227,6 +227,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $_fields = [];
     $last = false;
     foreach($fields as $k=>$v) {
+      $noLast = false;
       $field = $v;
       $fieldData = null;
       if(is_string($k)) {
@@ -237,13 +238,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if(is_array($field)) {
         $form->add($field);
         $field = $form->children()->last();
+        $noLast = true;
       }
 
       if(!$field instanceof Inputfield) $field = $form->get((string)$field);
       if($fieldData) $field->setArray($fieldData);
       if($field instanceof Inputfield) {
         $_fields[] = $field;
-        $last = $field;
+
+        // we update the "last" variable to be the current field
+        // we do not use runtime fields (applied via array syntax)
+        // this ensures that the wrapper is at the same position where
+        // the field of the form was
+        if(!$noLast) $last = $field;
       }
     }
     if(!$last) return;
