@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.8.9',
+      'version' => '0.8.10',
       'summary' => 'The ultimate Deployment and Automation-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -253,15 +253,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         if(!$noLast) $last = $field;
       }
     }
-    if(!$last) return;
 
     /** @var InputfieldFieldset $f */
     $fs = $this->wire('modules')->get('InputfieldFieldset');
     foreach($fieldset as $k=>$v) $fs->$k = $v;
-    $form->insertAfter($fs, $last);
+    if($last) $form->insertAfter($fs, $last);
+    else $form->add($fs);
 
     // now remove fields from the form and add them to the fieldset
     foreach($_fields as $f) {
+      // if the field is a runtime only field we add a temporary name
+      // otherwise the remove causes an endless loop
+      if(!$f->name) $f->name = uniqid();
       $form->remove($f);
       $fs->add($f);
     }
