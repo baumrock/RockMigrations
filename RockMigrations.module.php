@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.8.10',
+      'version' => '0.8.11',
       'summary' => 'The ultimate Deployment and Automation-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -159,6 +159,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $field = $event->object;
     if(!$field->toolbar) return;
     $field->toolbar .= ",Source";
+  }
+
+  /**
+   * Remove non-breaking spaces in string
+   * @return string
+   */
+  public function regularSpaces($str) {
+    return preg_replace('/\xc2\xa0/', ' ', $str);
   }
 
   /**
@@ -1781,6 +1789,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if(!$tpl = $this->getTemplate($tpl)) return;
     $tpl->removeRole($role, "all");
     $tpl->save();
+  }
+
+  /**
+   * Remove all template context field settings
+   * @return void
+   */
+  public function removeTemplateContext($tpl, $field) {
+    $tpl = $this->getTemplate($tpl);
+    $field = $this->getField($field);
+    $tpl->fieldgroup->setFieldContextArray($field->id, []);
   }
 
   /**
