@@ -8,7 +8,7 @@ Use this module at your own risk!
 
 It is public as of 2022-04-16 because it ships with github workflows that can be used for easy deployment and need to be publicly accessible.
 
-The readme is not finished yet and some concepts might change until I release RockMigrations officially.
+The readme is not finished yet and some concepts might change until I release RockMigrations officially (planned summer 2022).
 
 ---
 
@@ -22,7 +22,7 @@ The module also contains several helpers that make it extremely easy to implemen
 
 The example code uses `bd()` calls for dumping data. You need TracyDebugger installed!
 
-Put this in your `site/ready.php`
+Put this in your `site/migrate.php`
 
 ```php
 /** @var RockMigrations $rm */
@@ -43,70 +43,24 @@ $rm->createTemplate('demo', [
 
 Reload your site and you will see the new field and template in the backend and you'll see the message in the tracy debug bar.
 
-Now refresh the page and note that the migration run again (the same message appears in tracy). There are two important things to understand here:
+Now do a modules refresh (not a regular page reload) and note that the migration run again (the same message appears in tracy). There are two important things to understand here:
 
 1) Migrations can run multiple times and will always lead to the same result.
 2) If you put your migrations in ready.php or an autoload module they will run on every request. This not a good idea as it may slow down your site significantly
 
-So what can we do about this? RockMigrations has a concept of watching files and only running migrations once a file has changed or Modules::refresh was triggered.
+Now do a regular page reload. The migration will not run as nothing has changed. A modules refresh does always force to run migrations.
+
+## Where do I find out all those field and template properties?
+
+1) You can edit your field or template and copy the code from there (I recommend to only copy the settings you need to make your migration files more readable):
+![img](https://i.imgur.com/IAHV3VZ.png)
+
+2) Hover the caret on the very right of the field of the setting you want to set:
+![img](https://i.imgur.com/hmydzf5.png)
 
 ## Watching files, paths or modules
 
 RockMigrations can watch files, paths and modules for changes. It will detect changes on any of the files on the watchlist and trigger all migrations to run if anything changed.
-
-Let's wrap the example from above into a watch callback:
-
-```php
-bd('ready.php');
-/** @var RockMigrations $rm */
-$rm = $modules->get("RockMigrations");
-$rm->watch(function($rm) {
-  bd('Create field + template via RM');
-  $rm->createField('demo', 'text', [
-    'label' => 'My demo field',
-    'tags' => 'RMDemo',
-  ]);
-  $rm->createTemplate('demo', [
-    'fields' => [
-      'title',
-      'demo',
-    ],
-    'tags' => 'RMDemo',
-  ]);
-})
-```
-
-Reload the page and you'll see the message in the debug bar. Reload it again and only "ready.php" will show up, but not "Create field + template via RM". Now modify ready.php (eg by adding some empty lines at the bottom), save the file and reload your backend. The migrations will be triggered!
-
-### Watch priority
-
-Similar to the priority of hooks you can define a priority for execution of the migrations. This can sometimes be necessary if one migration depends on another. See this example:
-
-```php
-bd('ready.php');
-/** @var RockMigrations $rm */
-$rm = $modules->get('RockMigrations');
-$rm->watch(function($rm) {
-  bd('migrate one');
-}, 1.1);
-$rm->watch(function($rm) {
-  bd('migrate two');
-}, 1.2);
-$rm->watch(function($rm) {
-  bd('migrate three');
-}, 1.3);
-```
-
-The output will be:
-
-```txt
-ready.php
-migrate three
-migrate two
-migrate one
-```
-
-The higher the priority you define as second parameter the earlier it will be triggered. The default value is TRUE which is converted to `1.00`. You can define any float value (eg `1.0001` would also be valid).
 
 ### Watching modules
 
@@ -193,7 +147,7 @@ $rm->createField('foo', 'text');
 
 ### Auto-Watch
 
-RockMigrations automatically watches files like `YourModule.migrate.php`.
+RockMigrations automatically watches `/site/migrate.php` and files like `YourModule.migrate.php`.
 
 ## Working with YAML files
 
