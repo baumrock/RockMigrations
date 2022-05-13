@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.8.11',
+      'version' => '0.8.12',
       'summary' => 'The ultimate Deployment and Automation-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -65,7 +65,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public function __construct() {
     parent::__construct();
     $this->path = $this->wire->config->paths($this);
-    require_once($this->path."WireArray.php");
+    $this->wire->classLoader->addNamespace("RockMigrations", __DIR__."/classes");
+
     $this->recorders = $this->wire(new WireArrayRM());
     $this->watchlist = $this->wire(new WireArrayRM());
     $this->lastrun = (int)$this->wire->cache->get(self::cachename);
