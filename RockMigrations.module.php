@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.8.12',
+      'version' => '0.8.13',
       'summary' => 'The ultimate Deployment and Automation-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -461,6 +461,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function addPageSavedTimestamp() {
+    $this->wire->files->mkdir($this->wire->config->paths->cache, true);
     $file = $this->wire->config->paths->cache."rm-pagesaved.txt";
     $this->wire->files->filePutContents($file, time());
   }
