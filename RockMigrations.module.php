@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.8.13',
+      'version' => '0.8.14',
       'summary' => 'The ultimate Deployment and Automation-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -150,6 +150,26 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     PasteText, PasteFromWord
     Scayt, -, Source
     facebookvideo";
+
+  /**
+   * Add a runtime field to an inputfield wrapper
+   *
+   * Usage:
+   * $rm->addAfter($form, 'title', [
+   *   'type' => 'markup',
+   *   'label' => 'foo',
+   *   'value' => 'bar',
+   * ]);
+   *
+   * @return Inputfield
+   */
+  public function addAfter($wrapper, $existingItem, $newItem) {
+    if(!$existingItem instanceof Inputfield) $existingItem = $wrapper->get($existingItem);
+    $wrapper->add($newItem);
+    $newItem = $wrapper->children()->last();
+    $wrapper->insertAfter($newItem, $existingItem);
+    return $newItem;
+  }
 
   /**
    * Add sourcecode button to ckeditor fields for superuser
