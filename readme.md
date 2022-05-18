@@ -164,6 +164,39 @@ $rm->yaml('/path/to/file.yaml');
 $rm->yaml('/path/to/file.yaml', ['foo'=>'bar']);
 ```
 
+## Working with fieldsets
+
+Working with fieldsets is a pain because they need to have an opening and a closing field. That makes it complicated to work with it from a migrations perspective, but RockMigrations has you covered with a nice little helper method that can wrap other fields at runtime:
+
+```php
+// syntax
+$rm->wrapFields($form, $fields, $fieldset);
+
+// usage
+$wire->addHookAfter("ProcessPageEdit::buildForm", function($event) {
+  $form = $event->return;
+
+  /** @var RockMigrations $rm */
+  $rm = $this->wire->modules->get('RockMigrations');
+  $rm->wrapFields($form, [
+    'title' => [
+      // runtime settings for title field
+      'columnWidth' => 50,
+    ],
+    // runtime field example
+    [
+      'type' => 'markup',
+      'label' => 'foo',
+      'value' => 'bar',
+      'columnWidth' => 50,
+    ],
+    'other_field_of_this_template',
+  ], [
+    'label' => 'I am a new fieldset wrapper',
+  ]);
+})
+```
+
 ## Migration Examples
 
 ### Field migrations
