@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.8.14',
+      'version' => '0.9.0',
       'summary' => 'The ultimate Deployment and Automation-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1347,17 +1347,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Install module
    *
    * If an URL is provided the module will be downloaded before installation.
-   * You can provide module settings as 3rd parameter.
+   * You can provide module settings as 2nd parameter.
    *
    * Usage:
-   * $rm->installModule("MyModule", "https://...", ['setting'=>'foo']);
+   * $rm->installModule("YourModule");
+   * $rm->installModule("YourModule", ['setting1'=>'foo', 'setting2'=>'bar']);
+   * $rm->installModule("MyModule", ['setting'=>'foo'], "https://...");
    *
    * @param string $name
-   * @param string|array $url
    * @param array $config
+   * @param string|array $url
    * @return Module
    */
-  public function installModule($name, $options = [], $conf = []) {
+  public function installModule($name, $conf = [], $options = []) {
     if(is_string($options)) $options = ['url' => $options];
     if(!$options) $options = [];
 
