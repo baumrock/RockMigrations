@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.9.0',
+      'version' => '0.9.1',
       'summary' => 'The ultimate Deployment and Automation-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -580,12 +580,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *   'label' => 'My great field',
    * ]);
    *
+   * Alternate array syntax:
+   * $rm->createField('myfield', [
+   *   'type' => 'text',
+   *   'label' => 'My field label',
+   * ]);
+   *
    * @param string $name
-   * @param string $type
+   * @param string|array $type|$options
    * @param array $options
    * @return Field|false
    */
   public function createField($name, $type, $options = null) {
+    if(is_array($type)) {
+      $options = $type;
+      $type = $type['type'];
+    }
     $field = $this->getField($name, true);
 
     // field does not exist
