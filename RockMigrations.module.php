@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.9.1',
+      'version' => '0.9.2',
       'summary' => 'The ultimate Deployment and Automation-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -970,6 +970,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public function deleteUser($username, $quiet = false) {
     if(!$user = $this->getUser($username, $quiet)) return;
     $this->wire->users->delete($user);
+  }
+
+  /**
+   * Disable module
+   *
+   * This is a quickfix for modules that are not uninstallable by
+   * uninstallModule() - I don't know why this does not work for some modules...
+   * if you do please let me know!
+   *
+   * @param string|Module $name
+   * @return void
+   */
+  public function disableModule($name) {
+    $this->wire->modules->setFlag((string)$name, Modules::flagsDisabled, true);
   }
 
   /**
