@@ -52,8 +52,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.9.2',
-      'summary' => 'The ultimate Deployment and Automation-Tool for ProcessWire',
+      'version' => '0.9.3',
+      'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
       'icon' => 'magic',
@@ -2692,8 +2692,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $tracefile = $trace['file'];
     $traceline = $trace['line'];
 
+    // watch a custom pageclass
     if($what instanceof Page) {
-      throw new WireException("Cant watch page objects! Use watchPageClass instead...");
+      $reflector = new \ReflectionClass($what);
+      $file = $reflector->getFileName();
+      return $this->watchPageClass($file);
     }
     // instance of module
     elseif($what instanceof Module) {
