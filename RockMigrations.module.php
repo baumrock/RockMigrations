@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.9.3',
+      'version' => '0.9.4',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -76,6 +76,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $config = $this->wire->config;
     $this->wire('rockmigrations', $this);
     if($config->debug) $this->setOutputLevel(self::outputLevelVerbose);
+
+    // this creates folders that are necessary for PW and that might have
+    // been deleted on deploy
+    // for example this will create the sessions folder if it does not exist
+    $this->createNeededFolders();
 
     // always watch + migrate /site/migrate.[yaml|json|php]
     // the third parameter makes it use the migrateNew() method
@@ -628,6 +633,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if($options) $field = $this->setFieldData($field, $options);
 
     return $field;
+  }
+
+  private function createNeededFolders() {
+    $dir = $this->wire->config->paths->assets."sessions";
+    if(!is_dir($dir)) $this->wire->files->mkdir($dir);
   }
 
   /**
