@@ -16,6 +16,13 @@ on:
       SSH_HOST:
         type: string
         required: true
+      # sometimes the php CLI version is different than the webroot version
+      # in that case you can set the php path/command that is used to trigger
+      # migrate.php
+      PHP:
+        type: string
+        required: false
+        default: php
     secrets:
       CI_TOKEN:
         required: false
@@ -75,5 +82,5 @@ jobs:
 
       - name: 🌟 Trigger RockMigrations Deployment
         run: |
-          ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "php ${{ env.DEPLOY_FOLDER }}/site/deploy.php ${{steps.branch.outputs.ref}}"
+          ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "${{ inputs.PHP }} ${{ env.DEPLOY_FOLDER }}/site/deploy.php ${{steps.branch.outputs.ref}}"
 
