@@ -16,6 +16,7 @@ class Deployment extends WireData {
   public $dry = false;
   private $isVerbose = false;
   public $paths;
+  private $php = "php";
   public $share = [];
 
   public function __construct($argv, $path) {
@@ -192,6 +193,7 @@ class Deployment extends WireData {
     if($this->dry) return;
     exec($cmd, $out);
     $this->echo($out);
+    return $out;
   }
 
   /**
@@ -214,6 +216,12 @@ class Deployment extends WireData {
       ln -snf $newName current
     ");
     $this->deleteOldReleases($keep);
+    $this->exec("touch {$this->paths->root}/current/site/deployed.txt");
+  }
+
+  public function halt($msg) {
+    $this->echo($msg);
+    die();
   }
 
   public function hello() {
@@ -233,7 +241,13 @@ class Deployment extends WireData {
     $file = "$release/site/modules/RockMigrations/migrate.php";
     if(!is_file($file)) return $this->echo("RockMigrations not found...");
     $this->echo("Trigger RockMigrations...");
-    $this->exec("php $file", true);
+    $php = $this->php();
+    try {
+      $out = $this->exec("$php $file", true);
+    } catch (\Throwable $th) {
+      $this->halt($th->getMessage());
+    }
+    if(!is_array($out)) return $this->halt("migrate.php failed");
   }
 
   /**
@@ -241,6 +255,21 @@ class Deployment extends WireData {
    */
   public function paths() {
     $this->echo($this->paths->getArray());
+  }
+
+  /**
+   * Get or set php command that will be used to trigger the migrate script
+   * This needs to be configurable in case the CLI php version is different
+   * than the webroot (eg 7.4 vs. 8.1)
+   *
+   * Example:
+   * $deploy->php('keyhelp-php81');
+   *
+   * @return string
+   */
+  public function php($phpCommand = '') {
+    if($phpCommand) $this->php = $phpCommand;
+    return $this->php;
   }
 
   /**
