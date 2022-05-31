@@ -17,11 +17,15 @@ class Deployment extends WireData {
   private $isVerbose = false;
   public $paths;
   private $php = "php";
+  private $robots;
   public $share = [];
 
   public function __construct($argv, $path) {
     $this->paths = new WireData();
-    $this->branch = count($argv)>1 ? $argv[1] : '';
+
+    // get branch from script arguments
+    $this->branch = '';
+    if($argv AND count($argv)>1) $this->branch = $argv[1];
 
     // path to the current release
     $this->paths->release = getcwd();
@@ -60,8 +64,7 @@ class Deployment extends WireData {
   }
 
   public function addRobots() {
-    if($this->branch == 'main') return;
-    if($this->branch == 'master') return;
+    if(!$this->robots()) return;
     $this->echo("Hiding site from search engines via robots.txt");
     $release = $this->paths->release;
     $src = __DIR__."/robots.txt";
@@ -273,6 +276,27 @@ class Deployment extends WireData {
   }
 
   /**
+   * Get or set robots flag
+   * TRUE = add robots.txt to root directory
+   * FALSE = do not add robots.txt to root
+   * NULL = get current value
+   *
+   * By default it will be FALSE for master and main branch and TRUE for
+   * all other branches
+   */
+  public function robots($val = null) {
+    if($val === null) {
+      if($this->robots === null) {
+        if($this->branch == 'main') $this->robots = false;
+        elseif($this->branch == 'master') $this->robots = false;
+        else $this->robots = true;
+      }
+      return $this->robots;
+    }
+    $this->robots = $val;
+  }
+
+  /**
    * Run default actions
    */
   public function run($keep = null) {
@@ -303,9 +327,14 @@ class Deployment extends WireData {
 
   /**
    * Share files and folders across releases
+   * Shared assets will be symlinked: releases folder --> shared folder
    *
    * Usage:
    * $deploy->share([
+   *   // symlink the foo folder
+   *   '/foo',
+   *
+   *   // push data from repo to shared folder and then create a symlink
    *   '/site/assets/files/123' => 'push',
    * ]);
    * @return void
