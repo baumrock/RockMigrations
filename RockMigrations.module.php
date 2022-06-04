@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.9.6',
+      'version' => '0.9.7',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1418,7 +1418,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       $module = $this->modules->install($name, ['force' => $opt->force]);
       $this->log("Installed module $module");
     }
-    if(count($opt->conf)) $this->setModuleConfig($module, $opt->conf);
+    if(is_array($opt->conf) AND count($opt->conf)) {
+      $this->setModuleConfig($module, $opt->conf);
+    }
     return $module;
   }
 
