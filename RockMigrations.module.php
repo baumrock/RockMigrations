@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.9.7',
+      'version' => '0.9.8',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -88,10 +88,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->watch($config->paths->site."migrate", true);
     $this->watchModules();
 
+    // disabled as of 2022-06-04
+    // it created files that I did not want
+    // no need to fix something that I don't need...
     // add recorders based on module settings (true=add, false=remove)
-    $time = date("Y-m-d--H:i:s");
-    $this->record($config->paths->assets.$this->className."/$time.yaml", [], !$this->saveToProject);
-    $this->record($config->paths->site."migrate.yaml", [], !$this->saveToMigrate);
+    // $time = date("Y-m-d--H:i:s");
+    // $this->record($config->paths->assets.$this->className."/$time.yaml", [], !$this->saveToProject);
+    // $this->record($config->paths->site."migrate.yaml", [], !$this->saveToMigrate);
 
     // hooks
     $this->addHookAfter("Modules::refresh", $this, "triggerMigrations");
@@ -2874,14 +2877,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   */
   public function getModuleConfigInputfields($inputfields) {
 
-    $inputfields->add([
-      'name' => 'saveToProject',
-      'type' => 'toggle',
-      'label' => 'Save migration data to /site/assets/RockMigrations/[timestamp].yaml?',
-      'value' => !!$this->saveToProject,
-      'columnWidth' => 100,
-      'description' => 'These files will NOT be watched for changes! Think of them as a read-only dumps of your project\'s config at the given time.',
-    ]);
+    // disabled as of 2022-06-04
+    // this will create lots of useless files
+    // maybe better create one project.yaml that can then be shown via git?
+    // $inputfields->add([
+    //   'name' => 'saveToProject',
+    //   'type' => 'toggle',
+    //   'label' => 'Save migration data to /site/assets/RockMigrations/[timestamp].yaml?',
+    //   'value' => !!$this->saveToProject,
+    //   'columnWidth' => 100,
+    //   'description' => 'These files will NOT be watched for changes! Think of them as a read-only dumps of your project\'s config at the given time.',
+    // ]);
     // $inputfields->add([
     //   'name' => 'saveToMigrate',
     //   'type' => 'toggle',
