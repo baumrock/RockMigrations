@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.9.9',
+      'version' => '0.9.10',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1487,6 +1487,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $hook = function(HookEvent $event) {
       $config = $this->wire->config;
       $file = $event->return;
+      $pagefile = $event->object;
+      if($pagefile->page->isTrash()) return;
 
       // this makes it possible to prevent downloading at runtime
       if(!$host = $this->wire->config->filesOnDemand) return;
