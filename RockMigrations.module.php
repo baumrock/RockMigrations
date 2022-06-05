@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.9.8',
+      'version' => '0.9.9',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1127,6 +1127,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       unset($data['id']);
       unset($data['name']);
       unset($data['rockmigrations']);
+    }
+    if(array_key_exists('_rockmigrations_log', $data)) {
+      unset($data['_rockmigrations_log']);
     }
     $code = $this->varexport($data);
     return "'{$item->name}' => $code,";
