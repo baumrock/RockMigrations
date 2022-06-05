@@ -1128,7 +1128,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       unset($data['name']);
       unset($data['rockmigrations']);
     }
-    $code = $this->varexport($data);
+    $code = array_filter($data, fn($value) => !is_null($value) && $value !== ''); // filter empty or null values
+    $code = $this->varexport($code);
     return "'{$item->name}' => $code,";
   }
 
