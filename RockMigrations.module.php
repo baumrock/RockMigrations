@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.9.10',
+      'version' => '0.10.0',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1391,7 +1391,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *
    * Usage:
    * $rm->installModule("YourModule");
+   *
+   * Install from url:
+   * $rm->installModule(
+   *   "TracyDebugger",
+   *   "https://github.com/adrianbj/TracyDebugger/archive/refs/heads/master.zip"
+   * );
+   *
+   * Install with settings:
    * $rm->installModule("YourModule", ['setting1'=>'foo', 'setting2'=>'bar']);
+   *
+   * Install with settings from url:
    * $rm->installModule("MyModule", ['setting'=>'foo'], "https://...");
    *
    * @param string $name
@@ -1400,6 +1410,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return Module
    */
   public function installModule($name, $conf = [], $options = []) {
+    if(is_string($conf)) $options['url'] = $conf;
     if(is_string($options)) $options = ['url' => $options];
     if(!$options) $options = [];
 
@@ -1777,6 +1788,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if(!$ref->id) return $this->log("Reference does not exist");
     if($page->parent !== $ref->parent) return $this->log("Both pages must have the same parent");
     $this->wire->pages->sort($page, $ref->sort);
+  }
+
+  /**
+   * Execute profile
+   */
+  private function profileExecute() {
+    $profile = $this->wire->input->post('profile', 'filename');
+    foreach($this->profiles() as $path=>$label) {
+      if($label !== $profile) continue;
+      $this->wire->files->include($path);
+      $this->wire->message("Executed profile $label");
+    }
+  }
+
+  private function profiles() {
+    $profiles = [];
+    $opt = ['extensions' => ['php']];
+    foreach($this->wire->files->find(__DIR__."/profiles", $opt) as $file) {
+      $profiles[$file] = basename($file);
+    }
+    return $profiles;
   }
 
   /**
@@ -2875,12 +2907,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     return $yaml;
   }
 
-
   /**
   * Config inputfields
   * @param InputfieldWrapper $inputfields
   */
   public function getModuleConfigInputfields($inputfields) {
+
+    $this->profileExecute();
+    $f = new InputfieldSelect();
+    $f->label = "Execute one of the existing profile migrations";
+    $f->name = 'profile';
+    foreach($this->profiles() as $path => $label) {
+      $f->addOption($label, $label);
+    }
+    $inputfields->add($f);
 
     // disabled as of 2022-06-04
     // this will create lots of useless files
