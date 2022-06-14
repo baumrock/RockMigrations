@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.10.1',
+      'version' => '0.10.2',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1376,6 +1376,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if($autoload) $this->autoload($path, $namespace);
     foreach($this->files->find($path, ['extensions' => ['php']]) as $file) {
       $class = pathinfo($file, PATHINFO_FILENAME);
+
+      // skip files that start with an underscore
+      // this is to make it possible to add abstract classes to your folder
+      // an example could be /site/classes/_MyPage.php
+      if(strpos($class, "_")===0) continue;
+
       if($namespace) $class = "\\$namespace\\$class";
       $tmp = new $class();
       if(method_exists($tmp, "init")) $tmp->init();
