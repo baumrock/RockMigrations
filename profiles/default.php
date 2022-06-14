@@ -15,3 +15,5 @@ $rm->installModule(
   "ProcessWireUpgrade",
   "https://github.com/ryancramerdesign/ProcessWireUpgrade/archive/master.zip"
 );
+
+$rm->installModule("PagePathHistory");

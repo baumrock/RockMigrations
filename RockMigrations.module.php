@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.10.0',
+      'version' => '0.10.1',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1799,13 +1799,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if($label !== $profile) continue;
       $this->wire->files->include($path);
       $this->wire->message("Executed profile $label");
+      return true;
     }
+    return false;
   }
 
   private function profiles() {
     $profiles = [];
     $opt = ['extensions' => ['php']];
     foreach($this->wire->files->find(__DIR__."/profiles", $opt) as $file) {
+      $profiles[$file] = basename($file);
+    }
+    $path = $this->wire->config->paths->assets."RockMigrations/profiles";
+    foreach($this->wire->files->find($path, $opt) as $file) {
       $profiles[$file] = basename($file);
     }
     return $profiles;
@@ -2920,6 +2926,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     foreach($this->profiles() as $path => $label) {
       $f->addOption($label, $label);
     }
+    $path = $this->wire->config->paths->assets."RockMigrations/profiles";
+    $f->notes = "You can place your own profiles in $path";
     $inputfields->add($f);
 
     // disabled as of 2022-06-04
