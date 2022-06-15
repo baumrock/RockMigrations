@@ -26,3 +26,13 @@ $rm->installModule(
   "AdminStyleRock",
   "https://github.com/baumrock/AdminStyleRock/archive/refs/heads/main.zip",
 );
+
+$rm->installModule(
+  "AdminHelperLinks",
+  "https://github.com/uiii/AdminHelperLinks/archive/main.zip"
+);
+
+$rm->installModule(
+  "ProcessDatabaseBackups",
+  "https://github.com/ryancramerdesign/ProcessDatabaseBackups/archive/master.zip"
+);
