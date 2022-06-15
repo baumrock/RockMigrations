@@ -12,6 +12,11 @@ $rm->installModule(
 $rm->installModule("SessionHandlerDB");
 
 $rm->installModule(
+  "ProcessDatabaseBackups",
+  "https://github.com/ryancramerdesign/ProcessDatabaseBackups/archive/master.zip"
+);
+
+$rm->installModule(
   "ProcessWireUpgrade",
   "https://github.com/ryancramerdesign/ProcessWireUpgrade/archive/master.zip"
 );
@@ -32,7 +37,3 @@ $rm->installModule(
   "https://github.com/uiii/AdminHelperLinks/archive/main.zip"
 );
 
-$rm->installModule(
-  "ProcessDatabaseBackups",
-  "https://github.com/ryancramerdesign/ProcessDatabaseBackups/archive/master.zip"
-);
