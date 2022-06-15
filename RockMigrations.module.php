@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.10.4',
+      'version' => '0.10.5',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -289,6 +289,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         if(!$noLast) $last = $field;
       }
     }
+
+    // no fields, no render
+    // this can be the case in modal windows when the page editor is called
+    // with a ?field or ?fields get parameter to only render specific fields
+    if(!count($_fields)) return;
 
     /** @var InputfieldFieldset $f */
     $fs = $this->wire('modules')->get('InputfieldFieldset');
