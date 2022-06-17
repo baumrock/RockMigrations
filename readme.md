@@ -282,6 +282,28 @@ $rm->migrate([
 ]);
 ```
 
+Options field with multilang labels:
+
+```
+$rm->createField("tmp_opt", "options", [
+  'label' => 'testing options field migration',
+  'options' => [
+    1 => 'one|Label for Option one',
+    2 => 'two|Label for Option two',
+    3 => 'three|Label for Option three',
+  ],
+  'optionLabels' => [
+    'german' => [
+      'Beschriftung für Option eins',
+      'Beschriftung für Option zwei',
+      'Beschriftung für Option drei',
+    ],
+  ],
+]);
+```
+
+Note that RockMigrations uses a slightly different syntax than when populating the options via GUI. RockMigrations makes sure that all options use the values of the default language and only set the label (title) of the options.
+
 Page Reference field
 
 ```php

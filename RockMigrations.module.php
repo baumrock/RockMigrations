@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.10.6',
+      'version' => '0.10.7',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1124,6 +1124,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         }
         unset($data['export_options']);
         $data['options'] = $options;
+
+        // for multilang fields we also set the translated labels
+        if($this->wire->languages) {
+          $arr = [];
+          foreach($this->wire->languages as $lang) {
+            if($lang->isDefault()) continue;
+            $options = [];
+            foreach($item->type->manager->getOptions($item) as $opt) {
+              $options[$opt->id] =
+                ($opt->value ? $opt->value."|" : "").
+                $opt->get("title$lang|title");
+            }
+            $arr[$lang->name] = $options;
+          }
+          $data['optionLabels'] = $arr;
+        }
       }
     }
     elseif($item instanceof Template) {
@@ -2015,6 +2031,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $field->_rockmigrations_log = $this->getTraceLog();
 
     // prepare data array
+    $optionLabels = [];
     foreach($data as $key=>$val) {
 
       // this makes it possible to set the template via name
@@ -2070,6 +2087,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         // if not done, the field shows raw option values when rendered
         unset($data['options']);
       }
+      if($key === "optionLabels") {
+        $optionLabels = $data['optionLabels'];
+        unset($data['optionLabels']);
+      }
 
     }
 
@@ -2101,6 +2122,40 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     }
 
     $field->save();
+
+    // update options field labels
+    if(count($optionLabels)) {
+      // git available options from default language
+      // note that the options must be set BEFORE the title translations
+      $options = $field->type->getOptions($field);
+
+      // setup the default language options array
+      $arr = [];
+      foreach($options as $option) {
+        $arr[$option->id] = $option->value."|".$option->title;
+      }
+
+      $labels = [];
+      $labels[$this->wire->languages->getDefault()->name] = $arr;
+      $labels = array_merge($labels, $optionLabels);
+
+      $strArray = [];
+      foreach($labels as $langName=>$langLabels) {
+        $langLabels = array_values($langLabels);
+        $lang = $this->wire->languages->get("name=$langName");
+        $i = 0;
+        $str = '';
+        foreach($options as $option) {
+          $str .= $option->id."=".$option->value."|".$langLabels[$i]."\n";
+          $i++;
+        }
+        $strArray[$lang->id] = $str;
+      }
+      // db($strArray);
+      $this->setOptionTitles($field, $strArray, true);
+      $field->save();
+    }
+
     return $field;
   }
 
@@ -2248,10 +2303,32 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public function setOptionsString($name, $options, $removeOthers = false) {
     $field = $this->getField($name);
 
+    /** @var SelectableOptionManager $manager */
     $manager = $this->wire(new SelectableOptionManager());
 
     // now set the options
     $manager->setOptionsString($field, $options, $removeOthers);
+    $field->save();
+
+    return $field;
+  }
+
+  /**
+   * Internal method to set option titles in other languages
+   *
+   * @param Field|string $name
+   * @param array $titles
+   * @param bool $removeOthers
+   * @return void
+   */
+  protected function setOptionTitles($name, $titles, $removeOthers = false) {
+    $field = $this->getField($name);
+
+    /** @var SelectableOptionManager $manager */
+    $manager = $this->wire(new SelectableOptionManager());
+
+    // now set the options
+    $manager->setOptionsStringLanguages($field, $titles, $removeOthers);
     $field->save();
 
     return $field;
