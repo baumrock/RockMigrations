@@ -284,7 +284,7 @@ $rm->migrate([
 
 Options field with multilang labels:
 
-```
+```php
 $rm->createField("tmp_opt", "options", [
   'label' => 'testing options field migration',
   'options' => [
