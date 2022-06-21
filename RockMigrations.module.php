@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.10.7',
+      'version' => '0.10.8',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -373,19 +373,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
-   * Install the languagesupport module
-   * @return Languages
-   */
-  public function addLanguageSupport() {
-    if(!$this->modules->isInstalled("LanguageSupport")) {
-      $this->wire->pages->setOutputFormatting(false);
-      $ls = $this->installModule("LanguageSupport", ['force' => true]);
-      if(!$this->wire->languages) $ls->init();
-    }
-    return $this->wire->languages;
-  }
-
-  /**
    * Add a new language or return existing
    *
    * Also installs language support if missing.
@@ -406,6 +393,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     }
     if($title) $lang->setAndSave('title', $title);
     return $lang;
+  }
+
+  /**
+   * Install the languagesupport module
+   * @return Languages
+   */
+  public function addLanguageSupport() {
+    if(!$this->modules->isInstalled("LanguageSupport")) {
+      $this->wire->pages->setOutputFormatting(false);
+      $ls = $this->installModule("LanguageSupport", ['force' => true]);
+      if(!$this->wire->languages) $ls->init();
+    }
+    return $this->wire->languages;
   }
 
   /**
@@ -1971,12 +1971,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
   /**
    * Set default options for several things in PW
+   * These are opinionated defaults that I like to use in my projects!
    */
   public function setDefaults($options = []) {
     $opt = $this->wire(new WireData()); /** @var WireData $opt */
     $opt->setArray([
       'pagenameReplacements' => 'de',
       'toggleBehavior' => 1,
+      'german' => true, // install german language pack
     ]);
     $opt->setArray($options);
 
@@ -1994,6 +1996,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       'useTrash' => true, // show trash in tree for non superusers
     ]);
 
+    if($opt->german) {
+      // install german language pack for the default language
+      // this will install language support, download the ZIP and install it
+      $this->setLanguageTranslations('DE');
+    }
   }
 
   /**
