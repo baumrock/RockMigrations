@@ -367,6 +367,10 @@ Add the public key to your remote user:
 
     ssh-copy-id -i ~/.ssh/id_rockmigrations user@your.server.com
 
+Or copy the content of the public key into the authorized_keys file
+
+    cat ~/.ssh/id_rockmigrations.pub
+
 Try to ssh into your server without using a password:
 
     ssh -i ~/.ssh/id_rockmigrations user@your.server.com

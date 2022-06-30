@@ -52,7 +52,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.10.9',
+      'version' => '0.10.10',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -198,20 +198,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
-   * Set page name from page title
+   * Set page name from field of template
    *
    * Usage:
-   * $rm->setPageNameFromTitle("basic-page");
+   * $rm->setPageNameFromField("basic-page", "headline");
    *
    * Make sure to install Page Path History module!
    *
-   * @param mixed $object
+   * @return void
    */
-  public function setPageNameFromTitle($template) {
+  public function setPageNameFromField($template, $field = 'title') {
     $template = $this->wire->templates->get((string)$template);
     if(!$template) return;
+    $field = (string)$field;
     $tpl = "template=$template";
-    $this->addHookAfter("Pages::saveReady($tpl,id>0)", function(HookEvent $event) {
+    $this->addHookAfter("Pages::saveReady($tpl,id>0)", function(HookEvent $event) use($field) {
       /** @var Page $page */
       $page = $event->arguments(0);
       $langs = $this->wire->languages;
@@ -219,7 +220,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         foreach($langs as $lang) {
           $prop = $lang->isDefault() ? "name" : "name$lang";
           $old = $page->get($prop);
-          $new = $page->getLanguageValue($lang, "title");
+          $new = $page->getLanguageValue($lang, $field);
+          $new = $event->sanitizer->markupToText($new);
           $new = $event->sanitizer->pageNameTranslate($new);
           if($new AND $old!=$new) {
             $new = $event->wire->pages->names()->uniquePageName($new, $page);
@@ -230,7 +232,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       }
       else {
         $old = $page->name;
-        $new = $event->sanitizer->pageNameTranslate($page->title);
+        $new = $page->get($field);
+        $new = $event->sanitizer->markupToText($new);
+        $new = $event->sanitizer->pageNameTranslate($new);
         if($new AND $old!=$new) {
           $new = $event->wire->pages->names()->uniquePageName($new, $page);
           $page->name = $new;
@@ -238,14 +242,28 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         }
       }
     });
-    $this->addHookAfter("ProcessPageEdit::buildForm", function(HookEvent $event) use($template) {
+    $this->addHookAfter("ProcessPageEdit::buildForm", function(HookEvent $event) use($template, $field) {
       $page = $event->object->getPage();
       if($page->template != $template) return;
       $form = $event->return;
       if($f = $form->get('_pw_page_name')) {
-        $f->notes = $this->_('Page name will be set automatically from page title on save.');
+        $f->notes = $this->_("Page name will be set automatically from field '$field' on save.");
       }
     });
+  }
+
+  /**
+   * Set page name from page title
+   *
+   * Usage:
+   * $rm->setPageNameFromTitle("basic-page");
+   *
+   * Make sure to install Page Path History module!
+   *
+   * @param mixed $object
+   */
+  public function setPageNameFromTitle($template) {
+    return $this->setPageNameFromField($template, 'title');
   }
 
   /**
