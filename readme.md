@@ -285,18 +285,24 @@ $rm->migrate([
 Options field with multilang labels:
 
 ```php
-$rm->createField("tmp_opt", "options", [
-  'label' => 'testing options field migration',
-  'options' => [
-    1 => 'one|Label for Option one',
-    2 => 'two|Label for Option two',
-    3 => 'three|Label for Option three',
-  ],
-  'optionLabels' => [
-    'german' => [
-      'Beschriftung für Option eins',
-      'Beschriftung für Option zwei',
-      'Beschriftung für Option drei',
+$rm->createField('demo_field', 'options', [
+  'label' => 'Test Field',
+  'label1020' => 'Test Feld',
+  'type' => 'options',
+  'optionsLang' => [
+    'default' => [
+      1 => 'VERYLOW|Very Low',
+      2 => 'LOW|Low',
+      3 => 'MIDDLE|Middle',
+      4 => 'HIGH|High',
+      5 => 'VERYHIGH|Very High',
+    ],
+    'de' => [
+      1 => 'VERYLOW|Sehr niedrig',
+      2 => 'LOW|Niedrig',
+      3 => 'MIDDLE|Mittel',
+      4 => 'HIGH|Hoch',
+      5 => 'VERYHIGH|Sehr hoch',
     ],
   ],
 ]);
