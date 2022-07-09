@@ -23,6 +23,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   const outputLevelQuiet = 'quiet';
   const outputLevelVerbose = 'verbose';
 
+  /** @var WireData */
+  public $conf;
+
   /**
    * Timestamp of last run migration
    * @var int
@@ -52,7 +55,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.11.0',
+      'version' => '0.12.0',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -76,6 +79,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $config = $this->wire->config;
     $this->wire('rockmigrations', $this);
     if($config->debug) $this->setOutputLevel(self::outputLevelVerbose);
+
+    $this->conf = new WireData();
+    $this->conf->setArray($this->getArray()); // get modules config
+    if(is_array($config->rockmigrations)) {
+      $this->conf->setArray($config->rockmigrations); // get config from file
+    }
 
     // this creates folders that are necessary for PW and that might have
     // been deleted on deploy
@@ -113,6 +122,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     // files on demand feature
     $this->loadFilesOnDemand();
+
+    // sync vscode snippets
+    if($this->conf->syncSnippets) {
+      $this->fileSync(
+        "/.vscode/RockMigrations.code-snippets",
+        __DIR__."/.vscode/RockMigrations.code-snippets"
+      );
+    }
   }
 
   public function ready() {
@@ -1076,6 +1093,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       .str_replace($this->wire->config->paths->root, $root, $file);
   }
 
+  public function filemtime($file) {
+    $path = $this->getAbsolutePath($file);
+    if(is_file($path)) return filemtime($path);
+    return 0;
+  }
+
   /**
    * Get filepath of file or object
    * @return string
@@ -1094,6 +1117,34 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Keep two files in sync
+   * See init() method of an example use
+   * @return void
+   */
+  public function fileSync($file1, $file2, $options = []) {
+    $file1 = $this->getAbsolutePath($file1);
+    $file2 = $this->getAbsolutePath($file2);
+
+    // get file timestamps
+    $m1 = $this->filemtime($file1);
+    $m2 = $this->filemtime($file2);
+    // bd($m1, 'm1');
+    // bd($m2, 'm2');
+
+    $this->wire->files->mkdir(dirname($file1), true);
+    $this->wire->files->mkdir(dirname($file2), true);
+
+    if($m1 > $m2) {
+      $this->wire->files->copy($file1, $file2);
+      touch($file1);
+    }
+    elseif($m2 > $m1) {
+      $this->wire->files->copy($file2, $file1);
+      touch($file2);
+    }
+  }
+
+  /**
    * DEPRECATED
    */
   public function fireOnRefresh($module, $method = null, $priority = []) {
@@ -1102,6 +1153,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->warning("fireOnRefresh is DEPRECATED and does not work any more!
       RockMigrations will migrate all watched files on Modules::refresh automatically. $trace");
     return;
+  }
+
+  /**
+   * Get absolute path
+   * If the provided file is not an absolute path this will simply prefix
+   * the provided path with the pw root path
+   * @param string $file
+   * @return string
+   */
+  public function getAbsolutePath($file) {
+    $path = Paths::normalizeSeparators($file);
+    $rootPath = $this->wire->config->paths->root;
+    if(strpos($path, $rootPath)===0) return $path;
+    return $rootPath.ltrim($file, "/");
   }
 
   /**
@@ -2682,6 +2747,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Get sorted WireArray of fields
+   * @return WireArray
+   */
+  public function sort($data) {
+    $arr = $this->wire(new WireArray()); /** @var WireArray $arr */
+    foreach($data as $item) $arr->add($item);
+    return $arr->sort('name');
+  }
+
+  /**
    * Add submodule to project
    * This will only add the submodule if the destination path does not exist!
    * @return void
@@ -2759,16 +2834,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if($type == 'json') $this->json($path, $arr);
     }
     $this->updateLastrun();
-  }
-
-  /**
-   * Get sorted WireArray of fields
-   * @return WireArray
-   */
-  public function sort($data) {
-    $arr = $this->wire(new WireArray()); /** @var WireArray $arr */
-    foreach($data as $item) $arr->add($item);
-    return $arr->sort('name');
   }
 
   /**
@@ -3023,6 +3088,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   */
   public function getModuleConfigInputfields($inputfields) {
 
+    $inputfields->add([
+      'type' => 'markup',
+      'label' => 'RockMigrations Config Options',
+      'value' => 'You can set all settings either here via GUI or alternatively via config array:<br>
+        <pre>$config->rockmigrations = [<br>'
+        .'  "syncSnippets" => true,<br>'
+        .'];</pre>'
+        .'Note that settings in config.php have precedence over GUI settings!',
+    ]);
+
     $this->profileExecute();
     $f = new InputfieldSelect();
     $f->label = "Execute one of the existing profile migrations";
@@ -3033,6 +3108,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $path = $this->wire->config->paths->assets."RockMigrations/profiles";
     $f->notes = "You can place your own profiles in $path";
     $inputfields->add($f);
+
+    $inputfields->add([
+      'type' => 'checkbox',
+      'name' => 'syncSnippets',
+      'label' => 'Sync VSCode Snippets to PW root',
+      'description' => "If this option is enabled the module will copy the vscode snippets file to the PW root directory. If you are using VSCode I highly recommend using this option. See readme for details.",
+    ]);
+    $inputfields->children()->last()->attr(
+      'checked',
+      $this->syncSnippets ? 'checked' : ''
+    );
 
     // disabled as of 2022-06-04
     // this will create lots of useless files

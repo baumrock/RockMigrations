@@ -197,6 +197,10 @@ $wire->addHookAfter("ProcessPageEdit::buildForm", function($event) {
 })
 ```
 
+## Snippets
+
+This module ships with several helpful VSCode snippets that help you when writing migrations code. I highly recommend enabling the syncSnippets option of RockMigrations for your local development. On production systems that setting should always be switched off!
+
 ## Migration Examples
 
 ### Field migrations
