@@ -55,7 +55,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.12.1',
+      'version' => '0.12.2',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1306,6 +1306,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $module = $modules->get($fname);
     if($module) return $module;
 
+    if(is_array($type)) $type = print_r($type, 1);
     $this->log("No fieldtype found for $type (also tried $fname)");
     return false;
   }
