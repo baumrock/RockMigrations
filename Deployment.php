@@ -219,12 +219,11 @@ class Deployment extends WireData {
       ln -snf $newName current
     ");
     $this->deleteOldReleases($keep);
-    $this->exec("touch {$this->paths->root}/current/site/deployed.txt");
   }
 
-  public function halt($msg) {
+  public function exit($msg) {
     $this->echo($msg);
-    die();
+    exit($msg);
   }
 
   public function hello() {
@@ -248,9 +247,9 @@ class Deployment extends WireData {
     try {
       $out = $this->exec("$php $file", true);
     } catch (\Throwable $th) {
-      $this->halt($th->getMessage());
+      $this->exit($th->getMessage());
     }
-    if(!is_array($out)) return $this->halt("migrate.php failed");
+    if(!is_array($out)) return $this->exit("migrate.php failed");
   }
 
   /**
@@ -308,6 +307,18 @@ class Deployment extends WireData {
     $this->migrate();
     $this->addRobots();
     $this->finish($keep);
+
+    $folders = glob($this->paths->root."/tmp-release-*");
+    if(count($folders)) {
+      $this->exit("Found some tmp-folders. It seems something went wrong...");
+    }
+    else {
+      $this->echo("
+        ########################
+        deployment successful :)
+        ########################
+      ");
+    }
   }
 
   /**
