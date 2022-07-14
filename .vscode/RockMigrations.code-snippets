@@ -111,6 +111,7 @@
       "  'customOptions' => '{\"bodyClass\":\"p-4 prose max-w-full\"}',",
       "  'icon' => 'align-left',",
       "  'textformatters' => [],",
+      "  'inlineMode' => true,",
       "],",
     ],
     "description": "Add a CKEditor field via RockMigrations"
