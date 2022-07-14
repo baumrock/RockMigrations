@@ -30,7 +30,7 @@
       "  'tags' => $3,",
       "  'derefAsPage' => ${4:FieldtypePage::derefAsPageArray},",
       "  'inputfield' => ${5:'InputfieldSelect'},",
-      "  'findPagesSelector' => '${6:template=admin}',",
+      "  'findPagesSelector' => '${6:id>0,template!=admin}',",
       "  'labelFieldName' => ${7:'title'},",
       "],",
     ],
