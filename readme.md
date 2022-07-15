@@ -1,16 +1,8 @@
 # RockMigrations
 
----
+> The swiss (or austrian in this case) army knife for migrations.
 
-## WARNING
-
-Use this module at your own risk!
-
-It is public as of 2022-04-16 because it ships with github workflows that can be used for easy deployment and need to be publicly accessible.
-
-The readme is not finished yet and some concepts might change until I release RockMigrations officially (planned summer 2022).
-
----
+wbmnfktr, 13.7.2022
 
 ### Module Description
 
@@ -58,6 +50,17 @@ Now do a regular page reload. The migration will not run as nothing has changed.
 2) Hover the caret on the very right of the field of the setting you want to set:
 ![img](https://i.imgur.com/hmydzf5.png)
 
+## Snippets
+
+Another option that helps you get started with migration syntax is using the shipped VSCode snippets. I highly recommend enabling the `syncSnippets` option in your config:
+
+```php
+// site/config.php
+$config->rockmigrations = [
+  "syncSnippets" => true,
+];
+```
+
 ## Watching files, paths or modules
 
 RockMigrations can watch files, paths and modules for changes. It will detect changes on any of the files on the watchlist and trigger all migrations to run if anything changed.
@@ -88,21 +91,6 @@ $rm->watch(__DIR__."/foo");
 
 Note that you need to define `FALSE` as second parameter if the file should not be migrated but only watched for changes. If you set it to `TRUE` the file will be included and executed as if it was a migration script (see examples below).
 
-### Watching PageClasses
-
-If you are using custom page classes you can watch them like this:
-
-```php
-public function init() {
-  /** @var RockMigrations $rm */
-  $rm = $this->wire->modules->get('RockMigrations');
-  $rm->watchPageClass(__FILE__);
-}
-public function migrate() {
-  bd('migrate page class');
-}
-```
-
 ## Running migrations
 
 RockMigrations will run migrations automatically when a watched file was changed. In case you want to trigger the migrations manually (eg after deployment) you can use the `migrate.php` file:
@@ -111,7 +99,7 @@ RockMigrations will run migrations automatically when a watched file was changed
 php site/modules/RockMigrations/migrate.php
 ```
 
-## File On Demand
+## Files On Demand
 
 You can instruct RockMigrations to download files on demand from a remote server. This makes it possible to create content on the remote system (eg on the live server), pull data from the database to your local machine and as soon as you open a page RockMigrations will fetch the missing files from your remote server.
 
@@ -195,165 +183,6 @@ $wire->addHookAfter("ProcessPageEdit::buildForm", function($event) {
     'label' => 'I am a new fieldset wrapper',
   ]);
 })
-```
-
-## Snippets
-
-This module ships with several helpful VSCode snippets that help you when writing migrations code. I highly recommend enabling the syncSnippets option of RockMigrations for your local development. On production systems that setting should always be switched off!
-
-```php
-// site/config-local.php
-$config->rockmigrations = [
-  "syncSnippets" => true,
-];
-```
-
-## Migration Examples
-
-### Field migrations
-
-CKEditor field
-
-```php
-$rm->migrate([
-  'fields' => [
-    'yourckefield' => [
-      'type' => 'textarea',
-      'tags' => 'MyTags',
-      'inputfieldClass' => 'InputfieldCKEditor',
-      'contentType' => FieldtypeTextarea::contentTypeHTML,
-      'rows' => 5,
-      'formatTags' => "h2;p;",
-      'contentsCss' => "/site/templates/main.css?m=".time(),
-      'stylesSet' => "mystyles:/site/templates/mystyles.js",
-      'toggles' => [
-        InputfieldCKEditor::toggleCleanDIV, // convert <div> to <p>
-        InputfieldCKEditor::toggleCleanP, // remove empty paragraphs
-        InputfieldCKEditor::toggleCleanNBSP, // remove &nbsp;
-      ],
-    ],
-  ],
-]);
-```
-
-Image field
-
-```php
-$rm->migrate([
-  'fields' => [
-    'yourimagefield' => [
-      'type' => 'image',
-      'tags' => 'YourTags',
-      'maxFiles' => 0,
-      'descriptionRows' => 1,
-      'extensions' => "jpg jpeg gif png svg",
-      'okExtensions' => ['svg'],
-      'icon' => 'picture-o',
-      'outputFormat' => FieldtypeFile::outputFormatSingle,
-      'maxSize' => 3, // max 3 megapixels
-    ],
-  ],
-]);
-```
-
-Files field
-
-```php
-$rm->migrate([
-  'fields' => [
-    'yourfilefield' => [
-      'type' => 'file',
-      'tags' => 'YourTags',
-      'maxFiles' => 1,
-      'descriptionRows' => 0,
-      'extensions' => "pdf",
-      'icon' => 'file-o',
-      'outputFormat' => FieldtypeFile::outputFormatSingle,
-    ],
-  ],
-]);
-```
-
-Options field
-
-```php
-$rm->migrate([
-  'fields' => [
-    'yourfield' => [
-      'type' => 'options',
-      'tags' => 'YourTags',
-      'label' => 'Options example',
-      'options' => [
-        1 => 'ONE|This is option one',
-        2 => 'TWO',
-        3 => 'THREE',
-      ],
-    ],
-  ],
-]);
-```
-
-Options field with multilang labels:
-
-```php
-$rm->createField('demo_field', 'options', [
-  'label' => 'Test Field',
-  'label1020' => 'Test Feld',
-  'type' => 'options',
-  'optionsLang' => [
-    'default' => [
-      1 => 'VERYLOW|Very Low',
-      2 => 'LOW|Low',
-      3 => 'MIDDLE|Middle',
-      4 => 'HIGH|High',
-      5 => 'VERYHIGH|Very High',
-    ],
-    'de' => [
-      1 => 'VERYLOW|Sehr niedrig',
-      2 => 'LOW|Niedrig',
-      3 => 'MIDDLE|Mittel',
-      4 => 'HIGH|Hoch',
-      5 => 'VERYHIGH|Sehr hoch',
-    ],
-  ],
-]);
-```
-
-Note that RockMigrations uses a slightly different syntax than when populating the options via GUI. RockMigrations makes sure that all options use the values of the default language and only set the label (title) of the options.
-
-Page Reference field
-
-```php
-$rm->migrate([
-  'fields' => [
-    'yourfield' => [
-      'type' => 'page',
-      'label' => __('Select a page'),
-      'tags' => 'YourModule',
-      'derefAsPage' => FieldtypePage::derefAsPageArray,
-      'inputfield' => 'InputfieldSelect',
-      'findPagesSelector' => 'foo=bar',
-      'labelFieldName' => 'title',
-    ],
-  ],
-]);
-```
-
-Date field
-
-```php
-$rm->migrate([
-  'fields' => [
-    'yourfield' => [
-      'type' => 'datetime',
-      'label' => __('Enter date'),
-      'tags' => 'YourModule',
-      'dateInputFormat' => 'j.n.y',
-      'datepicker' => InputfieldDatetime::datepickerFocus,
-      'defaultToday' => 1,
-    ],
-  ],
-]);
 ```
 
 # Deployments
@@ -502,4 +331,152 @@ Debugging can be hard when using CI/CD pipelines. If you get unexpected results 
 ...
 $deploy->verbose();
 $deploy->run();
+```
+
+## Migration Examples
+
+### Field migrations
+
+CKEditor field
+
+```php
+$rm->migrate([
+  'fields' => [
+    'yourckefield' => [
+      'type' => 'textarea',
+      'tags' => 'MyTags',
+      'inputfieldClass' => 'InputfieldCKEditor',
+      'contentType' => FieldtypeTextarea::contentTypeHTML,
+      'rows' => 5,
+      'formatTags' => "h2;p;",
+      'contentsCss' => "/site/templates/main.css?m=".time(),
+      'stylesSet' => "mystyles:/site/templates/mystyles.js",
+      'toggles' => [
+        InputfieldCKEditor::toggleCleanDIV, // convert <div> to <p>
+        InputfieldCKEditor::toggleCleanP, // remove empty paragraphs
+        InputfieldCKEditor::toggleCleanNBSP, // remove &nbsp;
+      ],
+    ],
+  ],
+]);
+```
+
+Image field
+
+```php
+$rm->migrate([
+  'fields' => [
+    'yourimagefield' => [
+      'type' => 'image',
+      'tags' => 'YourTags',
+      'maxFiles' => 0,
+      'descriptionRows' => 1,
+      'extensions' => "jpg jpeg gif png svg",
+      'okExtensions' => ['svg'],
+      'icon' => 'picture-o',
+      'outputFormat' => FieldtypeFile::outputFormatSingle,
+      'maxSize' => 3, // max 3 megapixels
+    ],
+  ],
+]);
+```
+
+Files field
+
+```php
+$rm->migrate([
+  'fields' => [
+    'yourfilefield' => [
+      'type' => 'file',
+      'tags' => 'YourTags',
+      'maxFiles' => 1,
+      'descriptionRows' => 0,
+      'extensions' => "pdf",
+      'icon' => 'file-o',
+      'outputFormat' => FieldtypeFile::outputFormatSingle,
+    ],
+  ],
+]);
+```
+
+Options field
+
+```php
+$rm->migrate([
+  'fields' => [
+    'yourfield' => [
+      'type' => 'options',
+      'tags' => 'YourTags',
+      'label' => 'Options example',
+      'options' => [
+        1 => 'ONE|This is option one',
+        2 => 'TWO',
+        3 => 'THREE',
+      ],
+    ],
+  ],
+]);
+```
+
+Options field with multilang labels:
+
+```php
+$rm->createField('demo_field', 'options', [
+  'label' => 'Test Field',
+  'label1020' => 'Test Feld',
+  'type' => 'options',
+  'optionsLang' => [
+    'default' => [
+      1 => 'VERYLOW|Very Low',
+      2 => 'LOW|Low',
+      3 => 'MIDDLE|Middle',
+      4 => 'HIGH|High',
+      5 => 'VERYHIGH|Very High',
+    ],
+    'de' => [
+      1 => 'VERYLOW|Sehr niedrig',
+      2 => 'LOW|Niedrig',
+      3 => 'MIDDLE|Mittel',
+      4 => 'HIGH|Hoch',
+      5 => 'VERYHIGH|Sehr hoch',
+    ],
+  ],
+]);
+```
+
+Note that RockMigrations uses a slightly different syntax than when populating the options via GUI. RockMigrations makes sure that all options use the values of the default language and only set the label (title) of the options.
+
+Page Reference field
+
+```php
+$rm->migrate([
+  'fields' => [
+    'yourfield' => [
+      'type' => 'page',
+      'label' => __('Select a page'),
+      'tags' => 'YourModule',
+      'derefAsPage' => FieldtypePage::derefAsPageArray,
+      'inputfield' => 'InputfieldSelect',
+      'findPagesSelector' => 'foo=bar',
+      'labelFieldName' => 'title',
+    ],
+  ],
+]);
+```
+
+Date field
+
+```php
+$rm->migrate([
+  'fields' => [
+    'yourfield' => [
+      'type' => 'datetime',
+      'label' => __('Enter date'),
+      'tags' => 'YourModule',
+      'dateInputFormat' => 'j.n.y',
+      'datepicker' => InputfieldDatetime::datepickerFocus,
+      'defaultToday' => 1,
+    ],
+  ],
+]);
 ```
