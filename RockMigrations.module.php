@@ -55,7 +55,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.12.4',
+      'version' => '0.12.5',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -2062,7 +2062,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $opt->setArray([
       'pagenameReplacements' => 'de',
       'toggleBehavior' => 1,
-      'german' => true, // install german language pack
+      'german' => false, // install german language pack
+      'useTrash' => true,
     ]);
     $opt->setArray($options);
 
@@ -2077,7 +2078,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     ]);
 
     $this->setModuleConfig("ProcessPageList", [
-      'useTrash' => true, // show trash in tree for non superusers
+      'useTrash' => $opt->useTrash, // show trash in tree for non superusers
     ]);
 
     if($opt->german) {
