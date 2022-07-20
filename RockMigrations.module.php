@@ -55,7 +55,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.12.5',
+      'version' => '0.12.6',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -128,6 +128,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       $this->fileSync(
         "/.vscode/RockMigrations.code-snippets",
         __DIR__."/.vscode/RockMigrations.code-snippets"
+      );
+      $this->fileSync(
+        "/.vscode/ProcessWire.code-snippets",
+        __DIR__."/.vscode/ProcessWire.code-snippets"
       );
     }
   }

@@ -1,0 +1,32 @@
+{
+  // namespace
+  "ns": {
+    "prefix": "ns",
+    "body": [
+      "<?php namespace $1;",
+      "$0",
+    ],
+  },
+
+  // processwire namespace
+  "pw": {
+    "prefix": "pw",
+    "body": [
+      "<?php namespace ProcessWire;",
+      "$0",
+    ],
+  },
+
+  // load a pw module
+  "pw-getmodule": {
+    "prefix": "pw-getmodule",
+    "body": [
+      "/** @var $1 $$2 */",
+      "$$2 = \\$this->wire->modules->get('$1');",
+      "$$2$0"
+    ],
+  },
+
+  // this is a placeholder so that all items above can have a trailing slash
+  "": {"body": ""}
+}
