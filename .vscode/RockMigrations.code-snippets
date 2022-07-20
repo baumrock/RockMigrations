@@ -52,6 +52,23 @@
     ],
     "description": "Add an image field via RockMigrations"
   },
+  "rockmigrations-field-datetime": {
+    "prefix": "rmf-datetime",
+    "body": [
+      "$1 => [",
+      "  'type' => 'datetime',",
+      "  'label' => '$2',",
+      "  'dateOutputFormat' => 'd.m.Y H:i',",
+      "  'inputType' => 'text',",
+      "  'dateSelectFormat' => 'yMd',",
+      "  'datepicker' => InputfieldDatetime::datepickerFocus,",
+      "  'dateInputFormat' => 'j.n.y',",
+      "  'timeInputFormat' => 'H:i',",
+      "  'defaultToday' => 1,",
+      "],",
+    ],
+    "description": "Add an image field via RockMigrations"
+  },
   "rockmigrations-field-files": {
     "prefix": "rmf-files",
     "body": [
