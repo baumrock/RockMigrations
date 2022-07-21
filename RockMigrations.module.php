@@ -55,7 +55,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.12.6',
+      'version' => '0.13.0',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -233,23 +233,26 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if(!$template) return;
     $field = (string)$field;
     $tpl = "template=$template";
-    $this->addHookAfter("Pages::saveReady($tpl,id>0)", function(HookEvent $event) use($field) {
+    $this->addHookAfter("Pages::saved($tpl,id>0)", function(HookEvent $event) use($field) {
       /** @var Page $page */
       $page = $event->arguments(0);
+      if($page->rmSetPageName) return;
+      $page->rmSetPageName = true;
       $langs = $this->wire->languages;
       if($langs) {
         foreach($langs as $lang) {
-          $prop = $lang->isDefault() ? "name" : "name$lang";
-          $old = $page->get($prop);
+          $old = $page->localName($lang);
           $new = $page->getLanguageValue($lang, $field);
           $new = $event->sanitizer->markupToText($new);
           $new = $event->sanitizer->pageNameTranslate($new);
-          if($new AND $old!=$new) {
-            $new = $event->wire->pages->names()->uniquePageName($new, $page);
-            $page->set($prop, $new);
+          $new = $event->wire->pages->names()->uniquePageName($new, $page);
+          if($old!=$new) {
+            if($lang->isDefault()) $page->setName($new);
+            else $page->setName($new, $lang);
             $this->message($this->_("Page name updated to $new ($lang->name)"));
           }
         }
+        $page->save();
       }
       else {
         $old = $page->name;
@@ -259,8 +262,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         if($new AND $old!=$new) {
           $new = $event->wire->pages->names()->uniquePageName($new, $page);
           $page->name = $new;
-          $this->message($this->_("Page name updated to $new"));
         }
+        $page->save();
+        $this->message($this->_("Page name updated to $new"));
       }
     });
     $this->addHookAfter("ProcessPageEdit::buildForm", function(HookEvent $event) use($template, $field) {
@@ -268,6 +272,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if($page->template != $template) return;
       $form = $event->return;
       if($f = $form->get('_pw_page_name')) {
+        $f->prependMarkup = "<style>#wrap_{$f->id} input[type=text] { display: none; }</style>";
         $f->notes = $this->_("Page name will be set automatically from field '$field' on save.");
       }
     });
