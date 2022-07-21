@@ -21,6 +21,39 @@
   },
 
   // field migrations
+  "rockmigrations-field-text": {
+    "prefix": "rmf-text",
+    "body": [
+      "$1 => [",
+      "  'type' => 'text',",
+      "  'label' => '$3',",
+      "  'icon' => 'align-left',",
+      "],",
+    ],
+    "description": "Add a text field via RockMigrations"
+  },
+  "rmf-checkbox": {
+    "prefix": "rmf-checkbox",
+    "body": [
+      "$1 => [",
+      "  'type' => 'checkbox',",
+      "  'label' => '$2',",
+      "],",
+    ],
+  },
+  "rmf-toggle": {
+    "prefix": "rmf-toggle",
+    "body": [
+      "$1 => [",
+      "  'type' => 'toggle',",
+      "  'label' => '$2',",
+      "  'formatType' => 0, // integer 0/1",
+      "  'labelType' => 0, // yes/no",
+      "  'inputfieldClass' => 0, // yes/no",
+      "  'defaultOption' => 'yes',",
+      "],",
+    ],
+  },
   "rockmigrations-field-page": {
     "prefix": "rmf-page",
     "body": [
@@ -129,17 +162,6 @@
       "],",
     ],
     "description": "Add a CKEditor field via RockMigrations"
-  },
-  "rockmigrations-field-text": {
-    "prefix": "rmf-text",
-    "body": [
-      "$1 => [",
-      "  'type' => 'text',",
-      "  'label' => '$3',",
-      "  'icon' => 'align-left',",
-      "],",
-    ],
-    "description": "Add a text field via RockMigrations"
   },
   "rockmigrations-field-rockmatrix": {
     "prefix": "rmf-rockmatrix",
