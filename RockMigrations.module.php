@@ -223,17 +223,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *
    * Usage:
    * $rm->setPageNameFromField("basic-page", "headline");
+   * $rm->setPageNameFromField("basic-page", ["headline", "title"]);
    *
    * Make sure to install Page Path History module!
    *
    * @return void
    */
-  public function setPageNameFromField($template, $field = 'title') {
+  public function setPageNameFromField($template, $fields = 'title') {
     $template = $this->wire->templates->get((string)$template);
     if(!$template) return;
-    $field = (string)$field;
     $tpl = "template=$template";
-    $this->addHookAfter("Pages::saved($tpl,id>0)", function(HookEvent $event) use($field) {
+    $this->addHookAfter("Pages::saved($tpl,id>0)", function(HookEvent $event) use($fields) {
       /** @var Page $page */
       $page = $event->arguments(0);
       if($page->rmSetPageName) return;
@@ -241,8 +241,25 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       $langs = $this->wire->languages;
       if($langs) {
         foreach($langs as $lang) {
-          $old = $page->localName($lang);
-          $new = $page->getLanguageValue($lang, $field);
+          try {
+            // dont know why exactly that is necessary but had problems
+            // at kaumberg "localName not callable in this context"??
+            // though the method was definitely there...
+            $old = $page->localName($lang);
+          } catch (\Throwable $th) {
+            $old = $page->name;
+          }
+
+          // get new value
+          if(is_array($fields)) {
+            $new = '';
+            foreach($fields as $field) {
+              if($new) continue;
+              $new = $page->getLanguageValue($lang, (string)$field);
+            }
+          }
+          else $new = $page->getLanguageValue($lang, (string)$fields);
+
           $new = $event->sanitizer->markupToText($new);
           $new = $event->sanitizer->pageNameTranslate($new);
           $new = $event->wire->pages->names()->uniquePageName($new, $page);
@@ -256,7 +273,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       }
       else {
         $old = $page->name;
-        $new = $page->get($field);
+
+        if(is_array($fields)) $new = $page->get(implode("|", $fields));
+        else $new = $page->get((string)$fields);
+
         $new = $event->sanitizer->markupToText($new);
         $new = $event->sanitizer->pageNameTranslate($new);
         if($new AND $old!=$new) {
@@ -267,7 +287,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         $this->message($this->_("Page name updated to $new"));
       }
     });
-    $this->addHookAfter("ProcessPageEdit::buildForm", function(HookEvent $event) use($template, $field) {
+    $this->addHookAfter("ProcessPageEdit::buildForm", function(HookEvent $event) use($template, $fields) {
+      $field = is_array($fields) ? implode("|", $fields) : $fields;
       $page = $event->object->getPage();
       if($page->template != $template) return;
       $form = $event->return;
