@@ -55,7 +55,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.13.1',
+      'version' => '0.13.2',
       'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1720,6 +1720,28 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public function val($arr, $property) {
     if(!array_key_exists($property, $arr)) return;
     return $arr[$property];
+  }
+
+  /**
+   * Mail to superuser
+   * @return void
+   */
+  public function mailToSuperuser($body, $subject = null) {
+    $su = $this->wire->users->get($this->wire->config->superUserPageID);
+    $host = $this->wire->config->httpHost;
+
+    $this->log($body);
+    if($su->email) {
+      $mail = new WireMail();
+      $mail->to($su->email);
+      $mail->subject($subject ?: "Issue on page $host");
+      $mail->body($body);
+      $mail->send();
+      $this->log("Sent mail to superuser: ".$su->email);
+    }
+    else {
+      $this->log("Superuser has no email in its profile");
+    }
   }
 
   /**
