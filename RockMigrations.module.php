@@ -56,7 +56,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     return [
       'title' => 'RockMigrations',
       'version' => '0.13.2',
-      'summary' => 'The ultimate Automation and Deployment-Tool for ProcessWire',
+      'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
       'icon' => 'magic',
