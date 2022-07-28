@@ -55,7 +55,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.13.2',
+      'version' => '0.13.3',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -139,6 +139,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public function ready() {
     $this->migrateWatchfiles();
     $this->changeFooter();
+
+    if($this->wire->page->template == 'admin') {
+      // load RockMigrations.js on backend
+      $this->wire->config->scripts->add(
+        $this->wire->config->urls($this).'RockMigrations.js'
+      );
+
+      // fix ProcessWire language tabs issue
+      if($this->wire->languages) {
+        $this->wire->config->js('rmUserLang', $this->wire->user->language->id);
+      }
+    }
   }
 
   /** ########## tools ########## */
