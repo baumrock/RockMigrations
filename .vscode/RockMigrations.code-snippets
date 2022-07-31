@@ -1,6 +1,6 @@
 {
   // load rockmigrations module into $rm variable
-  "rockmigrations": {
+  "rm": {
     "prefix": "rm",
     "body": [
       "/** @var RockMigrations \\$rm */",
@@ -9,7 +9,7 @@
     ],
     "description": "Get RockMigrations Module"
   },
-  "rockmigrations-migrate": {
+  "rm-migrate": {
     "prefix": "rm-migrate",
     "body": [
       "\\$rm->migrate([",
@@ -17,7 +17,6 @@
       "  'templates' => [],",
       "]);",
     ],
-    "description": "Get RockMigrations Module"
   },
 
   // field migrations
