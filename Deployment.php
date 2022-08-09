@@ -35,7 +35,7 @@ class Deployment extends WireData {
     if(strpos($this->paths->root, $path) !== 0) {
       // the current root path does not match the provided path argument
       // this means we are not on the deployment server, so we make it dry
-      $this->echo("Not in whitelist path! Current path is $path - running dry...");
+      $this->echo("Not in whitelist path! Current path is {$this->paths->root} and whitelisted path is $path - running dry...");
       $this->dry();
     }
 
