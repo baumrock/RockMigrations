@@ -67,7 +67,7 @@
     ],
     "description": "Add a page field via RockMigrations"
   },
-  "rockmigrations-field-image": {
+  "rmf-image": {
     "prefix": "rmf-image",
     "body": [
       "$1 => [",
@@ -84,7 +84,18 @@
     ],
     "description": "Add an image field via RockMigrations"
   },
-  "rockmigrations-field-datetime": {
+  "rmf-imagepicker": {
+    "prefix": "rmf-imagepicker",
+    "body": [
+      "$1 => [",
+      "  'type' => 'RockImagePicker',",
+      "  'label' => '$2',",
+      "  'sourcepage' => ${3:1},",
+      "  'sourcefield' => '${4:yourfieldname}',",
+      "],",
+    ],
+  },
+  "rmf-datetime": {
     "prefix": "rmf-datetime",
     "body": [
       "$1 => [",
@@ -101,7 +112,7 @@
     ],
     "description": "Add an image field via RockMigrations"
   },
-  "rockmigrations-field-files": {
+  "rmf-files": {
     "prefix": "rmf-files",
     "body": [
       "$1 => [",
