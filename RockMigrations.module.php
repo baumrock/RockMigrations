@@ -57,7 +57,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.14.0',
+      'version' => '0.14.1',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -139,6 +139,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   public function ready() {
+    $this->addLivereload();
     $this->migrateWatchfiles();
     $this->changeFooter();
 
@@ -156,42 +157,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /** ########## tools ########## */
-
-  // ckeditor settings
-  const cke_formatTags = 'p;h2;h3;h4;';
-  const cke_contentCss = '/site/templates/bundle/main.css';
-  const cke_stylesSet = 'customstyles:/site/templates/customstyles.js';
-  const cke_customOptions = '{"bodyClass":"p-4 prose max-w-full"}';
-  const cke_toggles = [
-    InputfieldCKEditor::toggleCleanDIV, // convert <div> to <p>
-    InputfieldCKEditor::toggleCleanP, // remove empty paragraphs
-    InputfieldCKEditor::toggleCleanNBSP, // remove &nbsp;
-  ];
-  const cke_toolbarLinks = "PWLink, Unlink, Anchor";
-  const cke_toolbarMinimal = "Format, Styles,
-    Bold, Italic, RemoveFormat";
-  const cke_toolbarSimple = "Format, Styles,
-    JustifyLeft, JustifyCenter, JustifyRight,
-    Bold, Italic, RemoveFormat,
-    NumberedList, BulletedList, Blockquote,
-    PWLink, Unlink, Anchor";
-  const cke_toolbarDefault = "Format, Styles
-    JustifyLeft, JustifyCenter, JustifyRight, JustifyBlock
-    Bold, Italic, Underline, RemoveFormat
-    NumberedList, BulletedList, Blockquote
-    PWLink, Unlink, Anchor
-    PWImage, Table, HorizontalRule, SpecialChar";
-  const cke_toolbarFull = "Format, Styles,
-    Bold, Italic, Underline, RemoveFormat
-    JustifyLeft, JustifyCenter, JustifyRight, JustifyBlock
-    TransformTextToLowercase,TransformTextToUppercase,TransformTextCapitalize
-    TextColor,BGColor
-    NumberedList, BulletedList, Blockquote
-    PWLink, Unlink, Anchor
-    PWImage, Table, HorizontalRule, SpecialChar
-    PasteText, PasteFromWord
-    Scayt, -, Source
-    facebookvideo";
 
   /**
    * Add a runtime field to an inputfield wrapper
@@ -485,6 +450,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if(!$this->wire->languages) $ls->init();
     }
     return $this->wire->languages;
+  }
+
+  /**
+   * Add RockFrontend livereloading to the backend
+   *
+   * This is only added on some pages to prevent reloads from causing issues
+   * @return void
+   */
+  protected function addLivereload() {
+    if(!$this->wire->modules->isInstalled('RockFrontend')) return;
+    $process = $this->wire->page->process;
+
+    // on some pages in the backend live reloading can cause problems
+    // or is just not helpful so we exclude it
+    if($process == "ProcessModule") return;
+    if($process == "ProcessPageList") return;
+
+    $url = $this->wire->config->urls('RockFrontend');
+    $path = $this->wire->config->paths('RockFrontend');
+    $m = filemtime($path."livereload.js");
+    $this->wire->config->scripts->add($url."livereload.js?m=$m");
   }
 
   /**
