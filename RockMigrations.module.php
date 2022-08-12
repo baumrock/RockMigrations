@@ -32,6 +32,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    **/
   private $lastrun;
 
+  private $noMigrate = false;
+
   private $outputLevel = self::outputLevelQuiet;
 
   /** @var string */
@@ -55,7 +57,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.13.3',
+      'version' => '0.14.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1853,10 +1855,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function migrateWatchfiles($force = false) {
-    // prevent auto-migrate when CLI mode is enabled
+    // prevent auto-migrate when CLI mode is enabled or when $rm->noMigrate()
+    // was called (which can be handy to get quick reloads while working on a
+    // module whithout the need for migrations)
     // $rm->run() will run either way because it sets force=true
     $cli = defined('RockMigrationsCLI');
-    if($cli AND !$force) return;
+    $runOnlyWhenForced = $cli || $this->noMigrate;
+    if($runOnlyWhenForced AND !$force) return;
 
     // if the noMigrate flag is set we do not run migrations
     // this makes it possible to refresh modules without triggering another
@@ -1962,6 +1967,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if(!$ref->id) return $this->log("Reference does not exist");
     if($page->parent !== $ref->parent) return $this->log("Both pages must have the same parent");
     $this->wire->pages->sort($page, $ref->sort);
+  }
+
+  public function noMigrate() {
+    $this->noMigrate = true;
   }
 
   /**
