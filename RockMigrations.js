@@ -5,7 +5,9 @@ $(window).load(function() {
   if(typeof ProcessWire.config.rmUserLang == 'undefined') return;
   let lang = ProcessWire.config.rmUserLang;
   setTimeout(() => {
-    $(".langTab"+lang).click();
+    let tabs = $(".langTab"+lang);
+    if(!tabs.length) return;
+    tabs.click();
     console.log('LanguageTabs set via RockMigrations');
   }, 200);
 });
