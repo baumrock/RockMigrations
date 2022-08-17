@@ -57,7 +57,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.14.2',
+      'version' => '0.14.3',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -209,6 +209,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function setPageNameFromField($template, $fields = 'title') {
+    if($template instanceof Page) $template = $template->template;
     $template = $this->wire->templates->get((string)$template);
     if(!$template) return;
     $tpl = "template=$template";
