@@ -57,7 +57,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.14.4',
+      'version' => '0.14.5',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -187,6 +187,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $field = $event->object;
     if(!$field->toolbar) return;
     $field->toolbar .= ",Source";
+  }
+
+  /**
+   * Make all pages having given template be created on top of the list
+   * @return void
+   */
+  public function createOnTop($tpl) {
+    $tpl = $this->wire->templates->get((string)$tpl);
+    $this->addHookAfter("Pages::added", function(HookEvent $event) {
+      $page = $event->arguments(0);
+      $this->wire->pages->sort($page, 0);
+    });
   }
 
   /**
