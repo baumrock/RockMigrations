@@ -57,7 +57,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.14.3',
+      'version' => '0.14.4',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -249,7 +249,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
             $this->message($this->_("Page name updated to $new ($lang->name)"));
           }
         }
-        $page->save();
+        $page->save(['noHooks' => true]);
       }
       else {
         $old = $page->name;
@@ -263,7 +263,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
           $new = $event->wire->pages->names()->uniquePageName($new, $page);
           $page->name = $new;
         }
-        $page->save();
+        $page->save(['noHooks' => true]);
         $this->message($this->_("Page name updated to $new"));
       }
     });
