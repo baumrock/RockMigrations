@@ -60,6 +60,18 @@
     ],
     "description": "Module Boilerplate"
   },
+  "pw-exception": {
+    "prefix": "pw-exception",
+    "body": [
+      "throw new WireException(\"$1\")",
+    ],
+  },
+  "pw-404exception": {
+    "prefix": "pw-404exception",
+    "body": [
+      "throw new Wire404Exception(\"$1\")",
+    ],
+  },
 
   // this is a placeholder so that all items above can have a trailing slash
   "": {"body": ""}
