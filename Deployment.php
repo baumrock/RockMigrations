@@ -323,8 +323,8 @@ class Deployment extends WireData {
     $this->dumpDB();
     $this->migrate();
     $this->addRobots();
-    $this->chown();
     $this->finish($keep);
+    $this->chown(); // must be after finish to affect current symlink!
 
     $folders = glob($this->paths->root."/tmp-release-*");
     if(count($folders)) {
