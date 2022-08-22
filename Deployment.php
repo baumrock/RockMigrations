@@ -75,6 +75,20 @@ class Deployment extends WireData {
   }
 
   /**
+   * chown files based on root folder
+   * @return void
+   */
+  public function chown() {
+    $root = $this->paths->root;
+    $owner = fileowner($root);
+    $group = filegroup($root);
+    $this->echo("Setting owner and group based on $root...");
+
+    $this->exec("chown -R $owner:$group $root", true);
+    $this->echo("Done");
+  }
+
+  /**
    * Delete files from release
    * @return void
    */
@@ -309,6 +323,7 @@ class Deployment extends WireData {
     $this->dumpDB();
     $this->migrate();
     $this->addRobots();
+    $this->chown();
     $this->finish($keep);
 
     $folders = glob($this->paths->root."/tmp-release-*");
