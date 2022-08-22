@@ -27,7 +27,7 @@
     ],
   },
   "pw-module": {
-    "prefix": "pw-module",
+    "prefix": "pw-createmodule",
     "body": [
       "${0:// info snippet}",
       "class ${1:Classname} extends WireData implements Module, ConfigurableModule {",

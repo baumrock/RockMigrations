@@ -57,7 +57,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.14.5',
+      'version' => '0.14.6',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -109,7 +109,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     // hooks
     $this->addHookAfter("Modules::refresh", $this, "triggerMigrations");
-    $this->addHookAfter("ProcessPageView::finished", $this, "triggerRecorder");
+    // $this->addHookAfter("ProcessPageView::finished", $this, "triggerRecorder");
     $this->addHookBefore("Field::getInputfield", $this, "addSourceCodeButton");
 
     // add hooks for recording changes
