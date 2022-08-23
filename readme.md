@@ -42,6 +42,10 @@ Now do a modules refresh (not a regular page reload) and note that the migration
 
 Now do a regular page reload. The migration will not run as nothing has changed. A modules refresh does always force to run migrations.
 
+## Limitations
+
+RockMigrations might not support all external fields, especially not profields like RepeaterMatrix. Adding support has no priority for me because I'm not using it. If you need support for it please provide a PR or if you are interested in sponsoring that feature please contact me via PM in the forum.
+
 ## Where do I find out all those field and template properties?
 
 1) You can edit your field or template and copy the code from there (I recommend to only copy the settings you need to make your migration files more readable):
