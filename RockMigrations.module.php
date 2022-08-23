@@ -57,7 +57,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.14.7',
+      'version' => '0.15.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -820,15 +820,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Helper to create webmaster role
    * @return Role
    */
-  public function createRoleWebmaster($name = 'webmaster', $permissions = null) {
-    if(!$permissions) $permissions = [
+  public function createRoleWebmaster($permissions = [], $name = 'webmaster') {
+    $permissions = array_merge([
       'page-edit',
       'page-edit-front',
       'page-delete',
       'page-move',
       'page-sort',
       'rockfrontend-alfred',
-    ];
+    ], $permissions);
     return $this->createRole($name, $permissions);
   }
 
@@ -3054,6 +3054,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
   public function watchEnabled() {
     if($this->wire->user->isSuperuser()) return true;
+    if($this->wire->config->forceWatch) return true;
     if(defined('RockMigrationsCLI')) return true;
     return false;
   }
@@ -3066,7 +3067,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @return void
    */
   public function watchModules() {
-    if(!$this->wire->user->isSuperuser()) return;
+    if(!$this->watchEnabled()) return;
     $path = $this->wire->config->paths->siteModules;
     foreach (new DirectoryIterator($path) as $fileInfo) {
       if(!$fileInfo->isDir()) continue;
