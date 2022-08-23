@@ -19,8 +19,28 @@
     ],
   },
 
+  // helpers
+  "rm-defaults": {
+    "prefix": "rm-defaults",
+    "body": [
+      "\\$rm->setPagenameReplacements('de');",
+      "\\$rm->setModuleConfig('AdminThemeUikit', [",
+      "  // use consistent inputfield clicks",
+      "  // see https://github.com/processwire/processwire/pull/169",
+      "  'toggleBehavior' => 1,",
+      "]);",
+      "\\$rm->setModuleConfig('ProcessPageList', [",
+      "  'useTrash' => true, // show trash in tree for non superusers",
+      "]);",
+      "// install german language pack for the default language",
+      "// this will install language support, download the ZIP and install it",
+      "\\$rm->setLanguageTranslations('DE');",
+    ],
+    "description": "Set some custom PW defaults"
+  },
+
   // field migrations
-  "rockmigrations-field-text": {
+  "rmf-text": {
     "prefix": "rmf-text",
     "body": [
       "$1 => [",
@@ -53,7 +73,7 @@
       "],",
     ],
   },
-  "rockmigrations-field-page": {
+  "rmf-page": {
     "prefix": "rmf-page",
     "body": [
       "$1 => [",
@@ -127,7 +147,7 @@
     ],
     "description": "Add a files field via RockMigrations"
   },
-  "rockmigrations-field-textarea": {
+  "rmf-textarea": {
     "prefix": "rmf-textarea",
     "body": [
       "$1 => [",
@@ -139,7 +159,7 @@
     ],
     "description": "Add a textarea field via RockMigrations"
   },
-  "rockmigrations-field-textarea-cke": {
+  "rmf-textarea-cke": {
     "prefix": "rmf-textarea-cke",
     "body": [
       "$1 => [",
@@ -173,7 +193,7 @@
     ],
     "description": "Add a CKEditor field via RockMigrations"
   },
-  "rockmigrations-field-rockmatrix": {
+  "rmf-rockmatrix": {
     "prefix": "rmf-rockmatrix",
     "body": [
       "$1 => [",
@@ -184,7 +204,7 @@
     ],
     "description": "Add a rockmatrix field via RockMigrations"
   },
-  "rockmigrations-field-options": {
+  "rmf-options": {
     "prefix": "rmf-options",
     "body": [
       "$1 => [",

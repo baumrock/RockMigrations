@@ -57,7 +57,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.14.6',
+      'version' => '0.14.7',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -2131,34 +2131,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * These are opinionated defaults that I like to use in my projects!
    */
   public function setDefaults($options = []) {
-    $opt = $this->wire(new WireData()); /** @var WireData $opt */
-    $opt->setArray([
-      'pagenameReplacements' => 'de',
-      'toggleBehavior' => 1,
-      'german' => false, // install german language pack
-      'useTrash' => true,
-    ]);
-    $opt->setArray($options);
-
-    // set german pagename replacements
-    $this->setPagenameReplacements($opt->pagenameReplacements);
-
-    // AdminThemeUikit settings
-    $this->setModuleConfig("AdminThemeUikit", [
-      // use consistent inputfield clicks
-      // see https://github.com/processwire/processwire/pull/169
-      'toggleBehavior' => $opt->toggleBehavior,
-    ]);
-
-    $this->setModuleConfig("ProcessPageList", [
-      'useTrash' => $opt->useTrash, // show trash in tree for non superusers
-    ]);
-
-    if($opt->german) {
-      // install german language pack for the default language
-      // this will install language support, download the ZIP and install it
-      $this->setLanguageTranslations('DE');
-    }
+    $this->log('$rm->setDefaults() is deprecated! Use rm-defaults snippet instead');
   }
 
   /**
