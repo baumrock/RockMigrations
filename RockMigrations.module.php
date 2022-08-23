@@ -57,7 +57,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.15.0',
+      'version' => '0.15.1',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -81,6 +81,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $config = $this->wire->config;
     $this->wire('rockmigrations', $this);
     if($config->debug) $this->setOutputLevel(self::outputLevelVerbose);
+
+    // for development
+    // $this->watch($this, false);
 
     $this->conf = new WireData();
     $this->conf->setArray($this->getArray()); // get modules config
@@ -1531,9 +1534,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if(strpos($class, "_")===0) continue;
 
       if($namespace) $class = "\\$namespace\\$class";
-      $tmp = new $class();
-      if(method_exists($tmp, "init")) $tmp->init();
-      $this->addMagicMethods($tmp);
+      try {
+        $tmp = new $class();
+        if(method_exists($tmp, "init")) $tmp->init();
+        $this->addMagicMethods($tmp);
+      } catch (\Throwable $th) {
+        $this->log($th->getMessage());
+      }
     }
   }
 
@@ -1908,13 +1915,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         continue;
       }
 
-      // if it is a pageclass we load it and call migrate()
-      // the homepage get's special treatment because it is always loaded
-      // by PW since it is needed for all other pages as root element
+      // special treatment for custom pageclasses in the pw classes folder
+      // this prevents "cannot redeclare ..." errors
       $pageClass = $file->pageClass;
-      if($file->path == $this->wire->config->paths->classes."HomePage.php") {
-        // fixes Cannot declare class ProcessWire\HomePage, because the name is already in use
-        $pageClass = "\\ProcessWire\\HomePage";
+      if(strpos($file->path, $this->wire->config->paths->classes)===0) {
+        $base = pathinfo($file->path, PATHINFO_FILENAME);
+        $pageClass = "\\ProcessWire\\$base";
       }
       if($pageClass) {
         if(!class_exists($pageClass)) require_once $file->path;
