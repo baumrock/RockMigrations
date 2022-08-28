@@ -60,6 +60,27 @@
     ],
     "description": "Module Boilerplate"
   },
+  "pw-textformatter": {
+    "prefix": "pw-textformatter",
+    "body": [
+      "${2:// info snippet}",
+      "class Textformatter${1:Demo} extends Textformatter {",
+      "  public static function getModuleInfo() {",
+      "    return [",
+      "      'title' => '${1:Demo}',",
+      "      'version' => '1.0.0',",
+      "      'summary' => 'Demo Textformatter',",
+      "    ]; ",
+      "  }",
+      "",
+      "  public function format(&\\$str) {",
+      "    ${0:\\$str = 'Demo Formatted: '.\\$str;}",
+      "  }",
+      "",
+      "}",
+      "",
+    ],
+  },
   "pw-exception": {
     "prefix": "pw-exception",
     "body": [
