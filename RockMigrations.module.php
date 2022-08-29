@@ -32,6 +32,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    **/
   private $lastrun;
 
+  private $migrateOnlyChangedFiles = false;
+
   private $noMigrate = false;
 
   private $outputLevel = self::outputLevelQuiet;
@@ -57,7 +59,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.15.1',
+      'version' => '0.15.2',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1587,6 +1589,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $opt->setArray($options);
 
     $module = $this->wire->modules->get($name);
+    if($module) return $module;
     if(!$module) $module = $this->modules->install($name, ['force' => $opt->force]);
     if(!$module) {
       // if an url was provided, download the module
@@ -1594,7 +1597,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
       // install the module
       $module = $this->modules->install($name, ['force' => $opt->force]);
-      $this->log("Installed module $module");
+      if($module) $this->log("Installed module $name");
+      else $this->log("Tried to install module $name but failed");
     }
     if(is_array($opt->conf) AND count($opt->conf)) {
       $this->setModuleConfig($module, $opt->conf);
