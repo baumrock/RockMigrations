@@ -60,7 +60,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.0.1',
+      'version' => '1.0.2',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1914,10 +1914,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       $this->log('Running migrations from watchfiles...');
     }
 
-    if($this->migrateOnlyChangedFiles) {
-      $this->log('Only migrating changed files');
-    }
-
     // always refresh modules before running migrations
     // this makes sure that $rm->installModule() etc will catch all new files
     $this->refresh();
@@ -2885,7 +2881,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     // See the readme for more information!
     if(defined("DontFireOnRefresh")) return;
     if($this->wire->config->DontFireOnRefresh) return;
-    $this->migrateAll = true;
+    if(!$this->wire->session->noMigrate) $this->migrateAll = true;
     $this->run();
   }
 
