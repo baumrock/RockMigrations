@@ -60,7 +60,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.0.0',
+      'version' => '1.0.1',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1603,8 +1603,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     ]);
     $opt->setArray($options);
 
+    // dont return early to make sure that if module settings
+    // are changed we apply the new settings at the bottom!!
     $module = $this->wire->modules->get($name);
-    if($module) return $module;
     if(!$module) $module = $this->modules->install($name, ['force' => $opt->force]);
     if(!$module) {
       // if an url was provided, download the module
@@ -2884,6 +2885,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     // See the readme for more information!
     if(defined("DontFireOnRefresh")) return;
     if($this->wire->config->DontFireOnRefresh) return;
+    $this->migrateAll = true;
     $this->run();
   }
 
