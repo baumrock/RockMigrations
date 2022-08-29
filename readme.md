@@ -67,7 +67,18 @@ $config->rockmigrations = [
 
 ## Watching files, paths or modules
 
-RockMigrations can watch files, paths and modules for changes. It will detect changes on any of the files on the watchlist and trigger all migrations to run if anything changed.
+RockMigrations can watch files, paths and modules for changes. It will detect changes on any of the files on the watchlist and trigger migrations to run if anything changed.
+
+As from version 1.0.0 (29.8.2022) RockMigrations will not run all migrations if one file changes but will only migrate this single changed file. This makes the migrations run a lot faster!
+
+When run from the CLI it will still run every single migration file to make sure that everything works as expected and no change is missed.
+
+Sometimes it is necessary that even unchanged files are migrated. RockMatrix is an example for that, where the module file triggers the migrations for all Matrix-Blocks. In that case you can add the file to the watchlist using the `force` option:
+
+```php
+$matrix = ...;
+$rm->watch($matrix, true, ['force'=>true]);
+```
 
 ### Watching modules
 

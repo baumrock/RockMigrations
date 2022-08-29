@@ -1,6 +1,7 @@
 <?php namespace ProcessWire;
 
 use DirectoryIterator;
+use RockMatrix\Block;
 use RockMigrations\RecorderFile;
 use RockMigrations\WatchFile;
 use RockMigrations\WireArray;
@@ -32,7 +33,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    **/
   private $lastrun;
 
-  private $migrateOnlyChangedFiles = false;
+  private $migrateAll = false;
 
   private $noMigrate = false;
 
@@ -59,7 +60,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '0.15.2',
+      'version' => '1.0.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1087,6 +1088,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->wire->modules->setFlag((string)$name, Modules::flagsDisabled, true);
   }
 
+  public function doMigrate($file) {
+    if($this->migrateAll) return true;
+    if($file instanceof Block) $file = $file->filePath();
+    $watchFile = $file;
+    if(is_string($watchFile)) $watchFile = $this->watchlist->get("path=$file");
+    if(!$watchFile instanceof WatchFile) return false;
+    if($watchFile->changed) return true;
+    if($watchFile->force) return true;
+    return false;
+  }
+
   /**
    * Download module from url
    *
@@ -1229,7 +1241,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       // hashes are needed for multiple callbacks living on the same file
       $path = explode(":", $file->path)[0];
       $m = filemtime($path);
-      if($m>$this->lastrun) $changed[] = $file->path;
+      if($m>$this->lastrun) {
+        $changed[] = $file->path;
+        $file->changed = true;
+      }
     }
     return $changed;
   }
@@ -1874,6 +1889,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $runOnlyWhenForced = $cli || $this->noMigrate;
     if($runOnlyWhenForced AND !$force) return;
 
+    // on CLI we always migrate all files and not only changed ones
+    // this is to make sure that all migrations run on deployments
+    if($cli) $this->migrateAll = true;
+
     // if the noMigrate flag is set we do not run migrations
     // this makes it possible to refresh modules without triggering another
     // run of migrations!
@@ -1893,6 +1912,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       foreach($changed as $file) $this->log("Detected change in $file");
       $this->log('Running migrations from watchfiles...');
     }
+
+    if($this->migrateOnlyChangedFiles) {
+      $this->log('Only migrating changed files');
+    }
+
     // always refresh modules before running migrations
     // this makes sure that $rm->installModule() etc will catch all new files
     $this->refresh();
@@ -1900,6 +1924,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->updateLastrun();
     foreach($this->watchlist as $file) {
       if(!$file->migrate) continue;
+      if(!$this->doMigrate($file)) {
+        $this->log("--- Skipping {$file->path} (no change)");
+        continue;
+      }
 
       // if it is a callback we execute it
       if($callback = $file->callback) {
@@ -1914,7 +1942,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
           $module->migrate();
         }
         else {
-          $this->log("Skipping $module::migrate() - method does not exist");
+          $this->log("--- Skipping $module::migrate() - method does not exist");
         }
         continue;
       }
@@ -1928,11 +1956,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       }
       if($pageClass) {
         if(!class_exists($pageClass)) require_once $file->path;
-        $tmp = new $pageClass();
-        if(method_exists($tmp, 'migrate')) {
+        if($this->doMigrate($file->path)) {
+          $tmp = new $pageClass();
           $this->log("Triggering $pageClass::migrate()");
           $tmp->migrate();
         }
+        else $this->log("--- Skipping $pageClass (no change)");
         continue;
       }
 
@@ -2965,6 +2994,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public function watch($what, $migrate = true, $options = []) {
     if(!$this->watchEnabled()) return;
 
+    // setup options
+    $opt = $this->wire(new WireData());
+    $opt->setArray([
+      'recursive' => false,
+      'force' => false,
+    ]);
+    $opt->setArray($options);
+
+    // other variables
     $file = $what;
     $migrate = (float)$migrate;
 
@@ -2984,7 +3022,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       return $this->watchPageClass(
         $file,
         $reflector->getNamespaceName(),
-        $options,
+        $opt->getArray(),
         $migrate
       );
     }
@@ -3005,20 +3043,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     // path to folder
     elseif(is_dir($what)) {
       $dir = $what;
-
-      // setup the recursive option
-      // by default we do not recurse into subdirectories
-      $recursive = false;
-      if(array_key_exists('recursive', $options)) {
-        $recursive = $options['recursive'];
-      }
-
-      $opt = [
+      $fopt = [
         'extensions'=>['php'],
-        'recursive' => $recursive,
+        'recursive' => $opt->recursive,
       ];
-      foreach($this->wire->files->find($dir, $opt) as $f) {
-        $this->watch($f, $migrate, $options);
+      foreach($this->wire->files->find($dir, $fopt) as $f) {
+        $this->watch($f, $migrate, $opt->getArray());
       }
     }
 
@@ -3040,20 +3070,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       return;
     }
 
-    // is it a pageclass file?
-    if(array_key_exists('pageClass', $options)) {
-      $pageClass = $options['pageClass'];
-    }
-
     require_once($this->path."WatchFile.php");
     $data = $this->wire(new WatchFile()); /** @var WatchFile $data */
     $data->setArray([
       'path' => $path.$hash,
       'module' => $module,
       'callback' => $callback,
-      'pageClass' => $pageClass,
+      'pageClass' => $opt->pageClass,
       'migrate' => (float)$migrate,
       'trace' => "$tracefile:$traceline",
+      'changed' => false,
+      'force' => $opt->force,
     ]);
     // bd($data, $data->path);
 
