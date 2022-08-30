@@ -60,7 +60,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.0.3',
+      'version' => '1.0.4',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -131,6 +131,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     // other actions on init()
     $this->loadFilesOnDemand();
     $this->syncSnippets();
+    // $this->autoloadPageClasses();
   }
 
   public function ready() {
@@ -629,6 +630,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if(is_file($file)) require_once($file);
     });
   }
+
+  // /**
+  //  * Autoload pageclasses
+  //  */
+  // public function autoloadPageClasses() {
+  //   bd('autoload pageclasses');
+  //   $this->addHookAfter("Modules::refresh", function(HookEvent $event) {
+  //     // save list of autoload page templates to cache
+  //     bd('modules refresh');
+  //   });
+  // }
 
   /**
    * Get basename of file or object
@@ -1905,7 +1917,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     // always refresh modules before running migrations
     // this makes sure that $rm->installModule() etc will catch all new files
-    $this->refresh();
+    if(!$this->triggeredByRefresh) $this->refresh();
 
     $this->updateLastrun();
     foreach($this->watchlist as $file) {
@@ -2886,6 +2898,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if(defined("DontFireOnRefresh")) return;
     if($this->wire->config->DontFireOnRefresh) return;
     if(!$this->wire->session->noMigrate) $this->migrateAll = true;
+    $this->triggeredByRefresh = true;
     $this->run();
   }
 
