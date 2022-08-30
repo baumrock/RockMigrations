@@ -60,7 +60,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.0.2',
+      'version' => '1.0.3',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -128,20 +128,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->addHookBefore("InputfieldForm::render", $this, "showEditInfo");
     $this->addHookBefore("InputfieldForm::render", $this, "showCopyCode");
 
-    // files on demand feature
+    // other actions on init()
     $this->loadFilesOnDemand();
-
-    // sync vscode snippets
-    if($this->conf->syncSnippets) {
-      $this->fileSync(
-        "/.vscode/RockMigrations.code-snippets",
-        __DIR__."/.vscode/RockMigrations.code-snippets"
-      );
-      $this->fileSync(
-        "/.vscode/ProcessWire.code-snippets",
-        __DIR__."/.vscode/ProcessWire.code-snippets"
-      );
-    }
+    $this->syncSnippets();
   }
 
   public function ready() {
@@ -2870,6 +2859,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $su = $this->wire->users->get("sort=id,roles=$role");
     if(!$su->id) return $this->log("No superuser found");
     $this->wire->users->setCurrentUser($su);
+  }
+
+  /**
+   * Sync snippets
+   */
+  private function syncSnippets() {
+    if(!$this->conf->syncSnippets) return;
+    $this->fileSync(
+      "/.vscode/RockMigrations.code-snippets",
+      __DIR__."/.vscode/RockMigrations.code-snippets"
+    );
+    $this->fileSync(
+      "/.vscode/ProcessWire.code-snippets",
+      __DIR__."/.vscode/ProcessWire.code-snippets"
+    );
   }
 
   /**
