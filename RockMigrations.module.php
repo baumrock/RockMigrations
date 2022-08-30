@@ -2964,7 +2964,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Add file to watchlist
    *
    * Usage:
-   * $rm->watch( file, path or object );
+   * Default priority = 1 (higher = earlier)
+   * $rm->watch(what, migrate/priority, options);
    *
    * If you dont specify an extension it will watch all available extensions:
    * $rm->watch('/path/to/module'); // watches module.[yaml|json|php]
