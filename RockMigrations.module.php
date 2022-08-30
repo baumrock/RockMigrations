@@ -14,6 +14,7 @@ use TracyDebugger;
  * @license COMMERCIAL DO NOT DISTRIBUTE
  * @link https://www.baumrock.com
  */
+require_once __DIR__ . "/MagicPage.php";
 require_once __DIR__ . "/PageClass.php";
 class RockMigrations extends WireData implements Module, ConfigurableModule {
 
@@ -41,6 +42,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
   /** @var string */
   public $path;
+
+  /** @var PageArray */
+  protected $readyClasses;
 
   /**
    * If true we will write data to recorder files
@@ -131,16 +135,23 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     // other actions on init()
     $this->loadFilesOnDemand();
     $this->syncSnippets();
-    // $this->autoloadPageClasses();
+    $this->initMagicPages();
   }
 
   public function ready() {
     $this->addLivereload();
+
+    // trigger ready() for all magic classes
+    foreach($this->readyClasses as $p) {
+      if(method_exists($p, 'ready')) $p->ready();
+    }
+
+    // other actions
     $this->migrateWatchfiles();
     $this->changeFooter();
 
+    // load RockMigrations.js on backend
     if($this->wire->page->template == 'admin') {
-      // load RockMigrations.js on backend
       $this->wire->config->scripts->add(
         $this->wire->config->urls($this).'RockMigrations.js'
       );
@@ -630,17 +641,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if(is_file($file)) require_once($file);
     });
   }
-
-  // /**
-  //  * Autoload pageclasses
-  //  */
-  // public function autoloadPageClasses() {
-  //   bd('autoload pageclasses');
-  //   $this->addHookAfter("Modules::refresh", function(HookEvent $event) {
-  //     // save list of autoload page templates to cache
-  //     bd('modules refresh');
-  //   });
-  // }
 
   /**
    * Get basename of file or object
@@ -1525,6 +1525,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * DEPRECATED
+   *
+   * As of v1.0.5 the recommended way of using magic page classes is using
+   * the MagicPage trait! See readme about MagicPage
+   *
    * Trigger init() method of classes in this folder
    *
    * If autoload is set to TRUE it will attach a class autoloader before
@@ -1560,6 +1565,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         $this->log($th->getMessage());
       }
     }
+  }
+
+  /**
+   * Trigger init() of MagicPage page classes
+   */
+  public function initMagicPages() {
+    $this->readyClasses = $ready = $this->wire(new PageArray());
+    if($this->wire->config->useMagicClasses === false) return;
+    if($this->wire->config->useMagicClasses === 0) return;
+    foreach($this->wire->templates as $tpl) {
+      $p = $this->wire->pages->get("template=$tpl");
+      if($p->isMagicPage) {
+        if(method_exists($p, 'init')) $p->init();
+        if(method_exists($p, 'ready')) $ready->add($p);
+        $this->addMagicMethods($p);
+      }
+    }
+    $this->readyClasses = $ready;
   }
 
   /**

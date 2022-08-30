@@ -54,7 +54,56 @@ RockMigrations might not support all external fields, especially not profields l
 2) Hover the caret on the very right of the field of the setting you want to set:
 ![img](https://i.imgur.com/hmydzf5.png)
 
-## Snippets
+## Magic
+
+RockMigrations does not only help you with your migrations and deployments but it also adds a lot of helpers that make developing with ProcessWire even more fun.
+
+### Magic Page Classes
+
+If you are not using [custom page classes](https://processwire.com/blog/posts/pw-3.0.152/#new-ability-to-specify-custom-page-classes) yet I highly recommend to start using them now! Without them every page is a "stupid" page object, but when using custom page classes you add so much more logic to your code and suddenly every event is an EventPage and every newsitem is a NewsPage. You avoid hook-hell and your IDE can assist you because it suddenly understands your code!
+
+The problem with custom page classes is, that they do not trigger `init()` and `ready()` automatically. That means you can't attach hooks in custom page classes by default. But hooks that belong to the page class should in my opinion be written in the pageclass file and not in /site/ready.php! When using RockMigrations you can make your pageclass even smarter and attach hooks directly from within it's own pageclass file:
+
+```php
+// example pageclass
+<?php namespace ProcessWire;
+class DemoPage extends Page {
+  use RockMigrations\MagicPage;
+}
+```
+
+That's all you need to do! Now you can attach hooks in init() and ready():
+
+```php
+// example pageclass
+<?php namespace ProcessWire;
+class DemoPage extends Page {
+  use RockMigrations\MagicPage;
+
+  public function init() {
+    // attach hooks here
+    $this->wire->addHookAfter(...);
+  }
+
+  public function ready() {
+    // or here
+    $page = $this->wire->page; // currently viewed page
+    $this->wire->addHookAfter(...);
+  }
+
+}
+```
+
+A `MagicPage` does also have other magic methods that make the most common hooks a lot easier to use:
+
+* editForm($form) instead of hooking ProcessPageEdit::buildForm
+* onSaveReady() instead of hooking Pages::saveReady
+
+For all available methods see `RockMigrations::addMagicMethods()`!
+
+Note that this feature loads one page of each available template at every boot so it has a little performance penalty. If you have many templates you can disable the feature by setting `$config->useMagicClasses = false`.
+
+### Snippets
 
 Another option that helps you get started with migration syntax is using the shipped VSCode snippets. I highly recommend enabling the `syncSnippets` option in your config:
 
