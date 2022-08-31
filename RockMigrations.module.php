@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.0.5',
+      'version' => '1.0.6',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -486,7 +486,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     // on some pages in the backend live reloading can cause problems
     // or is just not helpful so we exclude it
     if($process == "ProcessModule") return;
-    if($process == "ProcessPageList") return;
 
     $url = $this->wire->config->urls('RockFrontend');
     $path = $this->wire->config->paths('RockFrontend');
@@ -1575,11 +1574,26 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if($this->wire->config->useMagicClasses === false) return;
     if($this->wire->config->useMagicClasses === 0) return;
     foreach($this->wire->templates as $tpl) {
+      // do not init rockmatrix blocks!
+      // this caused issues at FTA accordion not showing up
+      if(strpos($tpl->name, "rmblock-")===0) continue;
       $p = $this->wire->pages->get("template=$tpl");
-      if($p->isMagicPage) {
-        if(method_exists($p, 'init')) $p->init();
-        if(method_exists($p, 'ready')) $ready->add($p);
-        $this->addMagicMethods($p);
+      try {
+        // if the template exists but no page we create on in the trash
+        if($p instanceof NullPage) {
+          $p = new Page();
+          $p->template = $tpl;
+          $p->parent = $this->wire->config->trashPageID;
+          $p->save();
+        }
+        // if it is a magicpage trigger init() and ready()
+        if($p->isMagicPage) {
+          if(method_exists($p, 'init')) $p->init();
+          if(method_exists($p, 'ready')) $ready->add($p);
+          $this->addMagicMethods($p);
+        }
+      } catch (\Throwable $th) {
+        $this->log($th->getMessage());
       }
     }
     $this->readyClasses = $ready;
@@ -1979,8 +1993,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         if(!class_exists($pageClass)) require_once $file->path;
         if($this->doMigrate($file->path)) {
           $tmp = new $pageClass();
-          $this->log("Triggering $pageClass::migrate()");
-          $tmp->migrate();
+          if(method_exists($tmp, 'migrate')) {
+            $this->log("Triggering $pageClass::migrate()");
+            $tmp->migrate();
+          }
         }
         else $this->log("--- Skipping $pageClass (no change)");
         continue;
