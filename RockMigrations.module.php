@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.0.10',
+      'version' => '1.1.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -131,6 +131,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->addHookAfter("Modules::saveConfig", $this, "setRecordFlag");
     $this->addHookBefore("InputfieldForm::render", $this, "showEditInfo");
     $this->addHookBefore("InputfieldForm::render", $this, "showCopyCode");
+    $this->addHookBefore("Modules::uninstall", $this, "unwatchBeforeUninstall");
 
     // other actions on init()
     $this->loadFilesOnDemand();
@@ -1615,6 +1616,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
           $p = new Page();
           $p->template = $tpl;
           $p->parent = $this->wire->config->trashPageID;
+          $p->title = "$tpl fakepage by RockMigrations";
           $p->save();
         }
         // if it is a magicpage trigger init() and ready()
@@ -2003,6 +2005,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $run = ($force OR self::debug OR count($changed));
     if(!$run) return;
 
+    // on module uninstall we reset the watchlist
+    // this is just to indicate that behaviour
+    if(!count($this->watchlist)) return;
+
     // logging
     $this->wire->log->delete($this->className);
     if(!$cli) {
@@ -2109,6 +2115,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->wire->pages->sort($page, $ref->sort);
   }
 
+  /**
+   * Set no migrate flag
+   */
   public function noMigrate() {
     $this->noMigrate = true;
   }
@@ -3026,6 +3035,30 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if($this->record) $this->writeRecorderFiles();
   }
 
+  /**
+   * Unwatch all files
+   */
+  public function unwatchAll() {
+    $this->watchlist->removeAll();
+  }
+
+  /**
+   * On every uninstall of a module we unwatch all files to make sure
+   * that migrations are not run immediately after uninstall.
+   */
+  public function unwatchBeforeUninstall(HookEvent $event) {
+    $this->unwatchAll();
+  }
+
+  /**
+   * Update last run timestamp
+   * @return void
+   */
+  public function updateLastrun($timestamp = null) {
+    if($timestamp === null) $timestamp = time();
+    $this->wire->cache->save(self::cachename, $timestamp, WireCache::expireNever);
+  }
+
   public function writeRecorderFiles() {
     $this->log('Running recorders...');
     foreach($this->recorders as $recorder) {
@@ -3052,15 +3085,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if($type == 'json') $this->json($path, $arr);
     }
     $this->updateLastrun();
-  }
-
-  /**
-   * Update last run timestamp
-   * @return void
-   */
-  public function updateLastrun($timestamp = null) {
-    if($timestamp === null) $timestamp = time();
-    $this->wire->cache->save(self::cachename, $timestamp, WireCache::expireNever);
   }
 
   /**
@@ -3224,6 +3248,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   public function watchEnabled() {
+    if(!$this->wire->user) return false;
     if($this->wire->user->isSuperuser()) return true;
     if($this->wire->config->forceWatch) return true;
     if(defined('RockMigrationsCLI')) return true;
