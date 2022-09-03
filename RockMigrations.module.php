@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.0.7',
+      'version' => '1.0.8',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -139,6 +139,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   public function ready() {
+    $this->forceMigrate();
     $this->addLivereload();
 
     // trigger ready() for all magic classes
@@ -1217,6 +1218,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Run migrations during development on every request
+   * This is handy to code rapidly and get instant output via RockFrontend's
+   * livereload feature!
+   *
+   * To use this feature add this to your /site/init.php:
+   * $config->forceMigrate = true;
+   */
+  private function forceMigrate() {
+    if(!$this->wire->config->forceMigrate) return;
+    if($this->wire->config->ajax) return;
+    $this->migrateAll = true;
+    $this->run();
+  }
+
+  /**
    * Get absolute path
    * If the provided file is not an absolute path this will simply prefix
    * the provided path with the pw root path
@@ -1898,7 +1914,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         $d->template,
         $d->parent,
         $d->status,
-        $d->data);
+        $d->data
+      );
     }
   }
 
@@ -2357,8 +2374,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param Template|string $name
    * @return void
    */
-  public function setFieldOrder($fields, $name) {
-    if(!$template = $this->getTemplate($name)) return;
+  public function setFieldOrder($fields, $template) {
+    if(!$template = $this->getTemplate($template)) return;
 
     // make sure that all fields exist
     foreach($fields as $i=>$field) {
@@ -2675,7 +2692,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if(!$template) return $this->log("Template $name not found");
 
     // it is possible to define templates without data:
-    // rm->migrate('templates' => ['foo', 'bar'])
+    // rm->migrate('templates' => ['tpl1', 'tpl2'])
     if(!$data) return $template;
 
     // save trace of migration to field
@@ -2863,7 +2880,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       'type' => 'markup',
       'label' => 'RockMigrations',
       'description' => '<div class="uk-alert uk-alert-danger">
-        ATTENTION - This item is under control of RockMigrations
+        ATTENTION - This item might be under control of RockMigrations
         </div>
         <div>If you make any changes they might be overwritten
         by the next migration! Here is the backtrace of the last migration:</div>',
