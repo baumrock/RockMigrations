@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.1.0',
+      'version' => '1.1.1',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1907,6 +1907,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *   ],
    * ]);
    *
+   * Short syntax (for development and testing):
+   * $rm->migrate([
+   *   // create plain text fields
+   *   'fields' => ['foo', 'bar', 'baz'],
+   * ]);
+   *
    * @return void
    */
   public function migrate($config) {
@@ -1914,6 +1920,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     // create fields+templates
     foreach($config->fields as $name=>$data) {
+      // if key is an integer and data is a string that means
+      // the fields have been defined name-only
+      if(is_integer($name) AND is_string($data)) {
+        $name = $data;
+        $data = ['type'=>'text'];
+      }
+
       // if no type is set this means that only field data was set
       // for example to update only label or icon of an existing field
       if(array_key_exists('type', $data)) $this->createField($name, $data['type']);
@@ -1927,7 +1940,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     foreach($config->roles as $name=>$data) $this->createRole($name);
 
     // set field+template data after they have been created
-    foreach($config->fields as $name=>$data) $this->setFieldData($name, $data);
+    foreach($config->fields as $name=>$data) {
+      if(is_array($data)) $this->setFieldData($name, $data);
+    }
     foreach($config->templates as $name=>$data) {
       // this check makes it possible to define templates without data
       // that means the defined templates will be created but not changed
