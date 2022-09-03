@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.0.6',
+      'version' => '1.0.7',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1992,7 +1992,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if($pageClass) {
         if(!class_exists($pageClass)) require_once $file->path;
         if($this->doMigrate($file->path)) {
-          $tmp = new $pageClass();
+          // if page id is set we load the page
+          // otherwise we load a nullpage of the pageclass
+          // having a pageID has the benefit that we can load the page
+          // and we will have all properties set (like template)
+          if($file->pageID) $tmp = $this->wire->pages->get($file->pageID);
+          else $tmp = new $pageClass();
           if(method_exists($tmp, 'migrate')) {
             $this->log("Triggering $pageClass::migrate()");
             $tmp->migrate();
@@ -3074,6 +3079,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if($what instanceof Page) {
       $reflector = new \ReflectionClass($what);
       $file = $reflector->getFileName();
+      $opt->pageID = $what->id;
       return $this->watchPageClass(
         $file,
         $reflector->getNamespaceName(),
@@ -3136,6 +3142,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       'trace' => "$tracefile:$traceline",
       'changed' => false,
       'force' => $opt->force,
+      'pageID' => $opt->pageID,
     ]);
     // bd($data, $data->path);
 
