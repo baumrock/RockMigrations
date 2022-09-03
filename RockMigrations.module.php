@@ -1519,7 +1519,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       if($base == 'index.php') continue;
       if($base == 'admin.php') continue;
       if($base == 'RockMigrations.module.php') continue;
-      $trace .= "$base::".$line['function']." (".$line['line'].")\n";
+      $trace .= "$base::{$line['function']}() - L{$line['line']}\n";
     }
     return $trace;
   }
