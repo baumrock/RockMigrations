@@ -94,6 +94,21 @@
     ],
   },
 
+  // tracy debugger config
+  "tracy-config": {
+    "prefix": "tracy-config",
+    "body": [
+      "// tracy config for ddev development",
+      "\\$config->tracy = [",
+      "  'outputMode' => 'development',",
+      "  'guestForceDevelopmentLocal' => true,",
+      "  // 'forceIsLocal' => true, // use this only on local dev!!!!",
+      "  'localRootPath' => '/path/to/your/project/', // with trailing slash!",
+      "  'numLogEntries' => 100, // for RockMigrations",
+      "];",
+    ],
+  },
+
   // this is a placeholder so that all items above can have a trailing slash
   "": {"body": ""}
 }
