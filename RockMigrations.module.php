@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.0.9',
+      'version' => '1.0.10',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1269,7 +1269,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Get code (export data)
    * @return string
    */
-  public function getCode($item) {
+  public function getCode($item, $raw = false) {
     if($item instanceof Field) {
       ob_start();
       $data = $item->getExportData();
@@ -1310,12 +1310,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       unset($data['id']);
       unset($data['name']);
       unset($data['rockmigrations']);
+
+      // use custom fields syntax
+      try {
+        $fields = [];
+        foreach($data['fieldgroupFields'] as $k=>$field) {
+          $context = $data['fieldgroupContexts'][$field];
+          $fields[$field] = $context;
+        }
+        $data = ['fields'=>$fields]+$data;
+      } catch (\Throwable $th) {
+        $this->log($th->getMessage());
+      }
+      unset($data['fieldgroupFields']);
+      unset($data['fieldgroupContexts']);
     }
     if(array_key_exists('_rockmigrations_log', $data)) {
       unset($data['_rockmigrations_log']);
     }
     $code = $this->varexport($data);
-    return "'{$item->name}' => $code,";
+    if($raw) return $code;
+    return "'{$item->name}' => $code";
   }
 
   /**
