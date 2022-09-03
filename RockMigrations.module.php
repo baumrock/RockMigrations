@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.0.8',
+      'version' => '1.0.9',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1840,6 +1840,33 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Merge fields
+   *
+   * This makes it possible to keep manually created fields at the same position
+   * after a migrate() call happened that does not include the manually created
+   * field. Prior to v1.0.9 manually created fields had always been added to the
+   * top of the page editor if not explicitly listed in the migrate() call.
+   */
+  protected function mergeFields(Fieldgroup $old, Fieldgroup $new): Fieldgroup {
+    // set the correct sort order of fields
+    $merged = clone $new;
+    $insertAfter = false;
+    foreach($old as $item) {
+      $newItem = $new->get("name=$item");
+      if($newItem) $insertAfter = $newItem;
+      if($new->has($item)) continue;
+
+      // add item to merged array
+      if($insertAfter) {
+        $merged->insertAfter($item, $insertAfter);
+        $insertAfter = $item;
+      }
+      else $merged->prepend($item);
+    }
+    return $merged;
+  }
+
+  /**
    * Migrate PW setup based on config array
    *
    * Usage:
@@ -2377,6 +2404,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public function setFieldOrder($fields, $template) {
     if(!$template = $this->getTemplate($template)) return;
 
+    // make sure fields is an array and not a fieldgroup
+    if($fields instanceof Fieldgroup) $fields = $fields->getArray();
+
     // make sure that all fields exist
     foreach($fields as $i=>$field) {
       if(!$this->getField($field)) unset($fields[$i]);
@@ -2729,9 +2759,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public function setTemplateFields($template, $fields, $removeOthers = false) {
     $template = $this->getTemplate($template);
     if(!$template) return; // logging happens in getTemplate()
+    $oldfields = clone $template->fields;
 
     $last = null;
     $names = [];
+    $newfields = $this->wire(new Fieldgroup());
     foreach($fields as $name=>$data) {
       if(is_int($name) AND is_int($data)) {
         $name = $this->getField((string)$data)->name;
@@ -2742,12 +2774,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         $data = [];
       }
       $names[] = $name;
+      $field = $this->getField($name);
+      if($field) $newfields->add($field);
       $this->addFieldToTemplate($name, $template, $last);
       $this->setFieldData($name, $data, $template);
       $last = $name;
     }
 
-    if(!$removeOthers) return;
+    if(!$removeOthers) {
+      $merged = $this->mergeFields($oldfields, $newfields);
+      $this->setFieldOrder($merged, $template);
+      return;
+    }
+
+    // remove other fields!
     foreach($template->fields as $field) {
       $name = (string)$field;
       if(!in_array($name, $names)) {
