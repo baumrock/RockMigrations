@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.2.0',
+      'version' => '1.2.1',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -393,6 +393,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     if(!$field) return; // logging is done in getField()
     $template = $this->getTemplate($template);
     if(!$template) return; // logging is done in getField()
+    if(!$afterfield AND !$beforefield) {
+      if($template->fields->has($field)) return;
+    }
 
     $afterfield = $this->getField($afterfield);
     $beforefield = $this->getField($beforefield);
