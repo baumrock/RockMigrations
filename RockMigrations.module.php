@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.1.1',
+      'version' => '1.2.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1622,6 +1622,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         // if it is a magicpage trigger init() and ready()
         if($p->isMagicPage) {
           if(method_exists($p, 'init')) $p->init();
+          if(method_exists($p, 'migrate')) $this->watch($p);
           if(method_exists($p, 'ready')) $ready->add($p);
           $this->addMagicMethods($p);
         }
