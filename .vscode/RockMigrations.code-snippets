@@ -35,6 +35,7 @@
       "// install german language pack for the default language",
       "// this will install language support, download the ZIP and install it",
       "\\$rm->setLanguageTranslations('DE');",
+      "\\$rm->installModule('ProcessWireUpgrade', 'https://github.com/ryancramerdesign/ProcessWireUpgrade/archive/master.zip');",
     ],
     "description": "Set some custom PW defaults"
   },
