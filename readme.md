@@ -1,4 +1,4 @@
-# RockMigrations
+<img src=rockmigrations.svg height=100>
 
 > The swiss (or austrian in this case) army knife for migrations.
 
