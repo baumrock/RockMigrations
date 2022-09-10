@@ -12,9 +12,19 @@ The module also contains several helpers that make it extremely easy to implemen
 
 ## QuickStart
 
-The example code uses `bd()` calls for dumping data. You need TracyDebugger installed!
+The first thing I always do is to add this to my development config ([see here how to manage different configs for dev/live](https://processwire.com/talk/topic/18719-maintain-separate-configs-for-livedev-like-a-boss/)):
 
-Put this in your `site/migrate.php`
+```php
+$config->rockmigrations = [
+  'syncSnippets' => true,
+];
+```
+
+This copies the VSCode snippets to the .vscode folder and that makes VSCode show helpful snippets, eg for loading RockMigrations and showing code suggestions:
+
+<img src=https://i.imgur.com/j11eVD3.png height=250>
+
+To write your first migrations just put this in your `site/migrate.php`. The example code uses `bd()` calls for dumping data. You need TracyDebugger installed!
 
 ```php
 /** @var RockMigrations $rm */
