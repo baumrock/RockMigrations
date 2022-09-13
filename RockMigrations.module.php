@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.2.1',
+      'version' => '1.3.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1611,7 +1611,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     foreach($this->wire->templates as $tpl) {
       // do not init rockmatrix blocks!
       // this caused issues at FTA accordion not showing up
-      if(strpos($tpl->name, "rmblock-")===0) continue;
+      // same problem on ÖGKV but only when superuser
+      if($tpl->isRockMatrixBlock) continue;
+
+      // this line causes an error for rockmatrix blocks
       $p = $this->wire->pages->get("template=$tpl");
       try {
         // if the template exists but no page we create on in the trash
