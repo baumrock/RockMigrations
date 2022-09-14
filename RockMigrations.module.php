@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.3.0',
+      'version' => '1.3.1',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -874,12 +874,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   /**
    * Create or return a PW user
    *
-   * Usage:
-   * $rm->createUser('demo', 'password');
+   * This will use a random password for the user
    *
+   * Usage:
    * $rm->createUser('demo', [
    *   'roles' => ['webmaster'],
-   *   'password' => 'MySecretPassword',
    * ]);
    *
    * @param string $username
@@ -888,7 +887,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    */
   public function createUser($username, $data = []) {
     $user = $this->users->get($username);
-    if(!$user->id) $user = $this->wire->users->add($username);
+    if(!$user->id) {
+      $user = $this->wire->users->add($username);
+
+      // setup password
+      $rand = $this->wire(new WireRandom()); /** @var WireRandom $rand */
+      $password = $rand->alphanumeric(null, [
+        'minLength' => 10,
+        'maxLength' => 20,
+      ]);
+      $data['password'] = $password;
+    }
     $this->setUserData($user, $data);
     return $user;
   }
@@ -2847,55 +2856,36 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   /**
    * Set user data
    *
-   * Usage:
-   * $rm->setUserData('demo', 'mySecretPassword');
-   *
-   * $rm->setUserData('demo', 50); // 50 char random string
-   *
    * $rm->setUserData('demo', [
    *   'roles' => [...],
-   *   'password' => ...,
    *   'adminTheme' => ...,
    * ]);
    *
    * @param mixed $user
-   * @param mixed $data
+   * @param array $data
    * @return User
    */
-  public function setUserData($user, $data) {
+  public function setUserData($user, array $data) {
     $user = $this->getUser($user);
     if(!$user) return; // logging above
     $user->of(false);
 
-    // setup data
-    if(is_int($data)) {
-      $rand = $this->wire(new WireRandom()); /** @var WireRandom $rand */
-      $data = $rand->alphanumeric($data);
-    }
-
-    if(is_string($data)) $data = ['password' => $data];
-
     // setup options
     $opt = $this->wire(new WireData()); /** @var WireData $opt */
     $opt->setArray([
+      // dont set password here as this would reset passwords
+      // when createUser() is used in a migration!
       'roles' => [],
-      'password' => null,
       'admintheme' => 'AdminThemeUikit',
+      'password' => null,
     ]);
     $opt->setArray($data);
 
     // set roles
     foreach($opt->roles as $role) $this->addRoleToUser($role, $user);
 
-    // setup password
-    $password = $opt->password;
-    $rand = $this->wire(new WireRandom()); /** @var WireRandom $rand */
-    if(is_array($opt->password)) $password = $rand->alphanumeric($opt->password);
-    if(!$password) $password = $rand->alphanumeric(null, [
-      'minLength' => 10,
-      'maxLength' => 20,
-    ]);
-    $user->pass = $password;
+    // set password if it is set
+    if($opt->password) $user->set('pass', $opt->password);
 
     // save admin theme in 2 steps
     // otherwise the admin theme will not update (PW issue)
