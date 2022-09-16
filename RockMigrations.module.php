@@ -1,4 +1,6 @@
-<?php namespace ProcessWire;
+<?php
+
+namespace ProcessWire;
 
 use DirectoryIterator;
 use RockMatrix\Block;
@@ -16,7 +18,8 @@ use TracyDebugger;
  */
 require_once __DIR__ . "/MagicPage.php";
 require_once __DIR__ . "/PageClass.php";
-class RockMigrations extends WireData implements Module, ConfigurableModule {
+class RockMigrations extends WireData implements Module, ConfigurableModule
+{
 
   const debug = false;
   const cachename = 'rockmigrations-last-run';
@@ -61,10 +64,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   /** @var YAML */
   private $yaml;
 
-  public static function getModuleInfo() {
+  public static function getModuleInfo()
+  {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.3.1',
+      'version' => '1.3.2',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -74,27 +78,29 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     ];
   }
 
-  public function __construct() {
+  public function __construct()
+  {
     parent::__construct();
     $this->path = $this->wire->config->paths($this);
-    $this->wire->classLoader->addNamespace("RockMigrations", __DIR__."/classes");
+    $this->wire->classLoader->addNamespace("RockMigrations", __DIR__ . "/classes");
 
     $this->recorders = $this->wire(new WireArrayRM());
     $this->watchlist = $this->wire(new WireArrayRM());
     $this->lastrun = (int)$this->wire->cache->get(self::cachename);
   }
 
-  public function init() {
+  public function init()
+  {
     $config = $this->wire->config;
     $this->wire('rockmigrations', $this);
-    if($config->debug) $this->setOutputLevel(self::outputLevelVerbose);
+    if ($config->debug) $this->setOutputLevel(self::outputLevelVerbose);
 
     // for development
     // $this->watch($this, false);
 
     $this->conf = new WireData();
     $this->conf->setArray($this->getArray()); // get modules config
-    if(is_array($config->rockmigrations)) {
+    if (is_array($config->rockmigrations)) {
       $this->conf->setArray($config->rockmigrations); // get config from file
     }
 
@@ -106,7 +112,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     // always watch + migrate /site/migrate.[yaml|json|php]
     // the third parameter makes it use the migrateNew() method
     // this will be the first file that is watched!
-    $this->watch($config->paths->site."migrate", true);
+    $this->watch($config->paths->site . "migrate", true);
     $this->watchModules();
 
     // disabled as of 2022-06-04
@@ -139,13 +145,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->initMagicPages();
   }
 
-  public function ready() {
+  public function ready()
+  {
     $this->forceMigrate();
     $this->addLivereload();
 
     // trigger ready() for all magic classes
-    foreach($this->readyClasses as $p) {
-      if(method_exists($p, 'ready')) $p->ready();
+    foreach ($this->readyClasses as $p) {
+      if (method_exists($p, 'ready')) $p->ready();
     }
 
     // other actions
@@ -153,13 +160,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->changeFooter();
 
     // load RockMigrations.js on backend
-    if($this->wire->page->template == 'admin') {
+    if ($this->wire->page->template == 'admin') {
       $this->wire->config->scripts->add(
-        $this->wire->config->urls($this).'RockMigrations.js'
+        $this->wire->config->urls($this) . 'RockMigrations.js'
       );
 
       // fix ProcessWire language tabs issue
-      if($this->wire->languages) {
+      if ($this->wire->languages) {
         $this->wire->config->js('rmUserLang', $this->wire->user->language->id);
       }
     }
@@ -179,8 +186,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *
    * @return Inputfield
    */
-  public function addAfter($wrapper, $existingItem, $newItem) {
-    if(!$existingItem instanceof Inputfield) $existingItem = $wrapper->get($existingItem);
+  public function addAfter($wrapper, $existingItem, $newItem)
+  {
+    if (!$existingItem instanceof Inputfield) $existingItem = $wrapper->get($existingItem);
     $wrapper->add($newItem);
     $newItem = $wrapper->children()->last();
     $wrapper->insertAfter($newItem, $existingItem);
@@ -191,10 +199,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Add sourcecode button to ckeditor fields for superuser
    * @return void
    */
-  public function addSourceCodeButton(HookEvent $event) {
-    if(!$this->wire->user->isSuperuser()) return;
+  public function addSourceCodeButton(HookEvent $event)
+  {
+    if (!$this->wire->user->isSuperuser()) return;
     $field = $event->object;
-    if(!$field->toolbar) return;
+    if (!$field->toolbar) return;
     $field->toolbar .= ",Source";
   }
 
@@ -202,9 +211,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Make all pages having given template be created on top of the list
    * @return void
    */
-  public function createOnTop($tpl) {
+  public function createOnTop($tpl)
+  {
     $tpl = $this->wire->templates->get((string)$tpl);
-    $this->addHookAfter("Pages::added", function(HookEvent $event) {
+    $this->addHookAfter("Pages::added", function (HookEvent $event) {
       $page = $event->arguments(0);
       $this->wire->pages->sort($page, 0);
     });
@@ -214,7 +224,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Remove non-breaking spaces in string
    * @return string
    */
-  public function regularSpaces($str) {
+  public function regularSpaces($str)
+  {
     return preg_replace('/\xc2\xa0/', ' ', $str);
   }
 
@@ -229,19 +240,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *
    * @return void
    */
-  public function setPageNameFromField($template, $fields = 'title') {
-    if($template instanceof Page) $template = $template->template;
+  public function setPageNameFromField($template, $fields = 'title')
+  {
+    if ($template instanceof Page) $template = $template->template;
     $template = $this->wire->templates->get((string)$template);
-    if(!$template) return;
+    if (!$template) return;
     $tpl = "template=$template";
-    $this->addHookAfter("Pages::saved($tpl,id>0)", function(HookEvent $event) use($fields) {
+    $this->addHookAfter("Pages::saved($tpl,id>0)", function (HookEvent $event) use ($fields) {
       /** @var Page $page */
       $page = $event->arguments(0);
-      if($page->rmSetPageName) return;
+      if ($page->rmSetPageName) return;
       $page->rmSetPageName = true;
       $langs = $this->wire->languages;
-      if($langs) {
-        foreach($langs as $lang) {
+      if ($langs) {
+        foreach ($langs as $lang) {
           try {
             // dont know why exactly that is necessary but had problems
             // at kaumberg "localName not callable in this context"??
@@ -252,35 +264,33 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
           }
 
           // get new value
-          if(is_array($fields)) {
+          if (is_array($fields)) {
             $new = '';
-            foreach($fields as $field) {
-              if($new) continue;
+            foreach ($fields as $field) {
+              if ($new) continue;
               $new = $page->getLanguageValue($lang, (string)$field);
             }
-          }
-          else $new = $page->getLanguageValue($lang, (string)$fields);
+          } else $new = $page->getLanguageValue($lang, (string)$fields);
 
           $new = $event->sanitizer->markupToText($new);
           $new = $event->sanitizer->pageNameTranslate($new);
           $new = $event->wire->pages->names()->uniquePageName($new, $page);
-          if($old!=$new) {
-            if($lang->isDefault()) $page->setName($new);
+          if ($old != $new) {
+            if ($lang->isDefault()) $page->setName($new);
             else $page->setName($new, $lang);
             $this->message($this->_("Page name updated to $new ($lang->name)"));
           }
         }
         $page->save(['noHooks' => true]);
-      }
-      else {
+      } else {
         $old = $page->name;
 
-        if(is_array($fields)) $new = $page->get(implode("|", $fields));
+        if (is_array($fields)) $new = $page->get(implode("|", $fields));
         else $new = $page->get((string)$fields);
 
         $new = $event->sanitizer->markupToText($new);
         $new = $event->sanitizer->pageNameTranslate($new);
-        if($new AND $old!=$new) {
+        if ($new and $old != $new) {
           $new = $event->wire->pages->names()->uniquePageName($new, $page);
           $page->name = $new;
         }
@@ -288,12 +298,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         $this->message($this->_("Page name updated to $new"));
       }
     });
-    $this->addHookAfter("ProcessPageEdit::buildForm", function(HookEvent $event) use($template, $fields) {
+    $this->addHookAfter("ProcessPageEdit::buildForm", function (HookEvent $event) use ($template, $fields) {
       $field = is_array($fields) ? implode("|", $fields) : $fields;
       $page = $event->object->getPage();
-      if($page->template != $template) return;
+      if ($page->template != $template) return;
       $form = $event->return;
-      if($f = $form->get('_pw_page_name')) {
+      if ($f = $form->get('_pw_page_name')) {
         $f->prependMarkup = "<style>#wrap_{$f->id} input[type=text] { display: none; }</style>";
         $f->notes = $this->_("Page name will be set automatically from field '$field' on save.");
       }
@@ -310,7 +320,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *
    * @param mixed $object
    */
-  public function setPageNameFromTitle($template) {
+  public function setPageNameFromTitle($template)
+  {
     return $this->setPageNameFromField($template, 'title');
   }
 
@@ -325,53 +336,54 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *
    * @return InputfieldFieldset
    */
-  public function wrapFields(InputfieldWrapper $form, array $fields, array $fieldset) {
+  public function wrapFields(InputfieldWrapper $form, array $fields, array $fieldset)
+  {
     $_fields = [];
     $last = false;
-    foreach($fields as $k=>$v) {
+    foreach ($fields as $k => $v) {
       $noLast = false;
       $field = $v;
       $fieldData = null;
-      if(is_string($k)) {
+      if (is_string($k)) {
         $field = $k;
         $fieldData = $v;
       }
 
-      if(is_array($field)) {
+      if (is_array($field)) {
         $form->add($field);
         $field = $form->children()->last();
         $noLast = true;
       }
 
-      if(!$field instanceof Inputfield) $field = $form->get((string)$field);
-      if($fieldData) $field->setArray($fieldData);
-      if($field instanceof Inputfield) {
+      if (!$field instanceof Inputfield) $field = $form->get((string)$field);
+      if ($fieldData) $field->setArray($fieldData);
+      if ($field instanceof Inputfield) {
         $_fields[] = $field;
 
         // we update the "last" variable to be the current field
         // we do not use runtime fields (applied via array syntax)
         // this ensures that the wrapper is at the same position where
         // the field of the form was
-        if(!$noLast) $last = $field;
+        if (!$noLast) $last = $field;
       }
     }
 
     // no fields, no render
     // this can be the case in modal windows when the page editor is called
     // with a ?field or ?fields get parameter to only render specific fields
-    if(!count($_fields)) return;
+    if (!count($_fields)) return;
 
     /** @var InputfieldFieldset $f */
     $fs = $this->wire('modules')->get('InputfieldFieldset');
-    foreach($fieldset as $k=>$v) $fs->$k = $v;
-    if($last) $form->insertAfter($fs, $last);
+    foreach ($fieldset as $k => $v) $fs->$k = $v;
+    if ($last) $form->insertAfter($fs, $last);
     else $form->add($fs);
 
     // now remove fields from the form and add them to the fieldset
-    foreach($_fields as $f) {
+    foreach ($_fields as $f) {
       // if the field is a runtime only field we add a temporary name
       // otherwise the remove causes an endless loop
-      if(!$f->name) $f->name = uniqid();
+      if (!$f->name) $f->name = uniqid();
       $form->remove($f);
       $fs->add($f);
     }
@@ -388,26 +400,30 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param Template|string $template
    * @return void
    */
-  public function addFieldToTemplate($field, $template, $afterfield = null, $beforefield = null) {
+  public function addFieldToTemplate($field, $template, $afterfield = null, $beforefield = null)
+  {
     $field = $this->getField($field);
-    if(!$field) return; // logging is done in getField()
+    if (!$field) return; // logging is done in getField()
     $template = $this->getTemplate($template);
-    if(!$template) return; // logging is done in getField()
-    if(!$afterfield AND !$beforefield) {
-      if($template->fields->has($field)) return;
+    if (!$template) return; // logging is done in getField()
+    if (!$afterfield and !$beforefield) {
+      if ($template->fields->has($field)) return;
     }
 
     $afterfield = $this->getField($afterfield);
     $beforefield = $this->getField($beforefield);
-    $fg = $template->fieldgroup; /** @var Fieldgroup $fg */
+    $fg = $template->fieldgroup;
+    /** @var Fieldgroup $fg */
 
-    if($afterfield) $fg->insertAfter($field, $afterfield);
-    elseif($beforefield) $fg->insertBefore($field, $beforefield);
+    if ($afterfield) $fg->insertAfter($field, $afterfield);
+    elseif ($beforefield) $fg->insertBefore($field, $beforefield);
     else $fg->add($field);
 
     // add end field for fieldsets
-    if($field->type instanceof FieldtypeFieldsetOpen
-      AND !$field->type instanceof FieldtypeFieldsetClose) {
+    if (
+      $field->type instanceof FieldtypeFieldsetOpen
+      and !$field->type instanceof FieldtypeFieldsetClose
+    ) {
       $closer = $field->type->getFieldsetCloseField($field, false);
       $this->addFieldToTemplate($closer, $template, $field);
     }
@@ -432,13 +448,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param bool $sortFields
    * @return void
    */
-  public function addFieldsToTemplate($fields, $template, $sortFields = false) {
-    foreach($fields as $k=>$v) {
+  public function addFieldsToTemplate($fields, $template, $sortFields = false)
+  {
+    foreach ($fields as $k => $v) {
       // if the key is an integer, it's a simple field
-      if(is_int($k)) $this->addFieldToTemplate((string)$v, $template);
+      if (is_int($k)) $this->addFieldToTemplate((string)$v, $template);
       else $this->addFieldToTemplate((string)$k, $template, $v);
     }
-    if($sortFields) $this->setFieldOrder($fields, $template);
+    if ($sortFields) $this->setFieldOrder($fields, $template);
   }
 
   /**
@@ -450,17 +467,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param string $title Optional title of the language
    * @return Language Language that was created
    */
-  public function addLanguage(string $name, string $title = null) {
+  public function addLanguage(string $name, string $title = null)
+  {
     // Make sure Language Support is installed
     $languages = $this->addLanguageSupport();
-    if(!$languages) return $this->log("Failed installing LanguageSupport");
+    if (!$languages) return $this->log("Failed installing LanguageSupport");
 
     $lang = $this->getLanguage($name);
-    if(!$lang->id) {
+    if (!$lang->id) {
       $lang = $languages->add($name);
       $languages->reloadLanguages();
     }
-    if($title) $lang->setAndSave('title', $title);
+    if ($title) $lang->setAndSave('title', $title);
     return $lang;
   }
 
@@ -468,11 +486,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Install the languagesupport module
    * @return Languages
    */
-  public function addLanguageSupport() {
-    if(!$this->modules->isInstalled("LanguageSupport")) {
+  public function addLanguageSupport()
+  {
+    if (!$this->modules->isInstalled("LanguageSupport")) {
       $this->wire->pages->setOutputFormatting(false);
       $ls = $this->installModule("LanguageSupport", ['force' => true]);
-      if(!$this->wire->languages) $ls->init();
+      if (!$this->wire->languages) $ls->init();
     }
     return $this->wire->languages;
   }
@@ -483,19 +502,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * This is only added on some pages to prevent reloads from causing issues
    * @return void
    */
-  protected function addLivereload() {
-    if(!$this->wire->modules->isInstalled('RockFrontend')) return;
-    if(!$this->wire->config->livereload) return;
+  protected function addLivereload()
+  {
+    if (!$this->wire->modules->isInstalled('RockFrontend')) return;
+    if (!$this->wire->config->livereload) return;
     $process = $this->wire->page->process;
 
     // on some pages in the backend live reloading can cause problems
     // or is just not helpful so we exclude it
-    if($process == "ProcessModule") return;
+    if ($process == "ProcessModule") return;
 
     $url = $this->wire->config->urls('RockFrontend');
     $path = $this->wire->config->paths('RockFrontend');
-    $m = filemtime($path."livereload.js");
-    $this->wire->config->scripts->add($url."livereload.js?m=$m");
+    $m = filemtime($path . "livereload.js");
+    $this->wire->config->scripts->add($url . "livereload.js?m=$m");
   }
 
   /**
@@ -503,30 +523,31 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param Page $obj
    * @return void
    */
-  public function addMagicMethods($obj) {
+  public function addMagicMethods($obj)
+  {
 
-    if(method_exists($obj, "editForm")) {
-      $this->wire->addHookAfter("ProcessPageEdit::buildForm", function($event) use($obj) {
+    if (method_exists($obj, "editForm")) {
+      $this->wire->addHookAfter("ProcessPageEdit::buildForm", function ($event) use ($obj) {
         $page = $event->object->getPage();
-        if($obj->className !== $page->className) return;
+        if ($obj->className !== $page->className) return;
         $form = $event->return;
         $page->editForm($form, $page);
       });
     }
 
-    if(method_exists($obj, "editFormContent")) {
-      $this->wire->addHookAfter("ProcessPageEdit::buildFormContent", function($event) use($obj) {
+    if (method_exists($obj, "editFormContent")) {
+      $this->wire->addHookAfter("ProcessPageEdit::buildFormContent", function ($event) use ($obj) {
         $page = $event->object->getPage();
-        if($obj->className !== $page->className) return;
+        if ($obj->className !== $page->className) return;
         $form = $event->return;
         $page->editFormContent($form, $page);
       });
     }
 
-    if(method_exists($obj, "editFormSettings")) {
-      $this->wire->addHookAfter("ProcessPageEdit::buildFormSettings", function($event) use($obj) {
+    if (method_exists($obj, "editFormSettings")) {
+      $this->wire->addHookAfter("ProcessPageEdit::buildFormSettings", function ($event) use ($obj) {
         $page = $event->object->getPage();
-        if($obj->className !== $page->className) return;
+        if ($obj->className !== $page->className) return;
         $form = $event->return;
         $page->editFormSettings($form, $page);
       });
@@ -534,43 +555,42 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     // execute onSaved on every save
     // this will also fire when id=0
-    if(method_exists($obj, "onSaved")) {
-      $this->wire->addHookAfter("Pages::saved", function($event) use($obj) {
+    if (method_exists($obj, "onSaved")) {
+      $this->wire->addHookAfter("Pages::saved", function ($event) use ($obj) {
         $page = $event->arguments(0);
-        if($obj->className !== $page->className) return;
+        if ($obj->className !== $page->className) return;
         $page->onSaved();
       });
     }
 
     // execute onSaveReady on every save
     // this will also fire when id=0
-    if(method_exists($obj, "onSaveReady")) {
-      $this->wire->addHookAfter("Pages::saveReady", function($event) use($obj) {
+    if (method_exists($obj, "onSaveReady")) {
+      $this->wire->addHookAfter("Pages::saveReady", function ($event) use ($obj) {
         $page = $event->arguments(0);
-        if($obj->className !== $page->className) return;
+        if ($obj->className !== $page->className) return;
         $page->onSaveReady();
       });
     }
 
     // execute onCreate on saveReady when id=0
-    if(method_exists($obj, "onCreate")) {
-      $this->wire->addHookAfter("Pages::saveReady", function($event) use($obj) {
+    if (method_exists($obj, "onCreate")) {
+      $this->wire->addHookAfter("Pages::saveReady", function ($event) use ($obj) {
         $page = $event->arguments(0);
-        if($page->id) return;
-        if($obj->className !== $page->className) return;
+        if ($page->id) return;
+        if ($obj->className !== $page->className) return;
         $page->onCreate();
       });
     }
 
     // execute onAdded on saved when id=0
-    if(method_exists($obj, "onAdded")) {
-      $this->wire->addHookAfter("Pages::added", function($event) use($obj) {
+    if (method_exists($obj, "onAdded")) {
+      $this->wire->addHookAfter("Pages::added", function ($event) use ($obj) {
         $page = $event->arguments(0);
-        if($obj->className !== $page->className) return;
+        if ($obj->className !== $page->className) return;
         $page->onAdded();
       });
     }
-
   }
 
   /**
@@ -580,9 +600,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param string|int $role
    * @return boolean
    */
-  public function addPermissionToRole($permission, $role) {
+  public function addPermissionToRole($permission, $role)
+  {
     $role = $this->getRole($role);
-    if(!$role) return $this->log("Role $role not found");
+    if (!$role) return $this->log("Role $role not found");
     $role->of(false);
     $role->addPermission($permission);
     return $role->save();
@@ -595,12 +616,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param User|string $user
    * @return void
    */
-  public function addRoleToUser($role, $user) {
+  public function addRoleToUser($role, $user)
+  {
     $role = $this->getRole($role);
     $user = $this->getUser($user);
     $msg = "Cannot add role to user";
-    if(!$role) return $this->log("$msg - role not found");
-    if(!$user) return $this->log("$msg - user not found");
+    if (!$role) return $this->log("$msg - role not found");
+    if (!$user) return $this->log("$msg - user not found");
     $user->of(false);
     $user->addRole($role);
     $user->save();
@@ -620,12 +642,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *
    * @return void
    */
-  public function addTemplateAccess($templates, $role, $acc) {
-    if(!$role = $this->getRole($role)) return;
-    if(!is_array($templates)) $templates = [$templates];
-    foreach($templates as $tpl) {
+  public function addTemplateAccess($templates, $role, $acc)
+  {
+    if (!$role = $this->getRole($role)) return;
+    if (!is_array($templates)) $templates = [$templates];
+    foreach ($templates as $tpl) {
       $tpl = $this->getTemplate($tpl);
-      if(!$tpl) continue; // log is done above
+      if (!$tpl) continue; // log is done above
       $tpl->addRole($role, $acc);
       $tpl->save();
     }
@@ -636,13 +659,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * This will NOT trigger init() or ready()
    * You can also use $rm->initClasses() with setting autoload=true
    */
-  public function autoload($path, $namespace) {
+  public function autoload($path, $namespace)
+  {
     $path = Paths::normalizeSeparators($path);
-    spl_autoload_register(function($class) use($path, $namespace) {
-      if(strpos($class, "$namespace\\") !== 0) return;
-      $name = substr($class, strlen($namespace)+1);
+    spl_autoload_register(function ($class) use ($path, $namespace) {
+      if (strpos($class, "$namespace\\") !== 0) return;
+      $name = substr($class, strlen($namespace) + 1);
       $file = "$path/$name.php";
-      if(is_file($file)) require_once($file);
+      if (is_file($file)) require_once($file);
     });
   }
 
@@ -650,24 +674,26 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Get basename of file or object
    * @return string
    */
-  public function basename($file) {
+  public function basename($file)
+  {
     return basename($this->filePath($file));
   }
 
   /**
    * Add deployment info to backend pages
    */
-  public function changeFooter() {
-    if($this->wire->page->template != 'admin') return;
+  public function changeFooter()
+  {
+    if ($this->wire->page->template != 'admin') return;
     $str = $this->wire->config->httpHost;
     $time = date("Y-m-d H:i:s", filemtime($this->wire->config->paths->root));
-    if($this->wire->user->isSuperuser()) {
+    if ($this->wire->user->isSuperuser()) {
       $dir = $this->wire->config->paths->root;
       $str = "<span title='$dir @ $time' uk-tooltip>$str</span>";
     }
-    $this->wire->addHookAfter('AdminThemeUikit::renderFile', function($event) use($str) {
+    $this->wire->addHookAfter('AdminThemeUikit::renderFile', function ($event) use ($str) {
       $file = $event->arguments(0); // full path/file being rendered
-      if(basename($file) !== '_footer.php') return;
+      if (basename($file) !== '_footer.php') return;
       $event->return = str_replace("ProcessWire", $str, $event->return);
     });
   }
@@ -693,21 +719,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param array $options
    * @return Field|false
    */
-  public function createField($name, $type, $options = null) {
-    if(is_array($type)) {
+  public function createField($name, $type, $options = null)
+  {
+    if (is_array($type)) {
       $options = $type;
       $type = $type['type'];
     }
     $field = $this->getField($name, true);
 
     // field does not exist
-    if(!$field) {
+    if (!$field) {
       // get type
       $type = $this->getFieldtype($type);
-      if(!$type) return; // logging above
+      if (!$type) return; // logging above
 
       // create the new field
-      if(strtolower($name) !== $name) throw new WireException("Fieldname must be lowercase!");
+      if (strtolower($name) !== $name) throw new WireException("Fieldname must be lowercase!");
       $name = strtolower($name);
       $field = $this->wire(new Field());
       $field->type = $type;
@@ -716,25 +743,26 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       $field->save();
 
       // create end field for fieldsets
-      if($field->type instanceof FieldtypeFieldsetOpen) {
+      if ($field->type instanceof FieldtypeFieldsetOpen) {
         $field->type->getFieldsetCloseField($field, true);
       }
 
       // this will auto-generate the repeater template
-      if($field->type instanceof FieldtypeRepeater) {
+      if ($field->type instanceof FieldtypeRepeater) {
         $field->type->getRepeaterTemplate($field);
       }
     }
 
     // set options
-    if($options) $field = $this->setFieldData($field, $options);
+    if ($options) $field = $this->setFieldData($field, $options);
 
     return $field;
   }
 
-  private function createNeededFolders() {
-    $dir = $this->wire->config->paths->assets."sessions";
-    if(!is_dir($dir)) $this->wire->files->mkdir($dir);
+  private function createNeededFolders()
+  {
+    $dir = $this->wire->config->paths->assets . "sessions";
+    if (!is_dir($dir)) $this->wire->files->mkdir($dir);
   }
 
   /**
@@ -757,13 +785,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param array $data
    * @return Page
    */
-  public function createPage(string $title, $name = null, $template, $parent, array $status = [], array $data = []) {
+  public function createPage(string $title, $name = null, $template, $parent, array $status = [], array $data = [])
+  {
     // create pagename from page title if it is not set
-    if(!$name) $name = $this->sanitizer->pageNameTranslate($title);
+    if (!$name) $name = $this->sanitizer->pageNameTranslate($title);
 
     $log = "Parent $parent not found";
     $parent = $this->getPage($parent);
-    if(!$parent->id) return $this->log($log);
+    if (!$parent->id) return $this->log($log);
 
     // get page if it exists
     $page = $this->getPage([
@@ -772,7 +801,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       'parent' => $parent,
     ], true);
 
-    if($page AND $page->id) {
+    if ($page and $page->id) {
       $page->status($status);
       $page->setAndSave($data);
       return $page;
@@ -800,8 +829,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param string $description
    * @return Permission
    */
-  public function createPermission($name, $description = null) {
-    if(!$perm = $this->getPermission($name)) {
+  public function createPermission($name, $description = null)
+  {
+    if (!$perm = $this->getPermission($name)) {
       $perm = $this->wire->permissions->add($name);
       $this->log("Created permission $name");
     }
@@ -815,12 +845,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param array $permissions
    * @return Role|null
    */
-  public function createRole($name, $permissions = []) {
-    if(!$name) return $this->log("Define a name for the role!");
+  public function createRole($name, $permissions = [])
+  {
+    if (!$name) return $this->log("Define a name for the role!");
 
     $role = $this->getRole($name);
-    if(!$role) $role = $this->roles->add($name);
-    foreach($permissions as $permission) {
+    if (!$role) $role = $this->roles->add($name);
+    foreach ($permissions as $permission) {
       $this->addPermissionToRole($permission, $role);
     }
 
@@ -831,7 +862,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Helper to create webmaster role
    * @return Role
    */
-  public function createRoleWebmaster($permissions = [], $name = 'webmaster') {
+  public function createRoleWebmaster($permissions = [], $name = 'webmaster')
+  {
     $permissions = array_merge([
       'page-edit',
       'page-edit-front',
@@ -850,9 +882,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param bool $addTitlefield
    * @return void
    */
-  public function createTemplate($name, $addTitlefield = true) {
+  public function createTemplate($name, $addTitlefield = true)
+  {
     $t = $this->templates->get((string)$name);
-    if(!$t) {
+    if (!$t) {
       // create new fieldgroup
       $fg = $this->wire(new Fieldgroup());
       $fg->name = $name;
@@ -866,7 +899,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     }
 
     // add title field to this template
-    if($addTitlefield) $this->addFieldToTemplate('title', $t);
+    if ($addTitlefield) $this->addFieldToTemplate('title', $t);
 
     return $t;
   }
@@ -885,13 +918,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param array $data
    * @return User
    */
-  public function createUser($username, $data = []) {
+  public function createUser($username, $data = [])
+  {
     $user = $this->users->get($username);
-    if(!$user->id) {
+    if (!$user->id) {
       $user = $this->wire->users->add($username);
 
       // setup password
-      $rand = $this->wire(new WireRandom()); /** @var WireRandom $rand */
+      $rand = $this->wire(new WireRandom());
+      /** @var WireRandom $rand */
       $password = $rand->alphanumeric(null, [
         'minLength' => 10,
         'maxLength' => 20,
@@ -906,11 +941,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Create view file for template (if it does not exist already)
    * @return void
    */
-  public function createViewFile($template, $content = "\n") {
+  public function createViewFile($template, $content = "\n")
+  {
     $template = $this->getTemplate($template);
-    $file = $this->wire->config->paths->templates.$template->name.".php";
-    if(is_file($content)) $content = file_get_contents($content);
-    if(!is_file($file)) $this->wire->files->filePutContents($file, $content);
+    $file = $this->wire->config->paths->templates . $template->name . ".php";
+    if (is_file($content)) $content = file_get_contents($content);
+    if (!is_file($file)) $this->wire->files->filePutContents($file, $content);
   }
 
   /**
@@ -919,12 +955,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param bool $quiet
    * @return void
    */
-  public function deleteField($name, $quiet = false) {
+  public function deleteField($name, $quiet = false)
+  {
     $field = $this->getField($name, $quiet);
-    if(!$field) return; // logging in getField()
+    if (!$field) return; // logging in getField()
 
     // delete _END field for fieldsets first
-    if($field->type instanceof FieldtypeFieldsetOpen) {
+    if ($field->type instanceof FieldtypeFieldsetOpen) {
       $closer = $field->type->getFieldsetCloseField($field, false);
       $this->deleteField($closer, $quiet);
     }
@@ -934,7 +971,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $field->flags = 0;
 
     // remove the field from all fieldgroups
-    foreach($this->fieldgroups as $fieldgroup) {
+    foreach ($this->fieldgroups as $fieldgroup) {
       /** @var Fieldgroup $fieldgroup */
       $fieldgroup->remove($field);
       $fieldgroup->save();
@@ -954,9 +991,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param array|string $fields
    * @return void
    */
-  public function deleteFields($fields, $quiet = false) {
-    if(is_string($fields)) $fields = $this->wire->fields->find($fields);
-    foreach($fields as $field) $this->deleteField($field, $quiet);
+  public function deleteFields($fields, $quiet = false)
+  {
+    if (is_string($fields)) $fields = $this->wire->fields->find($fields);
+    foreach ($fields as $field) $this->deleteField($field, $quiet);
   }
 
   /**
@@ -964,8 +1002,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param mixed $language
    * @return void
    */
-  public function deleteLanguage($language, $quiet = false) {
-    if(!$lang = $this->getLanguage($language, $quiet)) return;
+  public function deleteLanguage($language, $quiet = false)
+  {
+    if (!$lang = $this->getLanguage($language, $quiet)) return;
     $this->wire->languages->delete($lang);
   }
 
@@ -976,11 +1015,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param mixed $name
    * @return void
    */
-  public function deleteModule($name, $path = null) {
+  public function deleteModule($name, $path = null)
+  {
     $name = (string)$name;
-    if($this->wire->modules->isInstalled($name)) $this->uninstallModule($name);
-    if(!$path) $path = $this->wire->config->paths->siteModules.$name;
-    if(is_dir($path)) $this->wire->files->rmdir($path, true);
+    if ($this->wire->modules->isInstalled($name)) $this->uninstallModule($name);
+    if (!$path) $path = $this->wire->config->paths->siteModules . $name;
+    if (is_dir($path)) $this->wire->files->rmdir($path, true);
     $this->wire->database->exec("DELETE FROM modules WHERE class = '$name'");
   }
 
@@ -990,8 +1030,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param Page|string $page
    * @return void
    */
-  public function deletePage($page, $quiet = false) {
-    if(!$page = $this->getPage($page, $quiet)) return;
+  public function deletePage($page, $quiet = false)
+  {
+    if (!$page = $this->getPage($page, $quiet)) return;
 
     // temporarily disable filesOnDemand feature
     // this prevents PW from downloading files that are deleted from a local dev
@@ -1005,7 +1046,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $all = $this->wire(new PageArray());
     $all->add($page);
     $all->add($this->wire->pages->find("has_parent=$page, include=all"));
-    foreach($all as $p) {
+    foreach ($all as $p) {
       $p->addStatus(Page::statusSystemOverride);
       $p->status = 1;
       $p->save();
@@ -1021,8 +1062,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param Permission|string $permission
    * @return void
    */
-  public function deletePermission($permission, $quiet = false) {
-    if(!$permission = $this->getPermission($permission, $quiet)) return;
+  public function deletePermission($permission, $quiet = false)
+  {
+    if (!$permission = $this->getPermission($permission, $quiet)) return;
     $this->permissions->delete($permission);
   }
 
@@ -1032,8 +1074,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param bool $quiet
    * @return void
    */
-  public function deleteRole($role, $quiet = false) {
-    if(!$role = $this->getRole($role, $quiet)) return;
+  public function deleteRole($role, $quiet = false)
+  {
+    if (!$role = $this->getRole($role, $quiet)) return;
     $this->roles->delete($role);
   }
 
@@ -1043,12 +1086,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param bool $quiet
    * @return void
    */
-  public function deleteTemplate($tpl, $quiet = false) {
+  public function deleteTemplate($tpl, $quiet = false)
+  {
     $template = $this->getTemplate($tpl, $quiet);
-    if(!$template) return;
+    if (!$template) return;
 
     // remove all pages having this template
-    foreach($this->pages->find("template=$template, include=all") as $p) {
+    foreach ($this->pages->find("template=$template, include=all") as $p) {
       $this->deletePage($p);
     }
 
@@ -1061,7 +1105,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     // delete the fieldgroup
     $fg = $this->fieldgroups->get((string)$tpl);
-    if($fg) $this->fieldgroups->delete($fg);
+    if ($fg) $this->fieldgroups->delete($fg);
   }
 
   /**
@@ -1072,9 +1116,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *
    * @param string $selector
    */
-  public function deleteTemplates($selector, $quiet = false) {
+  public function deleteTemplates($selector, $quiet = false)
+  {
     $templates = $this->wire->templates->find($selector);
-    foreach($templates as $tpl) $this->deleteTemplate($tpl, $quiet);
+    foreach ($templates as $tpl) $this->deleteTemplate($tpl, $quiet);
   }
 
   /**
@@ -1083,8 +1128,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param string $username
    * @return void
    */
-  public function deleteUser($username, $quiet = false) {
-    if(!$user = $this->getUser($username, $quiet)) return;
+  public function deleteUser($username, $quiet = false)
+  {
+    if (!$user = $this->getUser($username, $quiet)) return;
     $this->wire->users->delete($user);
   }
 
@@ -1098,18 +1144,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param string|Module $name
    * @return void
    */
-  public function disableModule($name) {
+  public function disableModule($name)
+  {
     $this->wire->modules->setFlag((string)$name, Modules::flagsDisabled, true);
   }
 
-  public function doMigrate($file) {
-    if($this->migrateAll) return true;
-    if($file instanceof Block) $file = $file->filePath();
+  public function doMigrate($file)
+  {
+    if ($this->migrateAll) return true;
+    if ($file instanceof Block) $file = $file->filePath();
     $watchFile = $file;
-    if(is_string($watchFile)) $watchFile = $this->watchlist->get("path=$file");
-    if(!$watchFile instanceof WatchFile) return false;
-    if($watchFile->changed) return true;
-    if($watchFile->force) return true;
+    if (is_string($watchFile)) $watchFile = $this->watchlist->get("path=$file");
+    if (!$watchFile instanceof WatchFile) return false;
+    if ($watchFile->changed) return true;
+    if ($watchFile->force) return true;
     return false;
   }
 
@@ -1119,10 +1167,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param string $url
    * @return void
    */
-  public function downloadModule($url) {
-    if(!class_exists('ProcessWire\ProcessModuleInstall')) {
+  public function downloadModule($url)
+  {
+    if (!class_exists('ProcessWire\ProcessModuleInstall')) {
       require $this->config->paths->modules
-        ."Process/ProcessModule/ProcessModuleInstall.php";
+        . "Process/ProcessModule/ProcessModuleInstall.php";
     }
     $install = $this->wire(new ProcessModuleInstall());
     $install->downloadModule($url);
@@ -1134,10 +1183,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param mixed $page
    * @return void
    */
-  public function enableAllLanguagesForPage($page) {
-    if(!$page) return;
+  public function enableAllLanguagesForPage($page)
+  {
+    if (!$page) return;
     $page = $this->getPage($page);
-    foreach($this->languages ?: [] as $lang) $page->set("status$lang", 1);
+    foreach ($this->languages ?: [] as $lang) $page->set("status$lang", 1);
     $page->save();
   }
 
@@ -1145,11 +1195,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Find migration file (tries all extensions)
    * @return string|false
    */
-  public function file($path) {
+  public function file($path)
+  {
     $path = Paths::normalizeSeparators($path);
-    if(is_file($path)) return $path;
-    foreach(['yaml', 'json', 'php'] as $ext) {
-      if(is_file($f = "$path.$ext")) return $f;
+    if (is_file($path)) return $path;
+    foreach (['yaml', 'json', 'php'] as $ext) {
+      if (is_file($f = "$path.$ext")) return $f;
     }
     return false;
   }
@@ -1158,19 +1209,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Get IDE edit link for file
    * @return string
    */
-  public function fileEditLink($file) {
+  public function fileEditLink($file)
+  {
     $file = $this->filePath($file);
     $tracy = $this->wire->config->tracy;
-    if(is_array($tracy) and array_key_exists('localRootPath', $tracy))
+    if (is_array($tracy) and array_key_exists('localRootPath', $tracy))
       $root = $tracy['localRootPath'];
     else $root = $this->wire->config->paths->root;
     return "vscode://file/"
-      .str_replace($this->wire->config->paths->root, $root, $file);
+      . str_replace($this->wire->config->paths->root, $root, $file);
   }
 
-  public function filemtime($file) {
+  public function filemtime($file)
+  {
     $path = $this->getAbsolutePath($file);
-    if(is_file($path)) return filemtime($path);
+    if (is_file($path)) return filemtime($path);
     return 0;
   }
 
@@ -1178,12 +1231,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Get filepath of file or object
    * @return string
    */
-  public function filePath($file, $relative = false) {
-    if(is_object($file)) {
+  public function filePath($file, $relative = false)
+  {
+    if (is_object($file)) {
       $reflector = new \ReflectionClass($file);
       $file = $reflector->getFileName();
     }
-    if($relative) $file = str_replace(
+    if ($relative) $file = str_replace(
       $this->wire->config->paths->root,
       $this->wire->config->urls->root,
       $file
@@ -1196,7 +1250,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * See init() method of an example use
    * @return void
    */
-  public function fileSync($file1, $file2, $options = []) {
+  public function fileSync($file1, $file2, $options = [])
+  {
     $file1 = $this->getAbsolutePath($file1);
     $file2 = $this->getAbsolutePath($file2);
 
@@ -1209,11 +1264,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->wire->files->mkdir(dirname($file1), true);
     $this->wire->files->mkdir(dirname($file2), true);
 
-    if($m1 > $m2) {
+    if ($m1 > $m2) {
       $this->wire->files->copy($file1, $file2);
       touch($file1);
-    }
-    elseif($m2 > $m1) {
+    } elseif ($m2 > $m1) {
       $this->wire->files->copy($file2, $file1);
       touch($file2);
     }
@@ -1222,9 +1276,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   /**
    * DEPRECATED
    */
-  public function fireOnRefresh($module, $method = null, $priority = []) {
+  public function fireOnRefresh($module, $method = null, $priority = [])
+  {
     $trace = debug_backtrace()[0];
-    $trace = $trace['file'].":".$trace['line'];
+    $trace = $trace['file'] . ":" . $trace['line'];
     $this->warning("fireOnRefresh is DEPRECATED and does not work any more!
       RockMigrations will migrate all watched files on Modules::refresh automatically. $trace");
     return;
@@ -1238,9 +1293,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * To use this feature add this to your /site/init.php:
    * $config->forceMigrate = true;
    */
-  private function forceMigrate() {
-    if(!$this->wire->config->forceMigrate) return;
-    if($this->wire->config->ajax) return;
+  private function forceMigrate()
+  {
+    if (!$this->wire->config->forceMigrate) return;
+    if ($this->wire->config->ajax) return;
     $this->migrateAll = true;
     $this->run();
   }
@@ -1252,25 +1308,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param string $file
    * @return string
    */
-  public function getAbsolutePath($file) {
+  public function getAbsolutePath($file)
+  {
     $path = Paths::normalizeSeparators($file);
     $rootPath = $this->wire->config->paths->root;
-    if(strpos($path, $rootPath)===0) return $path;
-    return $rootPath.ltrim($file, "/");
+    if (strpos($path, $rootPath) === 0) return $path;
+    return $rootPath . ltrim($file, "/");
   }
 
   /**
    * Get changed watchfiles
    * @return array
    */
-  public function getChangedFiles() {
+  public function getChangedFiles()
+  {
     $changed = [];
-    foreach($this->watchlist as $file) {
+    foreach ($this->watchlist as $file) {
       // remove the hash from file path
       // hashes are needed for multiple callbacks living on the same file
       $path = explode(":", $file->path)[0];
       $m = filemtime($path);
-      if($m>$this->lastrun) {
+      if ($m > $this->lastrun) {
         $changed[] = $file->path;
         $file->changed = true;
       }
@@ -1282,8 +1340,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Get code (export data)
    * @return string
    */
-  public function getCode($item, $raw = false) {
-    if($item instanceof Field) {
+  public function getCode($item, $raw = false)
+  {
+    if ($item instanceof Field) {
       ob_start();
       $data = $item->getExportData();
       unset($data['id']);
@@ -1291,24 +1350,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       unset($data['rockmigrations']);
 
       // we have a different syntax for options of an options field
-      if($item->type instanceof FieldtypeOptions) {
+      if ($item->type instanceof FieldtypeOptions) {
         $options = [];
-        foreach($item->type->manager->getOptions($item) as $opt) {
+        foreach ($item->type->manager->getOptions($item) as $opt) {
           $options[$opt->id] =
-            ($opt->value ? $opt->value."|" : "").
+            ($opt->value ? $opt->value . "|" : "") .
             "{$opt->title}";
         }
         unset($data['export_options']);
         $data['options'] = $options;
 
         // for multilang fields we also set the translated labels
-        if($this->wire->languages) {
+        if ($this->wire->languages) {
           $arr = [];
-          foreach($this->wire->languages as $lang) {
+          foreach ($this->wire->languages as $lang) {
             $options = [];
-            foreach($item->type->manager->getOptions($item) as $opt) {
+            foreach ($item->type->manager->getOptions($item) as $opt) {
               $options[$opt->id] =
-                ($opt->value ? $opt->value."|" : "").
+                ($opt->value ? $opt->value . "|" : "") .
                 $opt->get("title$lang|title");
             }
             $arr[$lang->name] = $options;
@@ -1317,8 +1376,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
           unset($data['options']);
         }
       }
-    }
-    elseif($item instanceof Template) {
+    } elseif ($item instanceof Template) {
       $data = $item->getExportData();
       unset($data['id']);
       unset($data['name']);
@@ -1327,22 +1385,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       // use custom fields syntax
       try {
         $fields = [];
-        foreach($data['fieldgroupFields'] as $k=>$field) {
+        foreach ($data['fieldgroupFields'] as $k => $field) {
           $context = $data['fieldgroupContexts'][$field];
           $fields[$field] = $context;
         }
-        $data = ['fields'=>$fields]+$data;
+        $data = ['fields' => $fields] + $data;
       } catch (\Throwable $th) {
         $this->log($th->getMessage());
       }
       unset($data['fieldgroupFields']);
       unset($data['fieldgroupContexts']);
     }
-    if(array_key_exists('_rockmigrations_log', $data)) {
+    if (array_key_exists('_rockmigrations_log', $data)) {
       unset($data['_rockmigrations_log']);
     }
     $code = $this->varexport($data);
-    if($raw) return $code;
+    if ($raw) return $code;
     return "'{$item->name}' => $code";
   }
 
@@ -1350,10 +1408,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Convert an array into a WireData config object
    * @return WireData
    */
-  public function getConfigObject(array $config) {
+  public function getConfigObject(array $config)
+  {
     // this ensures that $config->fields is an empty array rather than
     // a processwire fields object (proxied from the wire object)
-    $conf = $this->wire(new WireData()); /** @var WireData $conf */
+    $conf = $this->wire(new WireData());
+    /** @var WireData $conf */
     $conf->setArray([
       "fields" => [],
       "templates" => [],
@@ -1370,11 +1430,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param bool $quiet
    * @return mixed
    */
-  public function getField($name, $quiet = false) {
-    if(!$name) return false; // for addfieldtotemplate
+  public function getField($name, $quiet = false)
+  {
+    if (!$name) return false; // for addfieldtotemplate
     $field = $this->fields->get((string)$name);
-    if($field) return $field;
-    if(!$quiet) $this->log("Field $name not found");
+    if ($field) return $field;
+    if (!$quiet) $this->log("Field $name not found");
     return false;
   }
 
@@ -1393,28 +1454,29 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param mixed $type
    * @return Fieldtype|false
    */
-  public function getFieldtype($type) {
-    if($type instanceof Fieldtype) return $type;
+  public function getFieldtype($type)
+  {
+    if ($type instanceof Fieldtype) return $type;
     $modules = $this->wire->modules;
     $name = (string)$type;
 
     // first we try to get the module by name
     // $rm->getFieldtype('page') will request the page module!
     // we make sure not to auto-install non-fieldtype modules!
-    if($modules->isInstalled($name)) {
+    if ($modules->isInstalled($name)) {
       $module = $modules->get($name);
-      if($module instanceof Fieldtype) return $module;
+      if ($module instanceof Fieldtype) return $module;
     }
 
     // prepend Fieldtype (page --> FieldtypePage)
     // now we try to get the module and install it
     $fname = $name;
-    if(strpos($fname, "Fieldtype") !== 0) $fname = "Fieldtype".ucfirst($fname);
-    if(!$modules->isInstalled($fname)) @$modules->install($fname);
+    if (strpos($fname, "Fieldtype") !== 0) $fname = "Fieldtype" . ucfirst($fname);
+    if (!$modules->isInstalled($fname)) @$modules->install($fname);
     $module = $modules->get($fname);
-    if($module) return $module;
+    if ($module) return $module;
 
-    if(is_array($type)) $type = print_r($type, 1);
+    if (is_array($type)) $type = print_r($type, 1);
     $this->log("No fieldtype found for $type (also tried $fname)");
     return false;
   }
@@ -1424,10 +1486,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Returns FALSE if language is not found
    * @return Language|false
    */
-  public function getLanguage($data, $quiet = false) {
+  public function getLanguage($data, $quiet = false)
+  {
     $lang = $this->wire->languages->get((string)$data);
-    if($lang and $lang->id) return $lang;
-    if(!$quiet) $this->log("Language $data not found");
+    if ($lang and $lang->id) return $lang;
+    if (!$quiet) $this->log("Language $data not found");
     return false;
   }
 
@@ -1436,9 +1499,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param string $code 2-Letter Language Code
    * @return string
    */
-  public function getLanguageZip($code) {
-    if(strtoupper($code) == 'DE') return "https://github.com/jmartsch/pw-lang-de/archive/refs/heads/main.zip";
-    if(strtoupper($code) == 'FI') return "https://github.com/apeisa/Finnish-ProcessWire/archive/refs/heads/master.zip";
+  public function getLanguageZip($code)
+  {
+    if (strtoupper($code) == 'DE') return "https://github.com/jmartsch/pw-lang-de/archive/refs/heads/main.zip";
+    if (strtoupper($code) == 'FI') return "https://github.com/apeisa/Finnish-ProcessWire/archive/refs/heads/master.zip";
     return $code;
   }
 
@@ -1447,12 +1511,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Returns FALSE if page is not found
    * @return Page|false
    */
-  public function getPage($data, $quiet = false) {
-    if($data instanceof Page) return $data;
+  public function getPage($data, $quiet = false)
+  {
+    if ($data instanceof Page) return $data;
     $page = $this->wire->pages->get($data);
-    if($page->id) return $page;
-    if(is_array($data)) $data = "#array#";
-    if(!$quiet) $this->log("Page $data not found");
+    if ($page->id) return $page;
+    if (is_array($data)) $data = "#array#";
+    if (!$quiet) $this->log("Page $data not found");
     return false;
   }
 
@@ -1463,10 +1528,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param bool $quiet
    * @return Permission|false
    */
-  public function getPermission($data, $quiet = false) {
+  public function getPermission($data, $quiet = false)
+  {
     $permission = $this->permissions->get((string)$data);
-    if($permission AND $permission->id) return $permission;
-    if(!$quiet) $this->log("Permission $data not found");
+    if ($permission and $permission->id) return $permission;
+    if (!$quiet) $this->log("Permission $data not found");
     return false;
   }
 
@@ -1477,11 +1543,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param bool $quiet
    * @return mixed
    */
-  public function getRole($name, $quiet = false) {
-    if(!$name) return false;
+  public function getRole($name, $quiet = false)
+  {
+    if (!$name) return false;
     $role = $this->wire->roles->get((string)$name);
-    if($role AND $role->id) return $role;
-    if(!$quiet) $this->log("Role $name not found");
+    if ($role and $role->id) return $role;
+    if (!$quiet) $this->log("Role $name not found");
     return false;
   }
 
@@ -1489,28 +1556,29 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Get trace and return last entry from trace that is within the site folder
    * @return string
    */
-  public function getTrace($msg = null) {
+  public function getTrace($msg = null)
+  {
     $self = Paths::normalizeSeparators(__FILE__);
     $trace = debug_backtrace();
     $paths = $this->wire->config->paths;
-    $trace = array_filter($trace, function($item) use($paths, $self) {
-      if(!array_key_exists('file', $item)) return false; // when run from CLI
+    $trace = array_filter($trace, function ($item) use ($paths, $self) {
+      if (!array_key_exists('file', $item)) return false; // when run from CLI
       $file = $item['file'];
-      if($file === $self) {
-        if($item['function']=='getTrace') return false;
+      if ($file === $self) {
+        if ($item['function'] == 'getTrace') return false;
       }
-      if($file === $paths->templates."admin.php") return false;
-      if($file === $paths->root."index.php") return false;
-      if(strpos($file, $paths->wire)===0) return false;
+      if ($file === $paths->templates . "admin.php") return false;
+      if ($file === $paths->root . "index.php") return false;
+      if (strpos($file, $paths->wire) === 0) return false;
       return true;
     });
     // bd($trace, $msg);
 
     // return first trace entry that does not come from RockMigrations.module.php
     $first = null;
-    foreach($trace as $k=>$v) {
-      if(!$first) $first = $v;
-      if($v['file'] !== $self) return $v;
+    foreach ($trace as $k => $v) {
+      if (!$first) $first = $v;
+      if ($v['file'] !== $self) return $v;
     }
     return $first;
   }
@@ -1522,16 +1590,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *
    * @return string
    */
-  public function getTraceLog() {
-    $trace = date("--- Y-m-d H:i:s ---")."\n";
+  public function getTraceLog()
+  {
+    $trace = date("--- Y-m-d H:i:s ---") . "\n";
     // bd(debug_backtrace());
-    foreach(debug_backtrace() as $line) {
-      if(!array_key_exists('file', $line)) continue;
-      if(strpos($line['file'], $this->wire->config->paths->wire) !== false) continue;
+    foreach (debug_backtrace() as $line) {
+      if (!array_key_exists('file', $line)) continue;
+      if (strpos($line['file'], $this->wire->config->paths->wire) !== false) continue;
       $base = basename($line['file']);
-      if($base == 'index.php') continue;
-      if($base == 'admin.php') continue;
-      if($base == 'RockMigrations.module.php') continue;
+      if ($base == 'index.php') continue;
+      if ($base == 'admin.php') continue;
+      if ($base == 'RockMigrations.module.php') continue;
       $trace .= "$base::{$line['function']}() - L{$line['line']}\n";
     }
     return $trace;
@@ -1544,11 +1613,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param bool $quiet
    * @return mixed
    */
-  public function getUser($name, $quiet = false) {
-    if(!$name) return false;
+  public function getUser($name, $quiet = false)
+  {
+    if (!$name) return false;
     $role = $this->wire->users->get((string)$name);
-    if($role AND $role->id) return $role;
-    if(!$quiet) $this->log("User $name not found");
+    if ($role and $role->id) return $role;
+    if (!$quiet) $this->log("User $name not found");
     return false;
   }
 
@@ -1560,10 +1630,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param Template|string $name
    * @return Template|false
    */
-  public function getTemplate($name, $quiet = false) {
+  public function getTemplate($name, $quiet = false)
+  {
     $template = $this->templates->get((string)$name);
-    if($template AND $template->id) return $template;
-    if(!$quiet) $this->log("Template $name not found");
+    if ($template and $template->id) return $template;
+    if (!$quiet) $this->log("Template $name not found");
     return false;
   }
 
@@ -1589,20 +1660,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *
    * @return void
    */
-  public function initClasses($path, $namespace = "ProcessWire", $autoload = true) {
-    if($autoload) $this->autoload($path, $namespace);
-    foreach($this->files->find($path, ['extensions' => ['php']]) as $file) {
+  public function initClasses($path, $namespace = "ProcessWire", $autoload = true)
+  {
+    if ($autoload) $this->autoload($path, $namespace);
+    foreach ($this->files->find($path, ['extensions' => ['php']]) as $file) {
       $class = pathinfo($file, PATHINFO_FILENAME);
 
       // skip files that start with an underscore
       // this is to make it possible to add abstract classes to your folder
       // an example could be /site/classes/_MyPage.php
-      if(strpos($class, "_")===0) continue;
+      if (strpos($class, "_") === 0) continue;
 
-      if($namespace) $class = "\\$namespace\\$class";
+      if ($namespace) $class = "\\$namespace\\$class";
       try {
         $tmp = new $class();
-        if(method_exists($tmp, "init")) $tmp->init();
+        if (method_exists($tmp, "init")) $tmp->init();
         $this->addMagicMethods($tmp);
       } catch (\Throwable $th) {
         $this->log($th->getMessage());
@@ -1613,21 +1685,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   /**
    * Trigger init() of MagicPage page classes
    */
-  public function initMagicPages() {
+  public function initMagicPages()
+  {
     $this->readyClasses = $ready = $this->wire(new PageArray());
-    if($this->wire->config->useMagicClasses === false) return;
-    if($this->wire->config->useMagicClasses === 0) return;
-    foreach($this->wire->templates as $tpl) {
+    if ($this->wire->config->useMagicClasses === false) return;
+    if ($this->wire->config->useMagicClasses === 0) return;
+    foreach ($this->wire->templates as $tpl) {
       // do not init rockmatrix blocks!
       // this caused issues at FTA accordion not showing up
       // same problem on ÖGKV but only when superuser
-      if($tpl->isRockMatrixBlock) continue;
+      if ($tpl->isRockMatrixBlock) continue;
 
       // this line causes an error for rockmatrix blocks
       $p = $this->wire->pages->get("template=$tpl");
       try {
         // if the template exists but no page we create on in the trash
-        if($p instanceof NullPage) {
+        if ($p instanceof NullPage) {
           $p = new Page();
           $p->template = $tpl;
           $p->parent = $this->wire->config->trashPageID;
@@ -1635,10 +1708,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
           $p->save();
         }
         // if it is a magicpage trigger init() and ready()
-        if($p->isMagicPage) {
-          if(method_exists($p, 'init')) $p->init();
-          if(method_exists($p, 'migrate')) $this->watch($p);
-          if(method_exists($p, 'ready')) $ready->add($p);
+        if ($p->isMagicPage) {
+          if (method_exists($p, 'init')) $p->init();
+          if (method_exists($p, 'migrate')) $this->watch($p);
+          if (method_exists($p, 'ready')) $ready->add($p);
           $this->addMagicMethods($p);
         }
       } catch (\Throwable $th) {
@@ -1674,12 +1747,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param string|array $url
    * @return Module
    */
-  public function installModule($name, $conf = [], $options = []) {
-    if(is_string($conf)) $options['url'] = $conf;
-    if(is_string($options)) $options = ['url' => $options];
-    if(!$options) $options = [];
+  public function installModule($name, $conf = [], $options = [])
+  {
+    if (is_string($conf)) $options['url'] = $conf;
+    if (is_string($options)) $options = ['url' => $options];
+    if (!$options) $options = [];
 
-    $opt = $this->wire(new WireData()); /** @var WireData $opt */
+    $opt = $this->wire(new WireData());
+    /** @var WireData $opt */
     $opt->setArray([
       'url' => '',
       'conf' => $conf,
@@ -1693,17 +1768,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     // dont return early to make sure that if module settings
     // are changed we apply the new settings at the bottom!!
     $module = $this->wire->modules->get($name);
-    if(!$module) $module = $this->modules->install($name, ['force' => $opt->force]);
-    if(!$module) {
+    if (!$module) $module = $this->modules->install($name, ['force' => $opt->force]);
+    if (!$module) {
       // if an url was provided, download the module
-      if($opt->url) $this->downloadModule($opt->url);
+      if ($opt->url) $this->downloadModule($opt->url);
 
       // install the module
       $module = $this->modules->install($name, ['force' => $opt->force]);
-      if($module) $this->log("Installed module $name");
+      if ($module) $this->log("Installed module $name");
       else $this->log("Tried to install module $name but failed");
     }
-    if(is_array($opt->conf) AND count($opt->conf)) {
+    if (is_array($opt->conf) and count($opt->conf)) {
       $this->setModuleConfig($module, $opt->conf);
     }
     return $module;
@@ -1712,14 +1787,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   /**
    * @return bool
    */
-  public function isDebug() {
+  public function isDebug()
+  {
     return $this->outputLevel == self::outputLevelDebug;
   }
 
   /**
    * @return bool
    */
-  public function isVerbose() {
+  public function isVerbose()
+  {
     return $this->outputLevel == self::outputLevelVerbose;
   }
 
@@ -1727,8 +1804,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Get or set json data to file
    * @return mixed
    */
-  public function json($path, $data = null) {
-    if($data === null) return json_decode(file_get_contents($path));
+  public function json($path, $data = null)
+  {
+    if ($data === null) return json_decode(file_get_contents($path));
     file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT));
   }
 
@@ -1736,14 +1814,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Get lastmodified timestamp of watchlist
    * @return int
    */
-  public function lastmodified() {
+  public function lastmodified()
+  {
     $last = 0;
-    foreach($this->watchlist as $file) {
+    foreach ($this->watchlist as $file) {
       // remove the hash from file path
       // hashes are needed for multiple callbacks living on the same file
       $path = explode(":", $file->path)[0];
       $m = filemtime($path);
-      if($m>$last) $last=$m;
+      if ($m > $last) $last = $m;
     }
     return $last;
   }
@@ -1761,28 +1840,30 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *
    * @return void
    */
-  public function loadFilesOnDemand() {
-    if(!$this->wire->config->filesOnDemand) return;
-    $hook = function(HookEvent $event) {
+  public function loadFilesOnDemand()
+  {
+    if (!$this->wire->config->filesOnDemand) return;
+    $hook = function (HookEvent $event) {
       $config = $this->wire->config;
       $file = $event->return;
       $pagefile = $event->object;
-      if($pagefile->page->isTrash()) return;
+      if ($pagefile->page->isTrash()) return;
 
       // this makes it possible to prevent downloading at runtime
-      if(!$host = $this->wire->config->filesOnDemand) return;
+      if (!$host = $this->wire->config->filesOnDemand) return;
 
       // convert url to disk path
-      if($event->method == 'url') {
-        $file = $config->paths->root.substr($file, strlen($config->urls->root));
+      if ($event->method == 'url') {
+        $file = $config->paths->root . substr($file, strlen($config->urls->root));
       }
 
       // load file from remote if it does not exist
-      if(!file_exists($file)) {
+      if (!file_exists($file)) {
         $host = rtrim($host, "/");
         $src = "$host/site/assets/files/";
         $url = str_replace($config->paths->files, $src, $file);
-        $http = $this->wire(new WireHttp()); /** @var WireHttp $http */
+        $http = $this->wire(new WireHttp());
+        /** @var WireHttp $http */
         try {
           $http->download($url, $file);
         } catch (\Throwable $th) {
@@ -1811,24 +1892,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param bool $throwException
    * @return void
    */
-  public function log($msg, $throwException = true) {
+  public function log($msg, $throwException = true)
+  {
     $trace = $this->getTrace($msg);
     $file = $trace['file'];
     $line = $trace['line'];
     $filename = pathinfo($file, PATHINFO_FILENAME);
     $traceStr = "$filename:$line";
-    if($this->isVerbose()) {
+    if ($this->isVerbose()) {
       try {
         $url = TracyDebugger::createEditorLink($file, $line, $traceStr);
         $opt = ['url' => $url];
       } catch (\Throwable $th) {
         $opt = [];
       }
-      if($this->wire->config->external) echo "$msg\n";
+      if ($this->wire->config->external) echo "$msg\n";
       $this->wire->log->save("RockMigrations", $msg, $opt);
-    }
-    elseif($this->isDebug()) {
-      if($throwException) throw new WireException("$msg in $traceStr");
+    } elseif ($this->isDebug()) {
+      if ($throwException) throw new WireException("$msg in $traceStr");
     }
   }
 
@@ -1837,7 +1918,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param string $msg
    * @return void
    */
-  public function logOnly($msg) {
+  public function logOnly($msg)
+  {
     $this->log($msg, false);
   }
 
@@ -1845,8 +1927,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Get array value
    * @return mixed
    */
-  public function val($arr, $property) {
-    if(!array_key_exists($property, $arr)) return;
+  public function val($arr, $property)
+  {
+    if (!array_key_exists($property, $arr)) return;
     return $arr[$property];
   }
 
@@ -1854,20 +1937,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Mail to superuser
    * @return void
    */
-  public function mailToSuperuser($body, $subject = null) {
+  public function mailToSuperuser($body, $subject = null)
+  {
     $su = $this->wire->users->get($this->wire->config->superUserPageID);
     $host = $this->wire->config->httpHost;
 
     $this->log($body);
-    if($su->email) {
+    if ($su->email) {
       $mail = new WireMail();
       $mail->to($su->email);
       $mail->subject($subject ?: "Issue on page $host");
       $mail->body($body);
       $mail->send();
-      $this->log("Sent mail to superuser: ".$su->email);
-    }
-    else {
+      $this->log("Sent mail to superuser: " . $su->email);
+    } else {
       $this->log("Superuser has no email in its profile");
     }
   }
@@ -1880,21 +1963,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * field. Prior to v1.0.9 manually created fields had always been added to the
    * top of the page editor if not explicitly listed in the migrate() call.
    */
-  protected function mergeFields(Fieldgroup $old, Fieldgroup $new): Fieldgroup {
+  protected function mergeFields(Fieldgroup $old, Fieldgroup $new): Fieldgroup
+  {
     // set the correct sort order of fields
     $merged = clone $new;
     $insertAfter = false;
-    foreach($old as $item) {
+    foreach ($old as $item) {
       $newItem = $new->get("name=$item");
-      if($newItem) $insertAfter = $newItem;
-      if($new->has($item)) continue;
+      if ($newItem) $insertAfter = $newItem;
+      if ($new->has($item)) continue;
 
       // add item to merged array
-      if($insertAfter) {
+      if ($insertAfter) {
         $merged->insertAfter($item, $insertAfter);
         $insertAfter = $item;
-      }
-      else $merged->prepend($item);
+      } else $merged->prepend($item);
     }
     return $merged;
   }
@@ -1931,57 +2014,59 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *
    * @return void
    */
-  public function migrate($config) {
+  public function migrate($config)
+  {
     $config = $this->getConfigObject($config);
 
     // create fields+templates
-    foreach($config->fields as $name=>$data) {
+    foreach ($config->fields as $name => $data) {
       // if key is an integer and data is a string that means
       // the fields have been defined name-only
-      if(is_integer($name) AND is_string($data)) {
+      if (is_integer($name) and is_string($data)) {
         $name = $data;
-        $data = ['type'=>'text'];
+        $data = ['type' => 'text'];
       }
 
       // if no type is set this means that only field data was set
       // for example to update only label or icon of an existing field
-      if(array_key_exists('type', $data)) $this->createField($name, $data['type']);
+      if (array_key_exists('type', $data)) $this->createField($name, $data['type']);
     }
-    foreach($config->templates as $name=>$data) {
+    foreach ($config->templates as $name => $data) {
       // this check makes it possible to define templates without data
       // that means the defined templates will be created but not changed
-      if(is_int($name)) $name = $data;
+      if (is_int($name)) $name = $data;
       $this->createTemplate($name, false);
     }
-    foreach($config->roles as $name=>$data) $this->createRole($name);
+    foreach ($config->roles as $name => $data) $this->createRole($name);
 
     // set field+template data after they have been created
-    foreach($config->fields as $name=>$data) {
-      if(is_array($data)) $this->setFieldData($name, $data);
+    foreach ($config->fields as $name => $data) {
+      if (is_array($data)) $this->setFieldData($name, $data);
     }
-    foreach($config->templates as $name=>$data) {
+    foreach ($config->templates as $name => $data) {
       // this check makes it possible to define templates without data
       // that means the defined templates will be created but not changed
-      if(!is_int($name)) $this->setTemplateData($name, $data);
+      if (!is_int($name)) $this->setTemplateData($name, $data);
     }
-    foreach($config->roles as $role=>$data) {
+    foreach ($config->roles as $role => $data) {
       // set permissions for this role
-      if(array_key_exists("permissions", $data)) $this->setRolePermissions($role, $data['permissions']);
-      if(array_key_exists("access", $data)) {
-        foreach($data['access'] as $tpl=>$access) $this->setTemplateAccess($tpl, $role, $access);
+      if (array_key_exists("permissions", $data)) $this->setRolePermissions($role, $data['permissions']);
+      if (array_key_exists("access", $data)) {
+        foreach ($data['access'] as $tpl => $access) $this->setTemplateAccess($tpl, $role, $access);
       }
     }
 
     // setup pages
-    foreach($config->pages as $name=>$data) {
-      if(isset($data['name'])) {
+    foreach ($config->pages as $name => $data) {
+      if (isset($data['name'])) {
         $name = $data['name'];
-      } elseif(is_int($name)) {
+      } elseif (is_int($name)) {
         // no name provided
         $name = uniqid();
       }
 
-      $d = $this->wire(new WireData()); /** @var WireData $d */
+      $d = $this->wire(new WireData());
+      /** @var WireData $d */
       $d->setArray($data);
       $this->createPage(
         $d->title ?: $name,
@@ -1998,9 +2083,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Call $module::migrate() on modules::refresh
    * @return void
    */
-  public function migrateOnRefresh(Module $module) {
+  public function migrateOnRefresh(Module $module)
+  {
     $trace = debug_backtrace()[0];
-    $trace = $trace['file'].":".$trace['line'];
+    $trace = $trace['file'] . ":" . $trace['line'];
     $this->warning("fireOnRefresh is DEPRECATED and does not work any more!
       RockMigrations will migrate all watched files on Modules::refresh automatically. $trace");
     return;
@@ -2011,68 +2097,68 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Run migrations of all watchfiles
    * @return void
    */
-  public function migrateWatchfiles($force = false) {
+  public function migrateWatchfiles($force = false)
+  {
     // prevent auto-migrate when CLI mode is enabled or when $rm->noMigrate()
     // was called (which can be handy to get quick reloads while working on a
     // module whithout the need for migrations)
     // $rm->run() will run either way because it sets force=true
     $cli = defined('RockMigrationsCLI');
     $runOnlyWhenForced = $cli || $this->noMigrate;
-    if($runOnlyWhenForced AND !$force) return;
+    if ($runOnlyWhenForced and !$force) return;
 
     // on CLI we always migrate all files and not only changed ones
     // this is to make sure that all migrations run on deployments
-    if($cli) $this->migrateAll = true;
+    if ($cli) $this->migrateAll = true;
 
     // if the noMigrate flag is set we do not run migrations
     // this makes it possible to refresh modules without triggering another
     // run of migrations!
-    if($this->wire->session->noMigrate) {
+    if ($this->wire->session->noMigrate) {
       $this->wire->session->noMigrate = false;
       return;
     }
 
     $changed = $this->getChangedFiles();
-    $run = ($force OR self::debug OR count($changed));
-    if(!$run) return;
+    $run = ($force or self::debug or count($changed));
+    if (!$run) return;
 
     // on module uninstall we reset the watchlist
     // this is just to indicate that behaviour
-    if(!count($this->watchlist)) return;
+    if (!count($this->watchlist)) return;
 
     // logging
     $this->wire->log->delete($this->className);
-    if(!$cli) {
+    if (!$cli) {
       $this->log('-------------------------------------');
-      foreach($changed as $file) $this->log("Detected change in $file");
+      foreach ($changed as $file) $this->log("Detected change in $file");
       $this->log('Running migrations from watchfiles...');
     }
 
     // always refresh modules before running migrations
     // this makes sure that $rm->installModule() etc will catch all new files
-    if(!$this->triggeredByRefresh) $this->refresh();
+    if (!$this->triggeredByRefresh) $this->refresh();
 
     $this->updateLastrun();
-    foreach($this->watchlist as $file) {
-      if(!$file->migrate) continue;
-      if(!$this->doMigrate($file)) {
+    foreach ($this->watchlist as $file) {
+      if (!$file->migrate) continue;
+      if (!$this->doMigrate($file)) {
         $this->log("--- Skipping {$file->path} (no change)");
         continue;
       }
 
       // if it is a callback we execute it
-      if($callback = $file->callback) {
+      if ($callback = $file->callback) {
         $callback->__invoke($this);
         continue;
       }
 
       // if it is a module we call $module->migrate()
-      if($module = $file->module) {
-        if(method_exists($module, "migrate") OR method_exists($module, "___migrate")) {
+      if ($module = $file->module) {
+        if (method_exists($module, "migrate") or method_exists($module, "___migrate")) {
           $this->log("Triggering $module::migrate()");
           $module->migrate();
-        }
-        else {
+        } else {
           $this->log("--- Skipping $module::migrate() - method does not exist");
         }
         continue;
@@ -2081,25 +2167,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       // special treatment for custom pageclasses in the pw classes folder
       // this prevents "cannot redeclare ..." errors
       $pageClass = $file->pageClass;
-      if(strpos($file->path, $this->wire->config->paths->classes)===0) {
+      if (strpos($file->path, $this->wire->config->paths->classes) === 0) {
         $base = pathinfo($file->path, PATHINFO_FILENAME);
         $pageClass = "\\ProcessWire\\$base";
       }
-      if($pageClass) {
-        if(!class_exists($pageClass)) require_once $file->path;
-        if($this->doMigrate($file->path)) {
+      if ($pageClass) {
+        if (!class_exists($pageClass)) require_once $file->path;
+        if ($this->doMigrate($file->path)) {
           // if page id is set we load the page
           // otherwise we load a nullpage of the pageclass
           // having a pageID has the benefit that we can load the page
           // and we will have all properties set (like template)
-          if($file->pageID) $tmp = $this->wire->pages->get($file->pageID);
+          if ($file->pageID) $tmp = $this->wire->pages->get($file->pageID);
           else $tmp = new $pageClass();
-          if(method_exists($tmp, 'migrate')) {
+          if (method_exists($tmp, 'migrate')) {
             $this->log("Triggering $pageClass::migrate()");
             $tmp->migrate();
           }
-        }
-        else $this->log("--- Skipping $pageClass (no change)");
+        } else $this->log("--- Skipping $pageClass (no change)");
         continue;
       }
 
@@ -2111,10 +2196,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         'allowedPaths' => [dirname($file->path)],
       ]);
       // if rendering the file returned a string we state that it is YAML code
-      if(is_string($migrate)) $migrate = $this->yaml($migrate);
-      if(is_array($migrate)) {
+      if (is_string($migrate)) $migrate = $this->yaml($migrate);
+      if (is_array($migrate)) {
         $this->log("Returned an array - trigger migrate() of "
-          .print_r($migrate, true));
+          . print_r($migrate, true));
         $this->migrate($migrate);
       }
     }
@@ -2124,42 +2209,46 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Move one page on top of another one
    * @return void
    */
-  public function movePageAfter($page, $reference) {
+  public function movePageAfter($page, $reference)
+  {
     $page = $this->getPage($page);
     $ref = $this->getPage($reference);
-    if(!$page->id) return $this->log("Page does not exist");
-    if(!$ref->id) return $this->log("Reference does not exist");
-    if($page->parent !== $ref->parent) return $this->log("Both pages must have the same parent");
-    $this->wire->pages->sort($page, $ref->sort+1);
+    if (!$page->id) return $this->log("Page does not exist");
+    if (!$ref->id) return $this->log("Reference does not exist");
+    if ($page->parent !== $ref->parent) return $this->log("Both pages must have the same parent");
+    $this->wire->pages->sort($page, $ref->sort + 1);
   }
 
   /**
    * Move one page on top of another one
    * @return void
    */
-  public function movePageBefore($page, $reference) {
+  public function movePageBefore($page, $reference)
+  {
     $page = $this->getPage($page);
     $ref = $this->getPage($reference);
-    if(!$page->id) return $this->log("Page does not exist");
-    if(!$ref->id) return $this->log("Reference does not exist");
-    if($page->parent !== $ref->parent) return $this->log("Both pages must have the same parent");
+    if (!$page->id) return $this->log("Page does not exist");
+    if (!$ref->id) return $this->log("Reference does not exist");
+    if ($page->parent !== $ref->parent) return $this->log("Both pages must have the same parent");
     $this->wire->pages->sort($page, $ref->sort);
   }
 
   /**
    * Set no migrate flag
    */
-  public function noMigrate() {
+  public function noMigrate()
+  {
     $this->noMigrate = true;
   }
 
   /**
    * Execute profile
    */
-  private function profileExecute() {
+  private function profileExecute()
+  {
     $profile = $this->wire->input->post('profile', 'filename');
-    foreach($this->profiles() as $path=>$label) {
-      if($label !== $profile) continue;
+    foreach ($this->profiles() as $path => $label) {
+      if ($label !== $profile) continue;
       $this->wire->files->include($path);
       $this->wire->message("Executed profile $label");
       return true;
@@ -2167,14 +2256,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     return false;
   }
 
-  private function profiles() {
+  private function profiles()
+  {
     $profiles = [];
     $opt = ['extensions' => ['php']];
-    foreach($this->wire->files->find(__DIR__."/profiles", $opt) as $file) {
+    foreach ($this->wire->files->find(__DIR__ . "/profiles", $opt) as $file) {
       $profiles[$file] = basename($file);
     }
-    $path = $this->wire->config->paths->assets."RockMigrations/profiles";
-    foreach($this->wire->files->find($path, $opt) as $file) {
+    $path = $this->wire->config->paths->assets . "RockMigrations/profiles";
+    foreach ($this->wire->files->find($path, $opt) as $file) {
       $profiles[$file] = basename($file);
     }
     return $profiles;
@@ -2192,13 +2282,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param array $options
    * @return void
    */
-  public function record($path, $options = [], $remove = false) {
-    if($remove) {
+  public function record($path, $options = [], $remove = false)
+  {
+    if ($remove) {
       $this->recorders->remove($this->recorders->get("path=$path"));
       return;
     }
-    require_once($this->path."RecorderFile.php");
-    $data = $this->wire(new RecorderFile()); /** @var RecorderFile $data */
+    require_once($this->path . "RecorderFile.php");
+    $data = $this->wire(new RecorderFile());
+    /** @var RecorderFile $data */
     $data->setArray([
       'path' => $path,
       'type' => 'yaml', // other options: php, json
@@ -2211,7 +2303,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   /**
    * Refresh modules
    */
-  public function refresh() {
+  public function refresh()
+  {
     $this->wire->session->noMigrate = true;
     $this->log('Refreshing modules...');
     $this->wire->modules->refresh();
@@ -2226,16 +2319,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param bool $force
    * @return void
    */
-  public function removeFieldFromTemplate($field, $template, $force = false) {
+  public function removeFieldFromTemplate($field, $template, $force = false)
+  {
     $field = $this->getField($field);
-    if(!$field) return;
+    if (!$field) return;
     $template = $this->getTemplate($template);
-    if(!$template) return;
+    if (!$template) return;
 
-    $fg = $template->fieldgroup; /** @var Fieldgroup $fg */
-    if($force) $field->flags = 0;
+    $fg = $template->fieldgroup;
+    /** @var Fieldgroup $fg */
+    if ($force) $field->flags = 0;
 
-    if(!$fg->get($field->name)) return;
+    if (!$fg->get($field->name)) return;
 
     $fg->remove($field);
     $fg->save();
@@ -2245,17 +2340,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
   /**
    * See method above
    */
-  public function removeFieldsFromTemplate($fields, $template, $force = false) {
-    foreach($fields as $field) $this->removeFieldFromTemplate($field, $template, $force);
+  public function removeFieldsFromTemplate($fields, $template, $force = false)
+  {
+    foreach ($fields as $field) $this->removeFieldFromTemplate($field, $template, $force);
   }
 
   /**
    * Remove access from template for given role
    * @return void
    */
-  public function removeTemplateAccess($tpl, $role) {
-    if(!$role = $this->getRole($role)) return;
-    if(!$tpl = $this->getTemplate($tpl)) return;
+  public function removeTemplateAccess($tpl, $role)
+  {
+    if (!$role = $this->getRole($role)) return;
+    if (!$tpl = $this->getTemplate($tpl)) return;
     $tpl->removeRole($role, "all");
     $tpl->save();
   }
@@ -2264,7 +2361,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Remove all template context field settings
    * @return void
    */
-  public function removeTemplateContext($tpl, $field) {
+  public function removeTemplateContext($tpl, $field)
+  {
     $tpl = $this->getTemplate($tpl);
     $field = $this->getField($field);
     $tpl->fieldgroup->setFieldContextArray($field->id, []);
@@ -2274,8 +2372,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Rename given page
    * @return void
    */
-  public function renamePage($page, $newName, $quiet = false) {
-    if(!$page = $this->getPage($page, $quiet)) return;
+  public function renamePage($page, $newName, $quiet = false)
+  {
+    if (!$page = $this->getPage($page, $quiet)) return;
     $old = $page->name;
     $page->setAndSave('name', $newName);
     $this->log("Renamed page from $old to $newName");
@@ -2285,7 +2384,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Reset "lastrun" cache to force migrations
    * @return void
    */
-  public function resetCache(HookEvent $event) {
+  public function resetCache(HookEvent $event)
+  {
     $this->updateLastrun(0);
   }
 
@@ -2293,7 +2393,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Run migrations that have been attached via watch()
    * @return void
    */
-  public function run() {
+  public function run()
+  {
     $this->sudo();
     $this->migrateWatchfiles(true);
   }
@@ -2302,7 +2403,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Set the logo url of the backend logo (AdminThemeUikit)
    * @return void
    */
-  public function setAdminLogoUrl($url) {
+  public function setAdminLogoUrl($url)
+  {
     $this->setModuleConfig("AdminThemeUikit", ['logoURL' => $url]);
   }
 
@@ -2310,7 +2412,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Set default options for several things in PW
    * These are opinionated defaults that I like to use in my projects!
    */
-  public function setDefaults($options = []) {
+  public function setDefaults($options = [])
+  {
     $this->log('$rm->setDefaults() is deprecated! Use rm-defaults snippet instead');
   }
 
@@ -2330,14 +2433,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param Template|string $template
    * @return void
    */
-  public function setFieldData($field, $data, $template = null) {
+  public function setFieldData($field, $data, $template = null)
+  {
     $field = $this->getField($field);
-    if(!$field) return; // logging in getField()
+    if (!$field) return; // logging in getField()
 
     // check if the field type has changed
-    if(array_key_exists('type', $data)) {
+    if (array_key_exists('type', $data)) {
       $type = $this->getFieldtype($data['type']);
-      if((string)$type !== (string)$field->type) {
+      if ((string)$type !== (string)$field->type) {
         $field->type = $type;
         // if we do not save the field here it will lose some data (eg icon)
         $field->save();
@@ -2349,21 +2453,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $field->_rockmigrations_log = $this->getTraceLog();
 
     // prepare data array
-    foreach($data as $key=>$val) {
+    foreach ($data as $key => $val) {
 
       // this makes it possible to set the template via name
-      if($key === "template_id") {
+      if ($key === "template_id") {
         $data[$key] = $this->templates->get($val)->id;
       }
 
       // support repeater field array
       $contexts = [];
-      if($key === "repeaterFields") {
+      if ($key === "repeaterFields") {
         $fields = $data[$key];
         $addFields = [];
         $index = 0;
-        foreach($fields as $i=>$_field) {
-          if(is_string($i)) {
+        foreach ($fields as $i => $_field) {
+          if (is_string($i)) {
             // we've got a field with field context info here
             $fieldname = $i;
             $fielddata = $_field;
@@ -2372,8 +2476,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
               $fielddata,
               $this->getRepeaterTemplate($field),
             ];
-          }
-          else {
+          } else {
             // field without field context info
             $fieldname = $_field;
           }
@@ -2383,20 +2486,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         $data[$key] = $addFields;
 
         // add fields to repeater template
-        if($tpl = $this->getRepeaterTemplate($field)) {
+        if ($tpl = $this->getRepeaterTemplate($field)) {
           $this->addFieldsToTemplate($addFields, $tpl);
         }
 
         // set field contexts now that the fields are present
-        foreach($contexts as $c) {
+        foreach ($contexts as $c) {
           $this->setFieldData($c[0], $c[1], $c[2]);
         }
-
       }
 
       // add support for setting options of a select field
       // this will remove non-existing options from the field!
-      if($key === "options") {
+      if ($key === "options") {
         $options = $data[$key];
         $this->setOptions($field, $options, true);
 
@@ -2404,7 +2506,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         // if not done, the field shows raw option values when rendered
         unset($data['options']);
       }
-      if($key == "optionsLang") {
+      if ($key == "optionsLang") {
         $options = $data[$key];
         $this->setOptionsLang($field, $options, true);
 
@@ -2412,21 +2514,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         // if not done, the field shows raw option values when rendered
         unset($data[$key]);
       }
-
     }
 
     // set data
-    if(!$template) {
+    if (!$template) {
       // set field data directly
-      foreach($data as $k=>$v) $field->set($k, $v);
-    }
-    else {
+      foreach ($data as $k => $v) $field->set($k, $v);
+    } else {
       // make sure the template is set as array of strings
-      if(!is_array($template)) $template = [(string)$template];
+      if (!is_array($template)) $template = [(string)$template];
 
-      foreach($template as $t) {
+      foreach ($template as $t) {
         $tpl = $this->templates->get((string)$t);
-        if(!$tpl) throw new WireException("Template $t not found");
+        if (!$tpl) throw new WireException("Template $t not found");
 
         // set field data in template context
         $fg = $tpl->fieldgroup;
@@ -2437,7 +2537,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     }
 
     // Make sure Table field actually updates database schema
-    if($field->type == "FieldtypeTable") {
+    if ($field->type == "FieldtypeTable") {
       $fieldtypeTable = $field->getFieldtype();
       $fieldtypeTable->_checkSchema($field, true); // Commit changes
     }
@@ -2456,20 +2556,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param Template|string $name
    * @return void
    */
-  public function setFieldOrder($fields, $template) {
-    if(!$template = $this->getTemplate($template)) return;
+  public function setFieldOrder($fields, $template)
+  {
+    if (!$template = $this->getTemplate($template)) return;
 
     // make sure fields is an array and not a fieldgroup
-    if($fields instanceof Fieldgroup) $fields = $fields->getArray();
+    if ($fields instanceof Fieldgroup) $fields = $fields->getArray();
 
     // make sure that all fields exist
-    foreach($fields as $i=>$field) {
-      if(!$this->getField($field)) unset($fields[$i]);
+    foreach ($fields as $i => $field) {
+      if (!$this->getField($field)) unset($fields[$i]);
     }
     $fields = array_values($fields); // reset indices
-    foreach($fields as $i => $field) {
-      if(!$i) continue;
-      $this->addFieldToTemplate($field, $template, $fields[$i-1]);
+    foreach ($fields as $i => $field) {
+      if (!$i) continue;
+      $this->addFieldToTemplate($field, $template, $fields[$i - 1]);
     }
   }
 
@@ -2485,17 +2586,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param string|Language $lang PW Language to update
    * @return Language $language
    */
-  public function setLanguageTranslations($translations, $lang = null) {
+  public function setLanguageTranslations($translations, $lang = null)
+  {
     $zip = $this->getLanguageZip($translations);
 
     // Make sure Language Support is installed
-    if(!$this->wire->languages) $this->addLanguageSupport();
-    if($lang) {
+    if (!$this->wire->languages) $this->addLanguageSupport();
+    if ($lang) {
       $language = $this->getLanguage($lang);
-      if(!$language) return; // logging above
-    }
-    else $language = $this->wire->languages->getDefault();
-    if(!$language->id) return $this->log("No language found");
+      if (!$language) return; // logging above
+    } else $language = $this->wire->languages->getDefault();
+    if (!$language->id) return $this->log("No language found");
     $language->of(false);
 
     $this->log("Downloading $zip");
@@ -2506,12 +2607,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
 
     // Unzip files and add .json files to language
     $items = $this->wire->files->unzip($zipTemp, $cache);
-    if($cnt = count($items)) {
+    if ($cnt = count($items)) {
       $this->log("Adding $cnt new language files to language $language");
       $language->language_files->deleteAll();
       $language->save();
-      foreach($items as $item) {
-        if(strpos($item, ".json") === false) continue;
+      foreach ($items as $item) {
+        if (strpos($item, ".json") === false) continue;
         $language->language_files->add($cache . $item);
       }
     }
@@ -2532,18 +2633,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param bool $merge
    * @return Module|false
    */
-  public function setModuleConfig($module, $data, $reset = false) {
+  public function setModuleConfig($module, $data, $reset = false)
+  {
     /** @var Module $module */
     $name = (string)$module;
     $module = $this->modules->get($name);
-    if(!$module) {
-      if($this->config->debug) $this->log("Module $name not found");
+    if (!$module) {
+      if ($this->config->debug) $this->log("Module $name not found");
       return false;
     }
 
     // now we merge the new config data over the old config
     // if reset is TRUE we skip this step which means we may lose old config!
-    if(!$reset) {
+    if (!$reset) {
       $old = $this->wire->modules->getConfig($module);
       $data = array_merge($old, $data);
     }
@@ -2567,11 +2669,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param bool $removeOthers
    * @return Field|null
    */
-  public function setOptions($field, $options, $removeOthers = false) {
+  public function setOptions($field, $options, $removeOthers = false)
+  {
     $string = "";
-    foreach($options as $k=>$v) {
-      if($k===0) $this->log("Option with key 0 skipped");
-      else $string.="\n$k=$v";
+    foreach ($options as $k => $v) {
+      if ($k === 0) $this->log("Option with key 0 skipped");
+      else $string .= "\n$k=$v";
     }
     return $this->setOptionsString($field, $string, $removeOthers);
   }
@@ -2585,18 +2688,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param Language $lang
    * @return Field|null
    */
-  public function setOptionsLang($field, $options, $removeOthers = false) {
+  public function setOptionsLang($field, $options, $removeOthers = false)
+  {
     $field = $this->getField($field);
 
     $optionsArray = [];
-    foreach($options as $lang=>$opt) {
+    foreach ($options as $lang => $opt) {
       $lang = $this->getLanguage($lang);
       $string = "";
-      foreach($opt as $k=>$v) {
-        if($k===0) $this->log("Option with key 0 skipped");
-        else $string.="\n$k=$v";
+      foreach ($opt as $k => $v) {
+        if ($k === 0) $this->log("Option with key 0 skipped");
+        else $string .= "\n$k=$v";
       }
-      if($lang->isDefault()) $defaults = $string;
+      if ($lang->isDefault()) $defaults = $string;
       $optionsArray[$lang->id] = $string;
     }
 
@@ -2628,7 +2732,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param bool $removeOthers
    * @return void
    */
-  public function setOptionsString($name, $options, $removeOthers = false) {
+  public function setOptionsString($name, $options, $removeOthers = false)
+  {
     $field = $this->getField($name);
 
     /** @var SelectableOptionManager $manager */
@@ -2645,7 +2750,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Set output level
    * @return void
    */
-  public function setOutputLevel($level) {
+  public function setOutputLevel($level)
+  {
     $this->outputLevel = $level;
   }
 
@@ -2660,30 +2766,31 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param mixed $data
    * @return void
    */
-  public function setPagenameReplacements($data) {
-    if(is_string($data)) {
-      $file = __DIR__."/replacements/$data.txt";
-      if(!is_file($file)) {
+  public function setPagenameReplacements($data)
+  {
+    if (is_string($data)) {
+      $file = __DIR__ . "/replacements/$data.txt";
+      if (!is_file($file)) {
         return $this->log("File $file not found");
       }
       $replacements = explode("\n", $this->wire->files->render($file));
       $arr = [];
-      foreach($replacements as $row) {
+      foreach ($replacements as $row) {
         $items = explode("=", $row);
         $arr[$items[0]] = $items[1];
       }
-    }
-    elseif(is_array($data)) $arr = $data;
-    if(!is_array($arr)) return;
+    } elseif (is_array($data)) $arr = $data;
+    if (!is_array($arr)) return;
     $this->setModuleConfig("InputfieldPageName", ['replacements' => $arr]);
   }
 
   /**
    * Set parent child family settings for two templates
    */
-  public function setParentChild($parent, $child, $onlyOneParent = true) {
+  public function setParentChild($parent, $child, $onlyOneParent = true)
+  {
     $noParents = 0; // many parents are allowed
-    if($onlyOneParent) $noParents = -1;
+    if ($onlyOneParent) $noParents = -1;
     $this->setTemplateData($child, [
       'noChildren' => 1, // may not have children
       'noParents' => '', // can be used for new pages
@@ -2701,7 +2808,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Save config to recorder file
    * @return void
    */
-  public function setRecordFlag(HookEvent $event) {
+  public function setRecordFlag(HookEvent $event)
+  {
     // remove this part as of 2022-04-04
     // there is no project.yaml any more
     // we store migrations with timestamps in /site/assets/RockMigrations
@@ -2742,12 +2850,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param bool $remove Reset Permissions for this role?
    * @return void
    */
-  public function setTemplateAccess($tpl, $role, $access, $remove = false) {
+  public function setTemplateAccess($tpl, $role, $access, $remove = false)
+  {
     $tpl = $this->getTemplate($tpl);
     $role = $this->getRole($role);
-    if($remove) $this->removeTemplateAccess($tpl, $role);
-    $this->setTemplateData($tpl, ['useRoles'=>1]);
-    foreach($access as $acc) $this->addTemplateAccess($tpl, $role, $acc);
+    if ($remove) $this->removeTemplateAccess($tpl, $role);
+    $this->setTemplateData($tpl, ['useRoles' => 1]);
+    foreach ($access as $acc) $this->addTemplateAccess($tpl, $role, $acc);
   }
 
   /**
@@ -2771,30 +2880,30 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param array $data
    * @return Template
    */
-  public function setTemplateData($name, array $data) {
-    if($name instanceof Page) $template = $name->template;
+  public function setTemplateData($name, array $data)
+  {
+    if ($name instanceof Page) $template = $name->template;
     $template = $this->templates->get((string)$name);
-    if(!$template) return $this->log("Template $name not found");
+    if (!$template) return $this->log("Template $name not found");
 
     // it is possible to define templates without data:
     // rm->migrate('templates' => ['tpl1', 'tpl2'])
-    if(!$data) return $template;
+    if (!$data) return $template;
 
     // save trace of migration to field
     // this is shown on field edit screen
     $template->_rockmigrations_log = $this->getTraceLog();
 
     // loop template data
-    foreach($data as $k=>$v) {
+    foreach ($data as $k => $v) {
 
       // the "fields" property is a special property from RockMigrations
       // templates have "fieldgroupFields" and "fieldgroupContexts"
-      if(($k === 'fields' || $k === 'fields-')) {
-        if(is_array($v)) {
-          $removeOthers = ($k==='fields-');
+      if (($k === 'fields' || $k === 'fields-')) {
+        if (is_array($v)) {
+          $removeOthers = ($k === 'fields-');
           $this->setTemplateFields($template, $v, $removeOthers);
-        }
-        else {
+        } else {
           $this->log("Value of property 'fields' must be an array");
         }
         continue;
@@ -2811,41 +2920,42 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Set fields of template via array
    * @return void
    */
-  public function setTemplateFields($template, $fields, $removeOthers = false) {
+  public function setTemplateFields($template, $fields, $removeOthers = false)
+  {
     $template = $this->getTemplate($template);
-    if(!$template) return; // logging happens in getTemplate()
+    if (!$template) return; // logging happens in getTemplate()
     $oldfields = clone $template->fields;
 
     $last = null;
     $names = [];
     $newfields = $this->wire(new Fieldgroup());
-    foreach($fields as $name=>$data) {
-      if(is_int($name) AND is_int($data)) {
+    foreach ($fields as $name => $data) {
+      if (is_int($name) and is_int($data)) {
         $name = $this->getField((string)$data)->name;
         $data = [];
       }
-      if(is_int($name)) {
+      if (is_int($name)) {
         $name = $data;
         $data = [];
       }
       $names[] = $name;
       $field = $this->getField($name);
-      if($field) $newfields->add($field);
+      if ($field) $newfields->add($field);
       $this->addFieldToTemplate($name, $template, $last);
       $this->setFieldData($name, $data, $template);
       $last = $name;
     }
 
-    if(!$removeOthers) {
+    if (!$removeOthers) {
       $merged = $this->mergeFields($oldfields, $newfields);
       $this->setFieldOrder($merged, $template);
       return;
     }
 
     // remove other fields!
-    foreach($template->fields as $field) {
+    foreach ($template->fields as $field) {
       $name = (string)$field;
-      if(!in_array($name, $names)) {
+      if (!in_array($name, $names)) {
         // remove this field from the template
         // global fields like the title field are also removed
         $this->removeFieldFromTemplate($name, $template, true);
@@ -2865,13 +2975,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param array $data
    * @return User
    */
-  public function setUserData($user, array $data) {
+  public function setUserData($user, array $data)
+  {
     $user = $this->getUser($user);
-    if(!$user) return; // logging above
+    if (!$user) return; // logging above
     $user->of(false);
 
     // setup options
-    $opt = $this->wire(new WireData()); /** @var WireData $opt */
+    $opt = $this->wire(new WireData());
+    /** @var WireData $opt */
     $opt->setArray([
       // dont set password here as this would reset passwords
       // when createUser() is used in a migration!
@@ -2882,14 +2994,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $opt->setArray($data);
 
     // set roles
-    foreach($opt->roles as $role) $this->addRoleToUser($role, $user);
+    foreach ($opt->roles as $role) $this->addRoleToUser($role, $user);
 
     // set password if it is set
-    if($opt->password) $user->set('pass', $opt->password);
+    if ($opt->password) $user->set('pass', $opt->password);
 
     // save admin theme in 2 steps
     // otherwise the admin theme will not update (PW issue)
-    if($opt->admintheme) $user->set('admin_theme', $opt->admintheme);
+    if ($opt->admintheme) $user->set('admin_theme', $opt->admintheme);
 
     $user->save();
     $this->log("Set user data for user $user ({$user->name})");
@@ -2900,22 +3012,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Show edit info on field and template edit screen
    * @return void
    */
-  public function showCopyCode(HookEvent $event) {
+  public function showCopyCode(HookEvent $event)
+  {
     $form = $event->object;
-    if(!$id = $this->wire->input->get('id', 'int')) return;
+    if (!$id = $this->wire->input->get('id', 'int')) return;
 
-    if($event->process == 'ProcessField') {
+    if ($event->process == 'ProcessField') {
       $existing = $form->get('field_label');
       $item = $this->wire->fields->get($id);
-    }
-    elseif($event->process == 'ProcessTemplate') {
+    } elseif ($event->process == 'ProcessTemplate') {
       $existing = $form->get('fieldgroup_fields');
       $item = $this->wire->templates->get($id);
-    }
-    else return;
+    } else return;
 
     // early exit (eg when changing fieldtype)
-    if(!$existing) return;
+    if (!$existing) return;
 
     $form->add([
       'name' => '_RockMigrationsCopyInfo',
@@ -2934,22 +3045,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Show edit info on field and template edit screen
    * @return void
    */
-  public function showEditInfo(HookEvent $event) {
+  public function showEditInfo(HookEvent $event)
+  {
     $form = $event->object;
-    if(!$id = $this->wire->input->get('id', 'int')) return;
+    if (!$id = $this->wire->input->get('id', 'int')) return;
 
-    if($event->process == 'ProcessField') {
+    if ($event->process == 'ProcessField') {
       $existing = $form->get('field_label');
       $item = $this->wire->fields->get($id);
-    }
-    elseif($event->process == 'ProcessTemplate') {
+    } elseif ($event->process == 'ProcessTemplate') {
       $existing = $form->get('fieldgroup_fields');
       $item = $this->wire->templates->get($id);
-    }
-    else return;
+    } else return;
 
     // early exit (eg when changing fieldtype)
-    if(!$existing) return;
+    if (!$existing) return;
 
     $form->add([
       'name' => '_RockMigrations',
@@ -2960,7 +3070,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         </div>
         <div>If you make any changes they might be overwritten
         by the next migration! Here is the backtrace of the last migration:</div>',
-      'value' => "<small>".nl2br($item->get('_rockmigrations_log')?:'')."</small>",
+      'value' => "<small>" . nl2br($item->get('_rockmigrations_log') ?: '') . "</small>",
     ]);
     $f = $form->get('_RockMigrations');
     $f->entityEncodeText = false;
@@ -2972,9 +3082,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Get sorted WireArray of fields
    * @return WireArray
    */
-  public function sort($data) {
-    $arr = $this->wire(new WireArray()); /** @var WireArray $arr */
-    foreach($data as $item) $arr->add($item);
+  public function sort($data)
+  {
+    $arr = $this->wire(new WireArray());
+    /** @var WireArray $arr */
+    foreach ($data as $item) $arr->add($item);
     return $arr->sort('name');
   }
 
@@ -2983,11 +3095,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * This will only add the submodule if the destination path does not exist!
    * @return void
    */
-  public function submodule($name, $config = [], $url = null, $dst = null) {
+  public function submodule($name, $config = [], $url = null, $dst = null)
+  {
     $url = $url ?: 'git@github.com:baumrock';
     $dst = $dst ?: "site/modules/$name";
     $this->setModuleConfig($name, $config);
-    if(is_dir($this->wire->config->paths->root.$dst)) return;
+    if (is_dir($this->wire->config->paths->root . $dst)) return;
     $cwd = getcwd();
     ob_start();
     chdir($this->wire->config->paths->root);
@@ -3003,25 +3116,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * See https://processwire.com/talk/topic/458-superuser-when-bootstrapping/
    * @return void
    */
-  public function sudo() {
+  public function sudo()
+  {
     $role = $this->wire->roles->get('superuser');
     $su = $this->wire->users->get("sort=id,roles=$role");
-    if(!$su->id) return $this->log("No superuser found");
+    if (!$su->id) return $this->log("No superuser found");
     $this->wire->users->setCurrentUser($su);
   }
 
   /**
    * Sync snippets
    */
-  private function syncSnippets() {
-    if(!$this->conf->syncSnippets) return;
+  private function syncSnippets()
+  {
+    if (!$this->conf->syncSnippets) return;
     $this->fileSync(
       "/.vscode/RockMigrations.code-snippets",
-      __DIR__."/.vscode/RockMigrations.code-snippets"
+      __DIR__ . "/.vscode/RockMigrations.code-snippets"
     );
     $this->fileSync(
       "/.vscode/ProcessWire.code-snippets",
-      __DIR__."/.vscode/ProcessWire.code-snippets"
+      __DIR__ . "/.vscode/ProcessWire.code-snippets"
     );
   }
 
@@ -3029,12 +3144,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Trigger migrations after Modules::refresh
    * @return void
    */
-  public function triggerMigrations(HookEvent $event) {
+  public function triggerMigrations(HookEvent $event)
+  {
     // If flags are present dont attach hooks to Modules::refresh
     // See the readme for more information!
-    if(defined("DontFireOnRefresh")) return;
-    if($this->wire->config->DontFireOnRefresh) return;
-    if(!$this->wire->session->noMigrate) $this->migrateAll = true;
+    if (defined("DontFireOnRefresh")) return;
+    if ($this->wire->config->DontFireOnRefresh) return;
+    if (!$this->wire->session->noMigrate) $this->migrateAll = true;
     $this->triggeredByRefresh = true;
     $this->run();
   }
@@ -3043,14 +3159,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * This will trigger the recorder if the flag is set
    * @return void
    */
-  public function triggerRecorder(HookEvent $event) {
-    if($this->record) $this->writeRecorderFiles();
+  public function triggerRecorder(HookEvent $event)
+  {
+    if ($this->record) $this->writeRecorderFiles();
   }
 
   /**
    * Unwatch all files
    */
-  public function unwatchAll() {
+  public function unwatchAll()
+  {
     $this->watchlist->removeAll();
   }
 
@@ -3058,7 +3176,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * On every uninstall of a module we unwatch all files to make sure
    * that migrations are not run immediately after uninstall.
    */
-  public function unwatchBeforeUninstall(HookEvent $event) {
+  public function unwatchBeforeUninstall(HookEvent $event)
+  {
     $this->unwatchAll();
   }
 
@@ -3066,14 +3185,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Update last run timestamp
    * @return void
    */
-  public function updateLastrun($timestamp = null) {
-    if($timestamp === null) $timestamp = time();
+  public function updateLastrun($timestamp = null)
+  {
+    if ($timestamp === null) $timestamp = time();
     $this->wire->cache->save(self::cachename, $timestamp, WireCache::expireNever);
   }
 
-  public function writeRecorderFiles() {
+  public function writeRecorderFiles()
+  {
     $this->log('Running recorders...');
-    foreach($this->recorders as $recorder) {
+    foreach ($this->recorders as $recorder) {
       $path = $recorder->path;
       $type = strtolower($recorder->type);
       $this->log("Writing config to $path");
@@ -3082,19 +3203,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
         'fields' => [],
         'templates' => [],
       ];
-      foreach($this->sort($this->wire->fields) as $field) {
-        if($field->flags) continue;
+      foreach ($this->sort($this->wire->fields) as $field) {
+        if ($field->flags) continue;
         $arr['fields'][$field->name] = $field->getExportData();
         unset($arr['fields'][$field->name]['id']);
       }
-      foreach($this->sort($this->wire->templates) as $template) {
-        if($template->flags) continue;
+      foreach ($this->sort($this->wire->templates) as $template) {
+        if ($template->flags) continue;
         $arr['templates'][$template->name] = $template->getExportData();
         unset($arr['templates'][$template->name]['id']);
       }
 
-      if($type == 'yaml') $this->yaml($path, $arr);
-      if($type == 'json') $this->json($path, $arr);
+      if ($type == 'yaml') $this->yaml($path, $arr);
+      if ($type == 'json') $this->json($path, $arr);
     }
     $this->updateLastrun();
   }
@@ -3105,7 +3226,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param string|Module $name
    * @return void
    */
-  public function uninstallModule($name) {
+  public function uninstallModule($name)
+  {
     $this->wire->session->noMigrate = true;
     $this->modules->uninstall((string)$name);
     $this->wire->session->noMigrate = false;
@@ -3117,16 +3239,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * NOTE: The only issue is when a string value has `=>\n[`, it will get converted to `=> [`
    * @link https://www.php.net/manual/en/function.var-export.php
    */
-  function varexport($expression, $return=TRUE) {
+  function varexport($expression, $return = TRUE)
+  {
     $export = var_export($expression, TRUE);
     $patterns = [
-        "/array \(/" => '[',
-        "/^([ ]*)\)(,?)$/m" => '$1]$2',
-        "/=>[ ]?\n[ ]+\[/" => '=> [',
-        "/([ ]*)(\'[^\']+\') => ([\[\'])/" => '$1$2 => $3',
+      "/array \(/" => '[',
+      "/^([ ]*)\)(,?)$/m" => '$1]$2',
+      "/=>[ ]?\n[ ]+\[/" => '=> [',
+      "/([ ]*)(\'[^\']+\') => ([\[\'])/" => '$1$2 => $3',
     ];
     $export = preg_replace(array_keys($patterns), array_values($patterns), $export);
-    if((bool)$return) return $export; else echo $export;
+    if ((bool)$return) return $export;
+    else echo $export;
   }
 
   /**
@@ -3159,8 +3283,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * @param array $options Array of options
    * @return void
    */
-  public function watch($what, $migrate = true, $options = []) {
-    if(!$this->watchEnabled()) return;
+  public function watch($what, $migrate = true, $options = [])
+  {
+    if (!$this->watchEnabled()) return;
 
     // setup options
     $opt = $this->wire(new WireData());
@@ -3184,7 +3309,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $traceline = $trace['line'];
 
     // watch a custom pageclass
-    if($what instanceof Page) {
+    if ($what instanceof Page) {
       $reflector = new \ReflectionClass($what);
       $file = $reflector->getFileName();
       $opt->pageID = $what->id;
@@ -3196,53 +3321,54 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       );
     }
     // instance of module
-    elseif($what instanceof Module) {
+    elseif ($what instanceof Module) {
       $module = $what;
       $file = $this->wire->modules->getModuleFile($module);
     }
     // callback
-    elseif(!is_string($what) AND is_callable($what)) {
+    elseif (!is_string($what) and is_callable($what)) {
       $trace = debug_backtrace()[0];
       $tracefile = $trace['file'];
       $traceline = $trace['line'];
       $callback = $what;
       $file = $tracefile;
-      $hash = ":".uniqid();
+      $hash = ":" . uniqid();
     }
     // path to folder
-    elseif(is_dir($what)) {
+    elseif (is_dir($what)) {
       $dir = $what;
       $fopt = [
-        'extensions'=>['php'],
+        'extensions' => ['php'],
         'recursive' => $opt->recursive,
       ];
-      foreach($this->wire->files->find($dir, $fopt) as $f) {
+      foreach ($this->wire->files->find($dir, $fopt) as $f) {
         $this->watch($f, $migrate, $opt->getArray());
       }
     }
 
     // if we got no file until now we exit early
-    if(!$path = $this->file($file)) return;
+    if (!$path = $this->file($file)) return;
 
     // set migrate to false if extension is not valid
     // this can happen on $rm->watch("/my/file.js");
-    if($migrate) {
+    if ($migrate) {
       $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
       $allowed = ['php', 'yaml'];
-      if(!in_array($ext, $allowed)) $migrate = false;
+      if (!in_array($ext, $allowed)) $migrate = false;
     }
 
     // if path already exists we skip adding this file
     $exists = $this->watchlist->get("path=$path");
-    if($exists) {
+    if ($exists) {
       $this->log("Did not add $path to watchlist because it already exists. Called in $tracefile:$traceline");
       return;
     }
 
-    require_once($this->path."WatchFile.php");
-    $data = $this->wire(new WatchFile()); /** @var WatchFile $data */
+    require_once($this->path . "WatchFile.php");
+    $data = $this->wire(new WatchFile());
+    /** @var WatchFile $data */
     $data->setArray([
-      'path' => $path.$hash,
+      'path' => $path . $hash,
       'module' => $module,
       'callback' => $callback,
       'pageClass' => $opt->pageClass,
@@ -3259,13 +3385,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     $this->watchlist->add($data)->sortFloat('migrate');
   }
 
-  public function watchEnabled() {
-    if(!$this->wire->user) return false;
-    if($this->wire->user->isSuperuser()) return true;
-    if($this->wire->config->forceWatch) return true;
-    if(defined('RockMigrationsCLI')) return true;
+  public function watchEnabled()
+  {
+    if (!$this->wire->user) return false;
+    if ($this->wire->user->isSuperuser()) return true;
+    if ($this->wire->config->forceWatch) return true;
+    if (defined('RockMigrationsCLI')) return true;
     $tracy = $this->wire->modules->get('TracyDebugger');
-    if($tracy->forceIsLocal) return true;
+    if ($tracy->forceIsLocal) return true;
     return false;
   }
 
@@ -3273,7 +3400,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Return watchlist
    * @return WireArray
    */
-  public function watchlist() {
+  public function watchlist()
+  {
     return $this->watchlist;
   }
 
@@ -3284,14 +3412,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *
    * @return void
    */
-  public function watchModules() {
-    if(!$this->watchEnabled()) return;
+  public function watchModules()
+  {
+    if (!$this->watchEnabled()) return;
     $path = $this->wire->config->paths->siteModules;
     foreach (new DirectoryIterator($path) as $fileInfo) {
-      if(!$fileInfo->isDir()) continue;
-      if($fileInfo->isDot()) continue;
+      if (!$fileInfo->isDir()) continue;
+      if ($fileInfo->isDot()) continue;
       $name = $fileInfo->getFilename();
-      $migrateFile = $fileInfo->getPath()."/$name/$name.migrate";
+      $migrateFile = $fileInfo->getPath() . "/$name/$name.migrate";
       $this->watch("$migrateFile.yaml");
       $this->watch("$migrateFile.json");
       $this->watch("$migrateFile.php");
@@ -3302,7 +3431,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Add a single pageclass file to watchlist
    * @return void
    */
-  public function watchPageClass(string $file, $namespace = "ProcessWire", $options = [], $migrate = true) {
+  public function watchPageClass(string $file, $namespace = "ProcessWire", $options = [], $migrate = true)
+  {
     $name = pathinfo($file, PATHINFO_FILENAME);
     $class = "$namespace\\$name";
     $options = array_merge([
@@ -3315,15 +3445,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    * Watch pageClasses and trigger migrate() on change
    * @return void
    */
-  public function watchPageClasses($path, $namespace = "ProcessWire", $options = [], $migrate = true) {
-    if(!$this->watchEnabled()) return;
-    if(is_dir($path)) {
+  public function watchPageClasses($path, $namespace = "ProcessWire", $options = [], $migrate = true)
+  {
+    if (!$this->watchEnabled()) return;
+    if (is_dir($path)) {
       $opt = ['extensions' => ['php'], 'recursive' => 1];
-      foreach($this->wire->files->find($path, $opt) as $file) {
+      foreach ($this->wire->files->find($path, $opt) as $file) {
         $this->watchPageClass($file, $namespace, $options, $migrate);
       }
-    }
-    elseif(is_file($path)) $this->watchPageClass($path, $namespace, $options, $migrate);
+    } elseif (is_file($path)) $this->watchPageClass($path, $namespace, $options, $migrate);
     else $this->log("Nothing to watch in $path");
   }
 
@@ -3341,43 +3471,45 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
    *
    * @return mixed
    */
-  public function yaml($path = null, $data = null) {
+  public function yaml($path = null, $data = null)
+  {
     require_once('spyc/Spyc.php');
     require_once('YAML.php');
     $yaml = $this->yaml ?: new YAML();
-    if($path AND $data===null) return $yaml->load($path);
-    elseif($path AND $data!==null) {
+    if ($path and $data === null) return $yaml->load($path);
+    elseif ($path and $data !== null) {
       $dir = dirname($path);
-      if(!is_dir($dir)) $this->wire->files->mkdir($dir, true);
+      if (!is_dir($dir)) $this->wire->files->mkdir($dir, true);
       return $yaml->save($path, $data);
     }
     return $yaml;
   }
 
   /**
-  * Config inputfields
-  * @param InputfieldWrapper $inputfields
-  */
-  public function getModuleConfigInputfields($inputfields) {
+   * Config inputfields
+   * @param InputfieldWrapper $inputfields
+   */
+  public function getModuleConfigInputfields($inputfields)
+  {
 
     $inputfields->add([
       'type' => 'markup',
       'label' => 'RockMigrations Config Options',
       'value' => 'You can set all settings either here via GUI or alternatively via config array:<br>
         <pre>$config->rockmigrations = [<br>'
-        .'  "syncSnippets" => true,<br>'
-        .'];</pre>'
-        .'Note that settings in config.php have precedence over GUI settings!',
+        . '  "syncSnippets" => true,<br>'
+        . '];</pre>'
+        . 'Note that settings in config.php have precedence over GUI settings!',
     ]);
 
     $this->profileExecute();
     $f = new InputfieldSelect();
     $f->label = "Execute one of the existing profile migrations";
     $f->name = 'profile';
-    foreach($this->profiles() as $path => $label) {
+    foreach ($this->profiles() as $path => $label) {
       $f->addOption($label, $label);
     }
-    $path = $this->wire->config->paths->assets."RockMigrations/profiles";
+    $path = $this->wire->config->paths->assets . "RockMigrations/profiles";
     $f->notes = "You can place your own profiles in $path";
     $inputfields->add($f);
 
@@ -3415,10 +3547,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
     return $inputfields;
   }
 
-  public function __debugInfo() {
+  public function __debugInfo()
+  {
     $lastrun = "never";
-    if($this->lastrun) {
-      $lastrun = date("Y-m-d H:i:s", $this->lastrun)." ({$this->lastrun})";
+    if ($this->lastrun) {
+      $lastrun = date("Y-m-d H:i:s", $this->lastrun) . " ({$this->lastrun})";
     }
     return [
       'Version' => $this->getModuleInfo()['version'],
@@ -3427,5 +3560,4 @@ class RockMigrations extends WireData implements Module, ConfigurableModule {
       'watchlist' => $this->watchlist,
     ];
   }
-
 }
