@@ -34,7 +34,8 @@ $rm->createField('demo', 'text', [
   'label' => 'My demo field',
   'tags' => 'RMDemo',
 ]);
-$rm->createTemplate('demo', [
+$rm->createTemplate('demo');
+$rm->setTemplateData([
   'fields' => [
     'title',
     'demo',
@@ -47,8 +48,8 @@ Reload your site and you will see the new field and template in the backend and 
 
 Now do a modules refresh (not a regular page reload) and note that the migration run again (the same message appears in tracy). There are two important things to understand here:
 
-1) Migrations can run multiple times and will always lead to the same result.
-2) If you put your migrations in ready.php or an autoload module they will run on every request. This not a good idea as it may slow down your site significantly
+1. Migrations can run multiple times and will always lead to the same result.
+2. If you put your migrations in ready.php or an autoload module they will run on every request. This not a good idea as it may slow down your site significantly
 
 Now do a regular page reload. The migration will not run as nothing has changed. A modules refresh does always force to run migrations.
 
@@ -58,11 +59,11 @@ RockMigrations might not support all external fields, especially not profields l
 
 ## Where do I find out all those field and template properties?
 
-1) You can edit your field or template and copy the code from there (I recommend to only copy the settings you need to make your migration files more readable):
-![img](https://i.imgur.com/IAHV3VZ.png)
+1. You can edit your field or template and copy the code from there (I recommend to only copy the settings you need to make your migration files more readable):
+   ![img](https://i.imgur.com/IAHV3VZ.png)
 
-2) Hover the caret on the very right of the field of the setting you want to set:
-![img](https://i.imgur.com/hmydzf5.png)
+2. Hover the caret on the very right of the field of the setting you want to set:
+   ![img](https://i.imgur.com/hmydzf5.png)
 
 ## Magic
 
@@ -106,8 +107,8 @@ class DemoPage extends Page {
 
 A `MagicPage` does also have other magic methods that make the most common hooks a lot easier to use:
 
-* editForm($form) instead of hooking ProcessPageEdit::buildForm
-* onSaveReady() instead of hooking Pages::saveReady
+- editForm($form) instead of hooking ProcessPageEdit::buildForm
+- onSaveReady() instead of hooking Pages::saveReady
 
 For all available methods see `RockMigrations::addMagicMethods()`!
 
@@ -202,6 +203,7 @@ $config->filesOnDemand = 'https://user:password@example.com';
 ```php
 $rm->watch("/your/file.yaml");
 ```
+
 ```yaml
 fields:
   foo:
@@ -214,6 +216,7 @@ fields:
 ```php
 $rm->watch("/your/file.php");
 ```
+
 ```php
 <?php namespace ProcessWire;
 $rm->createField('foo', 'text');
@@ -275,9 +278,9 @@ $wire->addHookAfter("ProcessPageEdit::buildForm", function($event) {
 
 You can use RockMigrations to easily create fully automated CI/CD pipelines for Github. It only takes these simple steps:
 
-* Setup SSH keys and add secrets to your repository
-* Create workflow yaml file
-* Push to your repo
+- Setup SSH keys and add secrets to your repository
+- Create workflow yaml file
+- Push to your repo
 
 ## Setup SSH keys and add secrets to your repo
 
@@ -390,7 +393,7 @@ jobs:
       KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
 ```
 
-See https://bit.ly/3ru8a7e how to setup a Personal Access Token for Github. You need to *create* this token only once for your Github Account, not for every project, but you need to add it to every project that should be able to access private submodules!
+See https://bit.ly/3ru8a7e how to setup a Personal Access Token for Github. You need to _create_ this token only once for your Github Account, not for every project, but you need to add it to every project that should be able to access private submodules!
 
 Your workflow should copy files but fail at step `Trigger RockMigrations Deployment`. That is because you need to create a `site/deploy.php` file:
 
