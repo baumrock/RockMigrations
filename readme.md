@@ -35,7 +35,7 @@ $rm->createField('demo', 'text', [
   'tags' => 'RMDemo',
 ]);
 $rm->createTemplate('demo');
-$rm->setTemplateData([
+$rm->setTemplateData('demo', [
   'fields' => [
     'title',
     'demo',
