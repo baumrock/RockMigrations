@@ -2,19 +2,13 @@
   // namespace
   "ns": {
     "prefix": "ns",
-    "body": [
-      "<?php namespace $1;",
-      "$0",
-    ],
+    "body": ["<?php namespace $1;", "$0"]
   },
 
   // processwire namespace
   "pw": {
     "prefix": "pw",
-    "body": [
-      "<?php namespace ProcessWire;",
-      "$0",
-    ],
+    "body": ["<?php namespace ProcessWire;", "$0"]
   },
 
   // load a pw module
@@ -24,7 +18,7 @@
       "/** @var $1 $$2 */",
       "$$2 = \\$this->wire->modules->get('$1');",
       "$$2$0"
-    ],
+    ]
   },
   "pw-module": {
     "prefix": "pw-createmodule",
@@ -38,7 +32,7 @@
       "      'version' => '0.0.1',",
       "      'summary' => '${3:Your module description}',",
       "      'autoload' => ${4:true},",
-      "      'singular' => ${5:false},",
+      "      'singular' => ${5:true},",
       "      'icon' => '${6:smile-o}',",
       "      'requires' => [],",
       "      'installs' => [],",
@@ -78,20 +72,16 @@
       "  }",
       "",
       "}",
-      "",
-    ],
+      ""
+    ]
   },
   "pw-exception": {
     "prefix": "pw-exception",
-    "body": [
-      "throw new WireException(\"$1\")",
-    ],
+    "body": ["throw new WireException(\"$1\")"]
   },
   "pw-404exception": {
     "prefix": "pw-404exception",
-    "body": [
-      "throw new Wire404Exception(\"$1\")",
-    ],
+    "body": ["throw new Wire404Exception(\"$1\")"]
   },
 
   // tracy debugger config
@@ -105,10 +95,10 @@
       "  // 'forceIsLocal' => true, // use this only on local dev!!!!",
       "  'localRootPath' => '/path/to/your/project/', // with trailing slash!",
       "  'numLogEntries' => 100, // for RockMigrations",
-      "];",
-    ],
+      "];"
+    ]
   },
 
   // this is a placeholder so that all items above can have a trailing slash
-  "": {"body": ""}
+  "": { "body": "" }
 }
