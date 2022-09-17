@@ -120,7 +120,7 @@ A `MagicPage` does also have other magic methods that make the most common hooks
 - editForm($form) instead of hooking ProcessPageEdit::buildForm
 - onSaveReady() instead of hooking Pages::saveReady
 
-For all available methods see `RockMigrations::addMagicMethods()`!
+For all available methods see `MagicPages::addMagicMethods()`!
 
 Note that this feature loads one page of each available template at every boot so it has a little performance penalty. If you have many templates you can disable the feature by setting `$config->useMagicClasses = false`.
 
