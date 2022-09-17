@@ -146,8 +146,8 @@ When run from the CLI it will still run every single migration file to make sure
 Sometimes it is necessary that even unchanged files are migrated. RockMatrix is an example for that, where the module file triggers the migrations for all Matrix-Blocks. In that case you can add the file to the watchlist using the `force` option:
 
 ```php
-$matrix = ...;
-$rm->watch($matrix, true, ['force'=>true]);
+// inside RockMatrix::init
+$rm->watch($this, true, ['force'=>true]);
 ```
 
 ### Watching modules
