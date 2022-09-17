@@ -47,9 +47,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /** @var string */
   public $path;
 
-  /** @var PageArray */
-  protected $readyClasses;
-
   /**
    * If true we will write data to recorder files
    * @var bool
@@ -69,7 +66,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.6.1',
+      'version' => '1.6.2',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -150,11 +147,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $this->forceMigrate();
     $this->addLivereload();
-
-    // trigger ready() for all magic classes
-    foreach ($this->readyClasses ?: [] as $p) {
-      if (method_exists($p, 'ready')) $p->ready();
-    }
 
     // other actions
     $this->migrateWatchfiles();
