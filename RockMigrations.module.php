@@ -68,7 +68,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.5.0',
+      'version' => '1.6.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -93,6 +93,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $config = $this->wire->config;
     $this->wire('rockmigrations', $this);
+    $this->installModule('MagicPages');
     if ($config->debug) $this->setOutputLevel(self::outputLevelVerbose);
 
     // for development
@@ -142,7 +143,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // other actions on init()
     $this->loadFilesOnDemand();
     $this->syncSnippets();
-    $this->initMagicPages();
   }
 
   public function ready()
@@ -151,7 +151,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->addLivereload();
 
     // trigger ready() for all magic classes
-    foreach ($this->readyClasses as $p) {
+    foreach ($this->readyClasses ?: [] as $p) {
       if (method_exists($p, 'ready')) $p->ready();
     }
 
@@ -516,81 +516,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $path = $this->wire->config->paths('RockFrontend');
     $m = filemtime($path . "livereload.js");
     $this->wire->config->scripts->add($url . "livereload.js?m=$m");
-  }
-
-  /**
-   * Add magic methods to this page object
-   * @param Page $obj
-   * @return void
-   */
-  public function addMagicMethods($obj)
-  {
-
-    if (method_exists($obj, "editForm")) {
-      $this->wire->addHookAfter("ProcessPageEdit::buildForm", function ($event) use ($obj) {
-        $page = $event->object->getPage();
-        if ($obj->className !== $page->className) return;
-        $form = $event->return;
-        $page->editForm($form, $page);
-      });
-    }
-
-    if (method_exists($obj, "editFormContent")) {
-      $this->wire->addHookAfter("ProcessPageEdit::buildFormContent", function ($event) use ($obj) {
-        $page = $event->object->getPage();
-        if ($obj->className !== $page->className) return;
-        $form = $event->return;
-        $page->editFormContent($form, $page);
-      });
-    }
-
-    if (method_exists($obj, "editFormSettings")) {
-      $this->wire->addHookAfter("ProcessPageEdit::buildFormSettings", function ($event) use ($obj) {
-        $page = $event->object->getPage();
-        if ($obj->className !== $page->className) return;
-        $form = $event->return;
-        $page->editFormSettings($form, $page);
-      });
-    }
-
-    // execute onSaved on every save
-    // this will also fire when id=0
-    if (method_exists($obj, "onSaved")) {
-      $this->wire->addHookAfter("Pages::saved", function ($event) use ($obj) {
-        $page = $event->arguments(0);
-        if ($obj->className !== $page->className) return;
-        $page->onSaved();
-      });
-    }
-
-    // execute onSaveReady on every save
-    // this will also fire when id=0
-    if (method_exists($obj, "onSaveReady")) {
-      $this->wire->addHookAfter("Pages::saveReady", function ($event) use ($obj) {
-        $page = $event->arguments(0);
-        if ($obj->className !== $page->className) return;
-        $page->onSaveReady();
-      });
-    }
-
-    // execute onCreate on saveReady when id=0
-    if (method_exists($obj, "onCreate")) {
-      $this->wire->addHookAfter("Pages::saveReady", function ($event) use ($obj) {
-        $page = $event->arguments(0);
-        if ($page->id) return;
-        if ($obj->className !== $page->className) return;
-        $page->onCreate();
-      });
-    }
-
-    // execute onAdded on saved when id=0
-    if (method_exists($obj, "onAdded")) {
-      $this->wire->addHookAfter("Pages::added", function ($event) use ($obj) {
-        $page = $event->arguments(0);
-        if ($obj->className !== $page->className) return;
-        $page->onAdded();
-      });
-    }
   }
 
   /**
@@ -1680,45 +1605,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $this->log($th->getMessage());
       }
     }
-  }
-
-  /**
-   * Trigger init() of MagicPage page classes
-   */
-  public function initMagicPages()
-  {
-    $this->readyClasses = $ready = $this->wire(new PageArray());
-    if ($this->wire->config->useMagicClasses === false) return;
-    if ($this->wire->config->useMagicClasses === 0) return;
-    foreach ($this->wire->templates as $tpl) {
-      // do not init rockmatrix blocks!
-      // this caused issues at FTA accordion not showing up
-      // same problem on ÖGKV but only when superuser
-      if ($tpl->isRockMatrixBlock) continue;
-
-      // this line causes an error for rockmatrix blocks
-      $p = $this->wire->pages->get("template=$tpl");
-      try {
-        // if the template exists but no page we create on in the trash
-        if ($p instanceof NullPage) {
-          $p = new Page();
-          $p->template = $tpl;
-          $p->parent = $this->wire->config->trashPageID;
-          $p->title = "$tpl fakepage by RockMigrations";
-          $p->save();
-        }
-        // if it is a magicpage trigger init() and ready()
-        if ($p->isMagicPage) {
-          if (method_exists($p, 'init')) $p->init();
-          if (method_exists($p, 'migrate')) $this->watch($p);
-          if (method_exists($p, 'ready')) $ready->add($p);
-          $this->addMagicMethods($p);
-        }
-      } catch (\Throwable $th) {
-        $this->log($th->getMessage());
-      }
-    }
-    $this->readyClasses = $ready;
   }
 
   /**
