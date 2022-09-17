@@ -4,6 +4,7 @@ namespace ProcessWire;
 
 use DirectoryIterator;
 use RockMatrix\Block;
+use RockMigrations\MagicPages;
 use RockMigrations\RecorderFile;
 use RockMigrations\WatchFile;
 use RockMigrations\WireArray;
@@ -68,7 +69,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.6.0',
+      'version' => '1.6.1',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1817,6 +1818,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     if (!array_key_exists($property, $arr)) return;
     return $arr[$property];
+  }
+
+  /**
+   * Get instance of MagicPages module
+   */
+  public function magic(): MagicPages
+  {
+    return $this->wire->modules->get('MagicPages');
   }
 
   /**
