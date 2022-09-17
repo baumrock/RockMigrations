@@ -20,7 +20,7 @@ class MagicPages extends WireData implements Module
       'summary' => 'Autoload module to support MagicPages',
       'autoload' => true,
       'singular' => true,
-      'icon' => 'smile-o',
+      'icon' => 'magic',
       'requires' => [],
       'installs' => [],
     ];
