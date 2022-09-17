@@ -22,6 +22,14 @@ $config->rockmigrations = [
 
 This copies the VSCode snippets to the .vscode folder and that makes VSCode show helpful snippets, eg for loading RockMigrations and showing code suggestions:
 
+<img src=https://i.imgur.com/F8Gd4q0.png height=200>
+
+Then you can simply choose `rmf-datetime` for example and get the code to use to create your field:
+
+<img src=https://i.imgur.com/EirBznI.png height=200>
+
+The `rm` snippet lets you quickly access the RockMigrations module with typehints so that you get proper IntelliSense:
+
 <img src=https://i.imgur.com/j11eVD3.png height=250>
 
 To write your first migrations just put this in your `site/migrate.php`. The example code uses `bd()` calls for dumping data. You need TracyDebugger installed!
@@ -55,7 +63,9 @@ Now do a regular page reload. The migration will not run as nothing has changed.
 
 ## Limitations
 
-RockMigrations might not support all external fields, especially not profields like RepeaterMatrix. Adding support has no priority for me because I'm not using it. If you need support for it please provide a PR or if you are interested in sponsoring that feature please contact me via PM in the forum.
+RockMigrations might not support all external fields, especially not ProFields like RepeaterMatrix. Adding support has no priority for me because I'm not using it. If you need support for it please provide a PR or if you are interested in sponsoring that feature please contact me via PM in the forum.
+
+But not to forget: You can still use the regular PW API to create fields and manipulate all kinds of things. It might just not be as convenient as the RockMigrations API.
 
 ## Where do I find out all those field and template properties?
 
