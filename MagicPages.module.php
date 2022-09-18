@@ -16,7 +16,7 @@ class MagicPages extends WireData implements Module
   {
     return [
       'title' => 'MagicPages',
-      'version' => '1.0.1',
+      'version' => '1.0.2',
       'summary' => 'Autoload module to support MagicPages',
       'autoload' => true,
       'singular' => true,
@@ -46,7 +46,8 @@ class MagicPages extends WireData implements Module
 
   public function ready()
   {
-    foreach ($this->readyClasses as $p) $p->ready();
+    $ready = $this->readyClasses ?: []; // prevents error on uninstall
+    foreach ($ready as $p) $p->ready();
   }
 
   /**
