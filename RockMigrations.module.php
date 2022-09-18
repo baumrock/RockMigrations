@@ -66,7 +66,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.6.3',
+      'version' => '1.6.4',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -639,7 +639,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * @param array $options
    * @return Field|false
    */
-  public function createField($name, $type, $options = null)
+  public function createField($name, $type = 'text', $options = null)
   {
     if (is_array($type)) {
       $options = $type;
