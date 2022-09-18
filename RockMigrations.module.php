@@ -71,7 +71,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'autoload' => 2,
       'singular' => true,
       'icon' => 'magic',
-      'requires' => [],
       'installs' => [
         'MagicPages',
       ],
