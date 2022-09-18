@@ -16,12 +16,14 @@ class MagicPages extends WireData implements Module
   {
     return [
       'title' => 'MagicPages',
-      'version' => '1.0.0',
+      'version' => '1.0.1',
       'summary' => 'Autoload module to support MagicPages',
       'autoload' => true,
       'singular' => true,
       'icon' => 'magic',
-      'requires' => [],
+      'requires' => [
+        'RockMigrations>=1.6.3',
+      ],
       'installs' => [],
     ];
   }

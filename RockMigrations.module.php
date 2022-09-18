@@ -66,13 +66,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.6.2',
+      'version' => '1.6.3',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
       'icon' => 'magic',
       'requires' => [],
-      'installs' => [],
+      'installs' => [
+        'MagicPages',
+      ],
     ];
   }
 
@@ -795,14 +797,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Create a new ProcessWire Template
+   * 
+   * Usage:
+   * $rm->createTemplate('foo', [
+   *   'fields' => ['foo', 'bar'],
+   * ]);
    *
    * @param string $name
-   * @param bool $addTitlefield
+   * @param bool|array $data
    * @return void
    */
-  public function createTemplate($name, $addTitlefield = true)
+  public function createTemplate($name, $data = true)
   {
-    $t = $this->templates->get((string)$name);
+    $t = $this->getTemplate($name);
     if (!$t) {
       // create new fieldgroup
       $fg = $this->wire(new Fieldgroup());
@@ -816,8 +823,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $t->save();
     }
 
-    // add title field to this template
-    if ($addTitlefield) $this->addFieldToTemplate('title', $t);
+    if (is_bool($data)) {
+      // add title field to this template
+      if ($data) $this->addFieldToTemplate('title', $t);
+    } elseif (is_array($data)) {
+      $this->setTemplateData($t, $data);
+    }
 
     return $t;
   }
@@ -838,7 +849,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function createUser($username, $data = [])
   {
-    $user = $this->users->get($username);
+    $user = $this->getUser($username);
     if (!$user->id) {
       $user = $this->wire->users->add($username);
 
@@ -1550,6 +1561,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function getTemplate($name, $quiet = false)
   {
+    if ($name instanceof Page) $name = $name->template;
     $template = $this->templates->get((string)$name);
     if ($template and $template->id) return $template;
     if (!$quiet) $this->log("Template $name not found");
@@ -2051,27 +2063,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         continue;
       }
 
-      // special treatment for custom pageclasses in the pw classes folder
-      // this prevents "cannot redeclare ..." errors
-      $pageClass = $file->pageClass;
-      if (strpos($file->path, $this->wire->config->paths->classes) === 0) {
-        $base = pathinfo($file->path, PATHINFO_FILENAME);
-        $pageClass = "\\ProcessWire\\$base";
-      }
-      if ($pageClass) {
-        if (!class_exists($pageClass)) require_once $file->path;
+      // if it is a pageclass we create a temporary page and migrate it
+      if ($file->pageClass) {
         if ($this->doMigrate($file->path)) {
-          // if page id is set we load the page
-          // otherwise we load a nullpage of the pageclass
-          // having a pageID has the benefit that we can load the page
-          // and we will have all properties set (like template)
-          if ($file->pageID) $tmp = $this->wire->pages->get($file->pageID);
-          else $tmp = new $pageClass();
+          $tmp = $this->wire->pages->newPage($file->template);
           if (method_exists($tmp, 'migrate')) {
-            $this->log("Triggering $pageClass::migrate()");
+            $this->log("Triggering {$file->pageClass}::migrate()");
             $tmp->migrate();
           }
-        } else $this->log("--- Skipping $pageClass (no change)");
+        } else $this->log("--- Skipping {$file->pageClass} (no change)");
         continue;
       }
 
@@ -2769,9 +2769,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function setTemplateData($name, array $data)
   {
-    if ($name instanceof Page) $template = $name->template;
-    $template = $this->templates->get((string)$name);
-    if (!$template) return $this->log("Template $name not found");
+    $template = $this->getTemplate($name);
+    if (!$template) return; // logging above
 
     // it is possible to define templates without data:
     // rm->migrate('templates' => ['tpl1', 'tpl2'])
@@ -3199,7 +3198,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($what instanceof Page) {
       $reflector = new \ReflectionClass($what);
       $file = $reflector->getFileName();
-      $opt->pageID = $what->id;
+      $opt->template = $what->template;
       return $this->watchPageClass(
         $file,
         $reflector->getNamespaceName(),
@@ -3263,7 +3262,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'trace' => "$tracefile:$traceline",
       'changed' => false,
       'force' => $opt->force,
-      'pageID' => $opt->pageID,
+      'template' => $opt->template,
     ]);
     // bd($data, $data->path);
 
