@@ -66,7 +66,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.6.5',
+      'version' => '1.6.6',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -681,6 +681,26 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $field = $this->setFieldData($field, $options);
 
     return $field;
+  }
+
+  /**
+   * Create fields from array
+   * 
+   * Usage:
+   * $rm->createFields([
+   *   'field1' => [...],
+   *   'field2' => [...],
+   * ]);
+   */
+  public function createFields($fields): void
+  {
+    foreach ($fields as $name => $data) {
+      if (is_int($name)) {
+        $name = $data;
+        $data = [];
+      }
+      $this->createField($name, $data);
+    }
   }
 
   private function createNeededFolders()
