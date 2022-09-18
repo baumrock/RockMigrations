@@ -66,7 +66,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.6.4',
+      'version' => '1.6.5',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -624,6 +624,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * If run multiple times it will only update field data.
    *
    * Usage:
+   * $rm->createField('myfield');
+   * 
    * $rm->createField('myfield', 'text', [
    *   'label' => 'My great field',
    * ]);
@@ -639,11 +641,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * @param array $options
    * @return Field|false
    */
-  public function createField($name, $type = 'text', $options = null)
+  public function createField($name, $type = 'text', $options = [])
   {
     if (is_array($type)) {
       $options = $type;
-      $type = $type['type'];
+      if (!array_key_exists('type', $options)) $options['type'] = 'text';
+      $type = $options['type'];
     }
     $field = $this->getField($name, true);
 
@@ -674,7 +677,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
 
     // set options
-    if ($options) $field = $this->setFieldData($field, $options);
+    $options = array_merge($options, ['type' => $type]);
+    $field = $this->setFieldData($field, $options);
 
     return $field;
   }
