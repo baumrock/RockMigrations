@@ -4,6 +4,14 @@
 
 wbmnfktr, 13.7.2022
 
+<br>
+
+See the video here:
+
+<a href="https://www.youtube.com/watch?v=eBOB8dZvRN4"><img src=thumb.jpg></a>
+
+<br>
+
 ### Module Description
 
 RockMigrations has an easy API to do all the things you can do in the PW backend via code. This means you can **fully version control your site** or app simply by adding all the necessary fields and templates not via clicking but via writing simple scripts that do that tasks for you.

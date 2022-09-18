@@ -3402,6 +3402,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function getModuleConfigInputfields($inputfields)
   {
 
+    $video = new InputfieldMarkup();
+    $video->label = 'processwire-rocks.com';
+    $video->value = '<iframe width="560" height="315" src="https://www.youtube.com/embed/eBOB8dZvRN4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+    $inputfields->add($video);
+
     $inputfields->add([
       'type' => 'markup',
       'label' => 'RockMigrations Config Options',
