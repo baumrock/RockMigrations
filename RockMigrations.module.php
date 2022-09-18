@@ -66,7 +66,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.6.6',
+      'version' => '1.6.7',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -3455,6 +3455,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // ]);
 
     return $inputfields;
+  }
+
+  public function ___install(): void
+  {
+    $file = $this->wire->config->paths->site . "migrate.php";
+    if (!is_file($file)) {
+      $this->wire->files->filePutContents(
+        $file,
+        $this->wire->files->fileGetContents(__DIR__ . "/stubs/migrate.php")
+      );
+    }
   }
 
   public function __debugInfo()
