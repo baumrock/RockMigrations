@@ -16,7 +16,7 @@ class MagicPages extends WireData implements Module
   {
     return [
       'title' => 'MagicPages',
-      'version' => '1.0.2',
+      'version' => '1.0.3',
       'summary' => 'Autoload module to support MagicPages',
       'autoload' => true,
       'singular' => true,
@@ -38,8 +38,8 @@ class MagicPages extends WireData implements Module
       $p = $this->wire->pages->newPage(['template' => $tpl]);
       if (!$p->isMagicPage) continue;
       if (method_exists($p, 'init')) $p->init();
-      if (method_exists($p, 'migrate')) $this->rockmigrations()->watch($p);
       if (method_exists($p, 'ready')) $this->readyClasses->add($p);
+      $this->rockmigrations()->watch($p, method_exists($p, 'migrate'));
       $this->addMagicMethods($p);
     }
   }
