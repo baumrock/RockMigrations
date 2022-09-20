@@ -66,7 +66,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.6.7',
+      'version' => '1.6.8',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -3300,8 +3300,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($this->wire->user->isSuperuser()) return true;
     if ($this->wire->config->forceWatch) return true;
     if (defined('RockMigrationsCLI')) return true;
-    $tracy = $this->wire->modules->get('TracyDebugger');
-    if ($tracy->forceIsLocal) return true;
+    if ($this->wire->modules->isInstalled('TracyDebugger')) {
+      $tracy = $this->wire->modules->get('TracyDebugger');
+      if ($tracy->forceIsLocal) return true;
+    }
     return false;
   }
 
