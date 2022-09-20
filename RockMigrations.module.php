@@ -66,7 +66,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.6.8',
+      'version' => '1.6.9',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1278,7 +1278,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     foreach ($this->watchlist as $file) {
       // remove the hash from file path
       // hashes are needed for multiple callbacks living on the same file
-      $path = explode(":", $file->path)[0];
+      $path = explode("::", $file->path)[0];
       $m = filemtime($path);
       if ($m > $this->lastrun) {
         $changed[] = $file->path;
@@ -1628,7 +1628,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       try {
         $tmp = new $class();
         if (method_exists($tmp, "init")) $tmp->init();
-        $this->addMagicMethods($tmp);
+        $this->magic()->addMagicMethods($tmp);
       } catch (\Throwable $th) {
         $this->log($th->getMessage());
       }
@@ -1734,7 +1734,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     foreach ($this->watchlist as $file) {
       // remove the hash from file path
       // hashes are needed for multiple callbacks living on the same file
-      $path = explode(":", $file->path)[0];
+      $path = explode("::", $file->path)[0];
       $m = filemtime($path);
       if ($m > $last) $last = $m;
     }
@@ -3241,7 +3241,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $traceline = $trace['line'];
       $callback = $what;
       $file = $tracefile;
-      $hash = ":" . uniqid();
+      $hash = "::" . uniqid();
     }
     // path to folder
     elseif (is_dir($what)) {
