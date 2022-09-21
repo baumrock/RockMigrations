@@ -16,7 +16,7 @@ class MagicPages extends WireData implements Module
   {
     return [
       'title' => 'MagicPages',
-      'version' => '1.0.3',
+      'version' => '1.0.4',
       'summary' => 'Autoload module to support MagicPages',
       'autoload' => true,
       'singular' => true,
@@ -36,6 +36,7 @@ class MagicPages extends WireData implements Module
 
     foreach ($this->wire->templates as $tpl) {
       $p = $this->wire->pages->newPage(['template' => $tpl]);
+      if (!property_exists($p, "isMagicPage")) continue;
       if (!$p->isMagicPage) continue;
       if (method_exists($p, 'init')) $p->init();
       if (method_exists($p, 'ready')) $this->readyClasses->add($p);
