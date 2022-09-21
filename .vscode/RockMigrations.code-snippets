@@ -5,7 +5,7 @@
     "body": [
       "/** @var RockMigrations \\$rm */",
       "\\$rm = \\$this->wire->modules->get('RockMigrations');",
-      "\\$rm->",
+      "\\$rm->"
     ],
     "description": "Get RockMigrations Module"
   },
@@ -15,8 +15,8 @@
       "\\$rm->migrate([",
       "  'fields' => [],",
       "  'templates' => [],",
-      "]);",
-    ],
+      "]);"
+    ]
   },
 
   // helpers
@@ -35,7 +35,7 @@
       "// install german language pack for the default language",
       "// this will install language support, download the ZIP and install it",
       "\\$rm->setLanguageTranslations('DE');",
-      "\\$rm->installModule('ProcessWireUpgrade', 'https://github.com/ryancramerdesign/ProcessWireUpgrade/archive/master.zip');",
+      "\\$rm->installModule('ProcessWireUpgrade', 'https://github.com/ryancramerdesign/ProcessWireUpgrade/archive/master.zip');"
     ],
     "description": "Set some custom PW defaults"
   },
@@ -48,18 +48,13 @@
       "  'type' => 'text',",
       "  'label' => '$3',",
       "  'icon' => 'align-left',",
-      "],",
+      "],"
     ],
     "description": "Add a text field via RockMigrations"
   },
   "rmf-checkbox": {
     "prefix": "rmf-checkbox",
-    "body": [
-      "$1 => [",
-      "  'type' => 'checkbox',",
-      "  'label' => '$2',",
-      "],",
-    ],
+    "body": ["$1 => [", "  'type' => 'checkbox',", "  'label' => '$2',", "],"]
   },
   "rmf-toggle": {
     "prefix": "rmf-toggle",
@@ -71,8 +66,8 @@
       "  'labelType' => 0, // yes/no",
       "  'inputfieldClass' => 0, // yes/no",
       "  'defaultOption' => 'yes',",
-      "],",
-    ],
+      "],"
+    ]
   },
   "rmf-page": {
     "prefix": "rmf-page",
@@ -84,7 +79,7 @@
       "  'inputfield' => ${5:'InputfieldSelect'},",
       "  'findPagesSelector' => '${6:id>0,template!=admin}',",
       "  'labelFieldName' => ${7:'title'},",
-      "],",
+      "],"
     ],
     "description": "Add a page field via RockMigrations"
   },
@@ -101,7 +96,7 @@
       "  'okExtensions' => ['svg'],",
       "  'icon' => 'picture-o',",
       "  'outputFormat' => FieldtypeFile::outputFormatArray,",
-      "],",
+      "],"
     ],
     "description": "Add an image field via RockMigrations"
   },
@@ -113,8 +108,8 @@
       "  'label' => '$2',",
       "  'sourcepage' => ${3:1},",
       "  'sourcefield' => '${4:yourfieldname}',",
-      "],",
-    ],
+      "],"
+    ]
   },
   "rmf-datetime": {
     "prefix": "rmf-datetime",
@@ -129,7 +124,7 @@
       "  'dateInputFormat' => 'j.n.y',",
       "  'timeInputFormat' => 'H:i',",
       "  'defaultToday' => 1,",
-      "],",
+      "],"
     ],
     "description": "Add an image field via RockMigrations"
   },
@@ -144,7 +139,7 @@
       "  'extensions' => '${6:mp4 pdf xlsx}',",
       "  'icon' => 'files-o',",
       "  'outputFormat' => FieldtypeFile::outputFormatArray,",
-      "],",
+      "],"
     ],
     "description": "Add a files field via RockMigrations"
   },
@@ -156,7 +151,7 @@
       "  'label' => '$3',",
       "  'rows' => ${4:5},",
       "  'icon' => '${5:align-left}',",
-      "],",
+      "],"
     ],
     "description": "Add a textarea field via RockMigrations"
   },
@@ -190,7 +185,7 @@
       "  'textformatters' => [],",
       "  'inlineMode' => true,",
       "  // 'rmx-nolabel' => true,",
-      "],",
+      "],"
     ],
     "description": "Add a CKEditor field via RockMigrations"
   },
@@ -201,7 +196,7 @@
       "  'type' => 'RockMatrix',",
       "  'label' => '$2',",
       "  'icon' => 'cubes',",
-      "],",
+      "],"
     ],
     "description": "Add a rockmatrix field via RockMigrations"
   },
@@ -217,7 +212,7 @@
       "    2 => 'TWO',",
       "    3 => 'THREE',",
       "  ],",
-      "],",
+      "],"
     ],
     "description": "Add a options field via RockMigrations"
   },
@@ -238,5 +233,5 @@
   //   ],
   //   "description": "Log output to console"
   // }
-  "": {"body": ""}
+  "": { "body": "" }
 }
