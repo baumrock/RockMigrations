@@ -66,7 +66,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '1.6.9',
+      'version' => '1.6.10',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -656,12 +656,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       if (!$type) return; // logging above
 
       // create the new field
-      if (strtolower($name) !== $name) throw new WireException("Fieldname must be lowercase!");
-      $name = strtolower($name);
+      $_name = $this->wire->sanitizer->fieldName($name);
+      if ($_name !== $name) throw new WireException("Invalid fieldname ($name)!");
       $field = $this->wire(new Field());
       $field->type = $type;
-      $field->name = $name;
-      $field->label = $name; // set label (mandatory since ~3.0.172)
+      $field->name = $_name;
+      $field->label = $_name; // set label (mandatory since ~3.0.172)
       $field->save();
 
       // create end field for fieldsets
