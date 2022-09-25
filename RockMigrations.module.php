@@ -624,7 +624,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * Usage:
    * $rm->createField('myfield');
-   * 
+   *
    * $rm->createField('myfield', 'text', [
    *   'label' => 'My great field',
    * ]);
@@ -684,7 +684,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Create fields from array
-   * 
+   *
    * Usage:
    * $rm->createFields([
    *   'field1' => [...],
@@ -820,7 +820,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Create a new ProcessWire Template
-   * 
+   *
    * Usage:
    * $rm->createTemplate('foo', [
    *   'fields' => ['foo', 'bar'],
@@ -2371,33 +2371,37 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       }
 
       // support repeater field array
-      $contexts = [];
       if ($key === "repeaterFields") {
         $fields = $data[$key];
         $addFields = [];
         $index = 0;
         foreach ($fields as $i => $_field) {
-          if (is_string($i)) {
-            // we've got a field with field context info here
-            $fieldname = $i;
-            $fielddata = $_field;
-            $contexts[] = [
-              $fieldname,
-              $fielddata,
-              $this->getRepeaterTemplate($field),
-            ];
-          } else {
-            // field without field context info
-            $fieldname = $_field;
-          }
+          // field without field context info
+          $fieldname = $_field;
           $addFields[$index] = $this->fields->get((string)$fieldname)->id;
           $index++;
         }
         $data[$key] = $addFields;
 
         // add fields to repeater template
-        if ($tpl = $this->getRepeaterTemplate($field)) {
+        if ($tpl = $field->type->getRepeaterTemplate($field)) {
           $this->addFieldsToTemplate($addFields, $tpl);
+        }
+      }
+
+      // support repeater field contexts
+      if ($key === "fieldContexts") {
+        $contexts = [];
+        $fields = $data[$key];
+        foreach ($fields as $i => $_field) {
+          // we've got a field with field context info here
+          $fieldname = $i;
+          $fielddata = $_field;
+          $contexts[] = [
+            $fieldname,
+            $fielddata,
+            $field->type->getRepeaterTemplate($field),
+          ];
         }
 
         // set field contexts now that the fields are present
@@ -2405,6 +2409,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           $this->setFieldData($c[0], $c[1], $c[2]);
         }
       }
+
 
       // add support for setting options of a select field
       // this will remove non-existing options from the field!

@@ -216,6 +216,33 @@
     ],
     "description": "Add a options field via RockMigrations"
   },
+  "rmf-repeater": {
+    "prefix": "rmf-repeater",
+    "body": [
+      "$1 => [",
+      "  'label' => 'Repeater Label',",
+      "  'type' => 'FieldtypeRepeater',",
+      "  'repeaterFields' => [",
+      "    0 => 'title',",
+      "    1 => 'text',",
+      "    2 => 'rte',",
+      "  ],",
+      "  'repeaterTitle' => '#n: {title}',",
+      "  'familyFriendly' => 1,",
+      "  'repeaterDepth' => 0,",
+      "  'tags' => '',",
+      "  'repeaterAddLabel' => 'Add New Item',",
+      "  'columnWidth' => 100,",
+      "  'fieldContexts' => [",
+      "    'title' => [",
+      "      'label' => 'My Label',",
+      "      'required' => 0,",
+      "    ],",
+      "  ],",
+      "],"
+    ],
+    "description": "Add a repeater field via RockMigrations"
+  },
 
   // Place your workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and
   // description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope
