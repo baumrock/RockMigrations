@@ -8,7 +8,7 @@ wbmnfktr, 13.7.2022
 
 See the video here:
 
-<a href="https://www.youtube.com/watch?v=eBOB8dZvRN4"><img src=thumb.jpg></a>
+<a href="https://www.youtube.com/watch?v=eBOB8dZvRN4"><img src=thumb.png></a>
 
 <br>
 
