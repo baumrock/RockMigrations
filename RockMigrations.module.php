@@ -66,7 +66,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.0',
+      'version' => '2.0.1',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -825,14 +825,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * $rm->createTemplate('foo', [
    *   'fields' => ['foo', 'bar'],
    * ]);
+   * 
+   * Usage for creating a template with custom pageClass (the last parameter
+   * triggers migrate() on a new runtime page having that template)
+   * $rm->createTemplate('foo', '\YourNamespace\FooPage', true);
    *
    * @param string $name
    * @param bool|array $data
    * @return void
    */
-  public function createTemplate($name, $data = true)
+  public function createTemplate($name, $data = true, $triggerMigrate = false)
   {
-    $t = $this->getTemplate($name);
+    // quietly get the template
+    // it is quiet to prevent "template xx not found" logs
+    $t = $this->getTemplate($name, true);
     if (!$t) {
       // create new fieldgroup
       $fg = $this->wire(new Fieldgroup());
@@ -846,11 +852,26 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $t->save();
     }
 
+    // handle different types of second parameter
     if (is_bool($data)) {
-      // add title field to this template
+      // add title field to this template if second param = TRUE
       if ($data) $this->addFieldToTemplate('title', $t);
+    } elseif (is_string($data)) {
+      // second param is a string
+      // eg "\MyModule\MyPageClass"
+      $this->setTemplateData($t, ['pageClass' => $data]);
     } elseif (is_array($data)) {
+      // second param is an array
+      // that means we set the template data from array syntax
       $this->setTemplateData($t, $data);
+    }
+
+    // trigger migrate method of a runtime page with given template
+    // this is handy for migrating pageclasses in modules that
+    // ship with custom page classes
+    if ($triggerMigrate) {
+      $p = $this->wire->pages->newPage(['template' => $t]);
+      if (method_exists($p, "migrate")) $p->migrate();
     }
 
     return $t;
@@ -2288,6 +2309,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $old = $page->name;
     $page->setAndSave('name', $newName);
     $this->log("Renamed page from $old to $newName");
+  }
+
+  /**
+   * Require all PHP files in given path
+   */
+  public function require($path, $recursive = 1)
+  {
+    $options = [
+      'extensions' => ['php'],
+      'recursive' => $recursive,
+    ];
+    foreach ($this->wire->files->find($path, $options) as $file) {
+      require_once $file;
+    }
   }
 
   /**
