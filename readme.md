@@ -1,9 +1,5 @@
 <img src=rockmigrations.svg height=100>
 
-> The swiss (or austrian in this case) army knife for migrations.
-
-wbmnfktr, 13.7.2022
-
 <br>
 
 See the video here:
@@ -18,56 +14,9 @@ RockMigrations has an easy API to do all the things you can do in the PW backend
 
 The module also contains several helpers that make it extremely easy to implement **fully automated CI/CD pipelines**.
 
-## QuickStart
+# Wiki
 
-The first thing I always do is to add this to my development config ([see here how to manage different configs for dev/live](https://processwire.com/talk/topic/18719-maintain-separate-configs-for-livedev-like-a-boss/)):
-
-```php
-$config->rockmigrations = [
-  'syncSnippets' => true,
-];
-```
-
-This copies the VSCode snippets to the .vscode folder and that makes VSCode show helpful snippets, eg for loading RockMigrations and showing code suggestions:
-
-<img src=https://i.imgur.com/F8Gd4q0.png height=200>
-
-Then you can simply choose `rmf-datetime` for example and get the code to use to create your field:
-
-<img src=https://i.imgur.com/EirBznI.png height=200>
-
-The `rm` snippet lets you quickly access the RockMigrations module with typehints so that you get proper IntelliSense:
-
-<img src=https://i.imgur.com/j11eVD3.png height=250>
-
-To write your first migrations just put this in your `site/migrate.php`. The example code uses `bd()` calls for dumping data. You need TracyDebugger installed!
-
-```php
-/** @var RockMigrations $rm */
-$rm = $modules->get("RockMigrations");
-bd('Create field + template via RM');
-$rm->createField('demo', 'text', [
-  'label' => 'My demo field',
-  'tags' => 'RMDemo',
-]);
-$rm->createTemplate('demo');
-$rm->setTemplateData('demo', [
-  'fields' => [
-    'title',
-    'demo',
-  ],
-  'tags' => 'RMDemo',
-]);
-```
-
-Reload your site and you will see the new field and template in the backend and you'll see the message in the tracy debug bar.
-
-Now do a modules refresh (not a regular page reload) and note that the migration run again (the same message appears in tracy). There are two important things to understand here:
-
-1. Migrations can run multiple times and will always lead to the same result.
-2. If you put your migrations in ready.php or an autoload module they will run on every request. This not a good idea as it may slow down your site significantly
-
-Now do a regular page reload. The migration will not run as nothing has changed. A modules refresh does always force to run migrations.
+Check out the [WIKI for a Quickstart and Docs](https://github.com/baumrock/RockMigrations/wiki)!
 
 ## Limitations
 
