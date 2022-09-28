@@ -356,6 +356,7 @@ class Deployment extends WireData
         deployment successful :)
         ########################
       ");
+      $this->echo("Root folder name: " . $this->rootFolderName());
     }
   }
 
