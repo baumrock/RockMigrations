@@ -553,23 +553,40 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * Example for single template:
    * $rm->addTemplateAccess("my-template", "my-role", "edit");
    *
-   * Example for multiple templates:
+   * Example for multiple templates/roles/permissions:
    * $rm->addTemplateAccess([
    *   'home',
    *   'basic-page',
-   * ], "guest", "view");
+   * ],
+   * [
+   *   'admin',
+   *   'author',
+   * ],
+   * [
+   *   'add',
+   *   'edit',
+   * ]);
    *
+   * @param mixed string|array $templates template name or array of names
+   * @param mixed string|array $roles role name or array of names
+   * @param mixed string|array $accs permission name or array of names
    * @return void
    */
-  public function addTemplateAccess($templates, $role, $acc)
+  public function addTemplateAccess($templates, $roles, $accs)
   {
-    if (!$role = $this->getRole($role)) return;
     if (!is_array($templates)) $templates = [$templates];
-    foreach ($templates as $tpl) {
-      $tpl = $this->getTemplate($tpl);
-      if (!$tpl) continue; // log is done above
-      $tpl->addRole($role, $acc);
-      $tpl->save();
+    if (!is_array($roles)) $roles = [$roles];
+    if (!is_array($accs)) $accs = [$accs];
+    foreach($roles as $role) {
+      if (!$role = $this->getRole($role)) continue;
+      foreach ($templates as $tpl) {
+        $tpl = $this->getTemplate($tpl);
+        if (!$tpl) continue; // log is done above
+        foreach ($accs as $acc) {
+          $tpl->addRole($role, $acc);
+        }
+        $tpl->save();
+      }
     }
   }
 
@@ -825,7 +842,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * $rm->createTemplate('foo', [
    *   'fields' => ['foo', 'bar'],
    * ]);
-   * 
+   *
    * Usage for creating a template with custom pageClass (the last parameter
    * triggers migrate() on a new runtime page having that template)
    * $rm->createTemplate('foo', '\YourNamespace\FooPage', true);
