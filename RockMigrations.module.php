@@ -4,6 +4,7 @@ namespace ProcessWire;
 
 use DirectoryIterator;
 use RockMatrix\Block;
+use RockMigrations\Deployment;
 use RockMigrations\MagicPages;
 use RockMigrations\RecorderFile;
 use RockMigrations\WatchFile;
@@ -66,7 +67,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.2',
+      'version' => '2.0.3',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -577,7 +578,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!is_array($templates)) $templates = [$templates];
     if (!is_array($roles)) $roles = [$roles];
     if (!is_array($accs)) $accs = [$accs];
-    foreach($roles as $role) {
+    foreach ($roles as $role) {
       if (!$role = $this->getRole($role)) continue;
       foreach ($templates as $tpl) {
         $tpl = $this->getTemplate($tpl);
@@ -1427,6 +1428,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($field) return $field;
     if (!$quiet) $this->log("Field $name not found");
     return false;
+  }
+
+  /**
+   * Get a new deployment instance (for debugging/testing)
+   */
+  public function getDeployment($argv = null, $whitelistedPath = null): Deployment
+  {
+    require_once __DIR__ . "/Deployment.php";
+    return new Deployment($argv, $whitelistedPath);
   }
 
   /**

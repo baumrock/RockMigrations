@@ -1,4 +1,6 @@
-<?php namespace RockMigrations;
+<?php
+
+namespace RockMigrations;
 
 use ProcessWire\Config;
 use ProcessWire\Paths;
@@ -7,7 +9,8 @@ use ProcessWire\WireData;
 // we make sure that the current working directory is the PW root
 chdir(dirname(dirname(dirname(__DIR__))));
 require_once "wire/core/ProcessWire.php";
-class Deployment extends WireData {
+class Deployment extends WireData
+{
 
   const keep = 2;
 
@@ -20,30 +23,31 @@ class Deployment extends WireData {
   private $robots;
   public $share = [];
 
-  public function __construct($argv, $path) {
+  public function __construct($argv = null, $whitelistedPath = null)
+  {
     $this->paths = new WireData();
 
     // get branch from script arguments
     $this->branch = '';
-    if($argv AND count($argv)>1) $this->branch = $argv[1];
+    if ($argv and count($argv) > 1) $this->branch = $argv[1];
 
     // path to the current release
     $this->paths->release = getcwd();
 
     // path to the root that contains all releases and current + shared folder
     $this->paths->root = dirname($this->paths->release);
-    if(strpos($this->paths->root, $path) !== 0) {
+    if (strpos($this->paths->root, (string)$whitelistedPath) !== 0) {
       // the current root path does not match the provided path argument
       // this means we are not on the deployment server, so we make it dry
       $this->echo("Not in whitelist path!");
       $this->echo("Current path:     {$this->paths->root}");
-      $this->echo("Whitelisted path: $path");
+      $this->echo("Whitelisted path: $whitelistedPath");
       $this->echo("Running dry...");
       $this->dry();
     }
 
     // path to shared folder
-    $this->paths->shared = $this->paths->root."/shared";
+    $this->paths->shared = $this->paths->root . "/shared";
 
     // setup default share directories
     $this->share = [
@@ -63,14 +67,14 @@ class Deployment extends WireData {
       '/site/assets/pwpc-*',
       '/site/assets/sessions',
     ];
-
   }
 
-  public function addRobots() {
-    if(!$this->robots()) return;
+  public function addRobots()
+  {
+    if (!$this->robots()) return;
     $this->echo("Hiding site from search engines via robots.txt");
     $release = $this->paths->release;
-    $src = __DIR__."/robots.txt";
+    $src = __DIR__ . "/robots.txt";
     $this->exec("cp -f $src $release/robots.txt");
   }
 
@@ -78,7 +82,8 @@ class Deployment extends WireData {
    * chown files based on root folder
    * @return void
    */
-  public function chown() {
+  public function chown()
+  {
     $root = $this->paths->root;
     $owner = fileowner($root);
     $group = filegroup($root);
@@ -92,15 +97,15 @@ class Deployment extends WireData {
    * Delete files from release
    * @return void
    */
-  public function delete($files = null, $reset = false) {
-    if(is_array($files)) {
-      if($reset) $this->delete = [];
+  public function delete($files = null, $reset = false)
+  {
+    if (is_array($files)) {
+      if ($reset) $this->delete = [];
       $this->delete = array_merge($files, $this->delete);
-    }
-    elseif($files === null) {
+    } elseif ($files === null) {
       // execute deletion
       $this->echo("Deleting files...");
-      foreach($this->delete as $file) {
+      foreach ($this->delete as $file) {
         $file = trim(Paths::normalizeSeparators($file), "/");
         $this->echo("  $file");
         $this->exec("rm -rf $file");
@@ -117,38 +122,38 @@ class Deployment extends WireData {
    * This does also rename old release folders to make symlinks aware of the
    * change without rebooting the server or reloading php-fpm
    */
-  public function deleteOldReleases($keep = null, $rename = true) {
-    if(!$keep) $keep = self::keep;
+  public function deleteOldReleases($keep = null, $rename = true)
+  {
+    if (!$keep) $keep = self::keep;
     $this->echo("Cleaning up old releases...");
-    $folders = glob($this->paths->root."/release-*");
+    $folders = glob($this->paths->root . "/release-*");
     rsort($folders);
     $cnt = 0;
     $revert = "You can revert like this:";
     $revert .= "\n  cd {$this->paths->root}";
-    foreach($folders as $folder) {
+    foreach ($folders as $folder) {
       $cnt++;
       $base = basename($folder);
-      if($cnt>$keep+1) {
+      if ($cnt > $keep + 1) {
         $this->echo("delete $base", 2);
         $this->exec("rm -rf $folder");
         continue;
       }
-      if($rename) {
-        if($cnt>1) {
-          $arrow = str_pad(">", 10-$cnt, " ", STR_PAD_LEFT);
+      if ($rename) {
+        if ($cnt > 1) {
+          $arrow = str_pad(">", 10 - $cnt, " ", STR_PAD_LEFT);
           $this->echo("rename $base $arrow $base-", 2);
           $date = date("Y-m-d H:i:s", filemtime($folder));
           $revert .= "\n  $date >> ln -snf $base- current";
           $this->exec("mv $folder $folder-");
           $folder = "$folder-";
           $base = "$base-";
-        }
-        else $this->echo("create $base", 2);
+        } else $this->echo("create $base", 2);
       }
     }
-    $folders = glob($this->paths->root."/tmp-release-*");
-    if(count($folders)) $this->echo("Deleting tmp folders...");
-    foreach($folders as $folder) {
+    $folders = glob($this->paths->root . "/tmp-release-*");
+    if (count($folders)) $this->echo("Deleting tmp folders...");
+    foreach ($folders as $folder) {
       $base = basename($folder);
       $this->echo("delete $base", 2);
       $this->exec("rm -rf $folder");
@@ -157,18 +162,20 @@ class Deployment extends WireData {
     $this->echo("Done");
   }
 
-  public function dry($flag = true) {
+  public function dry($flag = true)
+  {
     $this->dry = $flag;
   }
 
   /**
    * Create DB dump
    */
-  public function dumpDB() {
-    if($this->dry) return $this->echo("Dry run - skipping dumpDB()...");
-    $current = $this->paths->root."/current";
+  public function dumpDB()
+  {
+    if ($this->dry) return $this->echo("Dry run - skipping dumpDB()...");
+    $current = $this->paths->root . "/current";
     $configFile = "$current/site/config.php";
-    if(!is_file($configFile)) {
+    if (!is_file($configFile)) {
       return $this->echo("No current release - skipping dumpDB()...");
     }
     try {
@@ -183,8 +190,8 @@ class Deployment extends WireData {
         mkdir -p $dir
         mysqldump -h'{$config->dbHost}' -P'{$config->dbPort}' -u'{$config->dbUser}' -p'{$config->dbPass}' {$config->dbName} > $sql
         ");
-      $this->echo("old: ".realpath($sql), 2);
-      $this->echo("new: ".str_replace("/site/", "-/site/", realpath($sql)), 2);
+      $this->echo("old: " . realpath($sql), 2);
+      $this->echo("new: " . str_replace("/site/", "-/site/", realpath($sql)), 2);
       $this->echo("Done");
     } catch (\Throwable $th) {
       $this->echo($th->getMessage());
@@ -194,23 +201,24 @@ class Deployment extends WireData {
   /**
    * Echo message to stout
    */
-  public function echo($msg = '', $indent = 0) {
-    if(is_int($indent)) $indent = str_pad('', $indent);
-    if(is_string($msg)) {
+  public function echo($msg = '', $indent = 0)
+  {
+    if (is_int($indent)) $indent = str_pad('', $indent);
+    if (is_string($msg)) {
       echo "{$indent}$msg\n";
-    }
-    elseif(is_array($msg)) {
-      if(count($msg)) echo print_r($msg, true)."\n";
+    } elseif (is_array($msg)) {
+      if (count($msg)) echo print_r($msg, true) . "\n";
     }
   }
 
   /**
    * Execute command and echo output
    */
-  public function exec($cmd, $echoCmd = false) {
-    if($this->dry) $echoCmd = true;
-    if($echoCmd) $this->echo($cmd);
-    if($this->dry) return;
+  public function exec($cmd, $echoCmd = false)
+  {
+    if ($this->dry) $echoCmd = true;
+    if ($echoCmd) $this->echo($cmd);
+    if ($this->dry) return;
     exec($cmd, $out);
     $this->echo($out);
     return $out;
@@ -222,8 +230,9 @@ class Deployment extends WireData {
    * and updates the "current" symlink
    * @return void
    */
-  public function finish($keep = null) {
-    if($this->dry) {
+  public function finish($keep = null)
+  {
+    if ($this->dry) {
       $this->echo("Dry run - skipping finish()...");
       return;
     }
@@ -238,12 +247,14 @@ class Deployment extends WireData {
     $this->deleteOldReleases($keep);
   }
 
-  public function exit($msg) {
+  public function exit($msg)
+  {
     $this->echo($msg);
     exit($msg);
   }
 
-  public function hello() {
+  public function hello()
+  {
     $this->echo("
       #########################################
       RockMigrations Deployment by baumrock.com
@@ -255,10 +266,11 @@ class Deployment extends WireData {
   /**
    * Run RockMigrations
    */
-  public function migrate() {
+  public function migrate()
+  {
     $release = $this->paths->release;
     $file = "$release/site/modules/RockMigrations/migrate.php";
-    if(!is_file($file)) return $this->echo("RockMigrations not found...");
+    if (!is_file($file)) return $this->echo("RockMigrations not found...");
     $this->echo("Trigger RockMigrations...");
     $php = $this->php();
     try {
@@ -266,13 +278,14 @@ class Deployment extends WireData {
     } catch (\Throwable $th) {
       $this->exit($th->getMessage());
     }
-    if(!is_array($out)) return $this->exit("migrate.php failed");
+    if (!is_array($out)) return $this->exit("migrate.php failed");
   }
 
   /**
    * Print paths
    */
-  public function paths() {
+  public function paths()
+  {
     $this->echo($this->paths->getArray());
   }
 
@@ -286,25 +299,26 @@ class Deployment extends WireData {
    *
    * @return string
    */
-  public function php($phpCommand = '') {
-    if($phpCommand) $this->php = $phpCommand;
+  public function php($phpCommand = '')
+  {
+    if ($phpCommand) $this->php = $phpCommand;
     return $this->php;
   }
 
   /**
    * Get or set robots flag
-   * TRUE = add robots.txt to root directory
-   * FALSE = do not add robots.txt to root
-   * NULL = get current value
+   * 
+   * TRUE means that the deny-all robots.txt will be written to root
    *
    * By default it will be FALSE for master and main branch and TRUE for
    * all other branches
    */
-  public function robots($val = null) {
-    if($val === null) {
-      if($this->robots === null) {
-        if($this->branch == 'main') $this->robots = false;
-        elseif($this->branch == 'master') $this->robots = false;
+  public function robots($val = null)
+  {
+    if ($val === null) {
+      if ($this->robots === null) {
+        if ($this->branch == 'main') $this->robots = false;
+        elseif ($this->branch == 'master') $this->robots = false;
         else $this->robots = true;
       }
       return $this->robots;
@@ -312,10 +326,17 @@ class Deployment extends WireData {
     $this->robots = $val;
   }
 
+
+  public function rootFolderName(): string
+  {
+    return basename($this->paths->root);
+  }
+
   /**
    * Run default actions
    */
-  public function run($keep = null) {
+  public function run($keep = null)
+  {
     $this->hello();
     $this->share();
     $this->delete();
@@ -326,11 +347,10 @@ class Deployment extends WireData {
     $this->finish($keep);
     $this->chown(); // must be after finish to affect current symlink!
 
-    $folders = glob($this->paths->root."/tmp-release-*");
-    if(count($folders)) {
+    $folders = glob($this->paths->root . "/tmp-release-*");
+    if (count($folders)) {
       $this->exit("Found some tmp-folders. It seems something went wrong...");
-    }
-    else {
+    } else {
       $this->echo("
         ########################
         deployment successful :)
@@ -343,7 +363,8 @@ class Deployment extends WireData {
    * Secure file and folder permissions
    * @return void
    */
-  public function secure() {
+  public function secure()
+  {
     $release = $this->paths->release;
     $shared = $this->paths->shared;
     $this->echo("Securing file and folder permissions...");
@@ -368,23 +389,23 @@ class Deployment extends WireData {
    * ]);
    * @return void
    */
-  public function share($files = null, $reset = false) {
-    if(is_array($files)) {
-      if($reset) $this->share = [];
+  public function share($files = null, $reset = false)
+  {
+    if (is_array($files)) {
+      if ($reset) $this->share = [];
       $this->share = array_merge($files, $this->share);
-    }
-    elseif($files === null) {
+    } elseif ($files === null) {
       $this->echo("Setting up shared files...");
 
       $release = $this->paths->release;
       $shared = $this->paths->shared;
       $this->echo($this->share);
-      foreach($this->share as $k=>$v) {
+      foreach ($this->share as $k => $v) {
         $file = $v;
 
         // push to shared folder or just create link?
         $type = 'link';
-        if(is_string($k)) {
+        if (is_string($k)) {
           $file = $k;
           $type = $v;
         }
@@ -399,26 +420,24 @@ class Deployment extends WireData {
         // we create relative symlinks
         $level = substr_count($file, "/");
         $to = "shared/$file";
-        for($i=0;$i<=$level;$i++) $to = "../$to";
+        for ($i = 0; $i <= $level; $i++) $to = "../$to";
 
-        if($isfile) {
+        if ($isfile) {
           $this->echo("  file $from");
           $this->exec("ln -sf $to $from");
-        }
-        else {
+        } else {
           $this->echo("  directory $from");
 
           // push means we only push files to the shared folder
           // but we do not create a symlink. This can be used to push site
           // translations where the files folder itself is already symlinked
-          if($type == 'push') {
+          if ($type == 'push') {
             $this->exec("
               rm -rf $toAbs
               mkdir -p $toDir
               mv $from $toDir
             ", $this->isVerbose);
-          }
-          else {
+          } else {
             $this->exec("
               mkdir -p $toAbs
               rm -rf $from
@@ -435,8 +454,8 @@ class Deployment extends WireData {
   /**
    * Make output more verbose
    */
-  public function verbose() {
+  public function verbose()
+  {
     $this->isVerbose = true;
   }
-
 }
