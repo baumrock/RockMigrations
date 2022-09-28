@@ -261,6 +261,7 @@ class Deployment extends WireData
       #########################################
     ");
     $this->echo("Creating new release at {$this->paths->release}\n");
+    $this->echo("Root folder name: " . $this->rootFolderName());
   }
 
   /**
@@ -356,7 +357,6 @@ class Deployment extends WireData
         deployment successful :)
         ########################
       ");
-      $this->echo("Root folder name: " . $this->rootFolderName());
     }
   }
 
