@@ -327,6 +327,29 @@ class Deployment extends WireData
     $this->robots = $val;
   }
 
+  /**
+   * Add robots.txt to deny all robot requests
+   * 
+   * This method is the same as robots() but the name is more verbose so the
+   * deployment script gets better readable.
+   * 
+   * Usage:
+   * $deploy->robotsDenyAll(true); // overwrite robots.txt (deny all)
+   * 
+   * $deploy->robotsDenyAll(false); // dont overwrite robots.txt
+   * 
+   * deny robot requests of the root folder name is NOT yoursite.com
+   * that means if the root folder name is staging.yoursite.com all robot
+   * requests will be denied because on deploy RM will copy the deny-all
+   * robots.txt to the root folder of your staging site
+   * $deploy->robotsDenyAll(
+   *   $deploy->rootFolderName() != 'yoursite.com'
+   * );
+   */
+  public function robotsDenyAll($bool = false)
+  {
+    return $this->robots(!!$bool);
+  }
 
   public function rootFolderName(): string
   {
