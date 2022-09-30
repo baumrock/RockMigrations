@@ -67,7 +67,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.3',
+      'version' => '2.0.4',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -796,7 +796,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $perm = $this->wire->permissions->add($name);
       $this->log("Created permission $name");
     }
-    if(is_null($description)) $description = $name;
+    if (!$description) $description = $name;
     $perm->setAndSave('title', $description);
     return $perm;
   }
