@@ -67,7 +67,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.5',
+      'version' => '2.0.6',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -210,6 +210,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!is_array($scripts)) $scripts = [$scripts];
     foreach ($scripts as $script) {
       $path = $this->filePath($script);
+      // if file is not found we silently skip it
+      // it is silent because of MagicPages::addPageAssets
+      if (!is_file($path)) continue;
       $url = str_replace(
         $this->wire->config->paths->root,
         $this->wire->config->urls->root,
@@ -227,6 +230,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!is_array($styles)) $styles = [$styles];
     foreach ($styles as $style) {
       $path = $this->filePath($style);
+      // if file is not found we silently skip it
+      // it is silent because of MagicPages::addPageAssets
+      if (!is_file($path)) continue;
       $url = str_replace(
         $this->wire->config->paths->root,
         $this->wire->config->urls->root,

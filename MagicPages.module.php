@@ -2,15 +2,20 @@
 
 namespace RockMigrations;
 
+use ProcessWire\HookEvent;
 use ProcessWire\Module;
 use ProcessWire\PageArray;
+use ProcessWire\Paths;
 use ProcessWire\RockMigrations;
 use ProcessWire\WireData;
+use ReflectionClass;
 
 class MagicPages extends WireData implements Module
 {
 
   private $readyClasses;
+
+  private $filePaths = [];
 
   public static function getModuleInfo()
   {
@@ -45,6 +50,11 @@ class MagicPages extends WireData implements Module
         $this->addMagicMethods($p);
       }
     });
+  }
+
+  public function init()
+  {
+    $this->wire->addHookAfter("ProcessPageEdit::buildForm", $this, "addPageAssets");
   }
 
   public function ready()
@@ -126,6 +136,70 @@ class MagicPages extends WireData implements Module
         $page->onAdded();
       });
     }
+  }
+
+  /**
+   * Add assets having the same filename as the magic page
+   * 
+   * FooPage.php would load FooPage.css/.js on page edit screen
+   */
+  public function addPageAssets(HookEvent $event): void
+  {
+    $page = $event->process->getPage();
+    $path = $this->getFilePath($page);
+    $rm = $this->rockmigrations();
+
+    // is the asset stored in /site/classes ?
+    // then move it to /site/assets because /site/classes is blocked by htaccess
+    if (strpos($path, $this->wire->config->paths->classes) === 0) {
+      $cachePath = $this->wire->config->paths->assets . "MagicPages/assets/";
+      foreach (['css', 'js'] as $ext) {
+        $file = substr($path, 0, -3) . $ext;
+        $name = basename($file);
+        $cache = $cachePath . $name;
+
+        // delete file?
+        if (!is_file($file) and is_file($cache)) {
+          $this->wire->files->unlink($cache);
+        }
+
+        // create file?
+        if ($rm->filemtime($file) > $rm->filemtime($cache)) {
+          $this->wire->files->mkdir($cachePath, true);
+          $this->wire->files->copy($file, $cache);
+        }
+
+        // add asset to backend
+        if ($ext == 'css') $this->rockmigrations()->addStyles($cache);
+        elseif ($ext == 'js') $this->rockmigrations()->addScripts($cache);
+      }
+    }
+    // now we have an assets from a pageclass inside a module (for example)
+    else {
+      foreach (['css', 'js'] as $ext) {
+        // add asset to backend
+        $file = substr($path, 0, -3) . $ext;
+        if ($ext == 'css') $this->rockmigrations()->addStyles($file);
+        elseif ($ext == 'js') $this->rockmigrations()->addScripts($file);
+      }
+    }
+  }
+
+  /**
+   * Get filepath of file for given page
+   */
+  public function getFilePath($page): string
+  {
+    // try to get filepath from cache
+    $tpl = (string)$page->template;
+    if ($tpl and array_key_exists($tpl, $this->filePaths)) {
+      return $this->filePaths[$tpl];
+    }
+    // otherwise get filepath from reflectionclass
+    $reflector = new ReflectionClass($page);
+    $filePath = Paths::normalizeSeparators($reflector->getFileName());
+    if ($tpl) $this->filePaths[$tpl] = $filePath;
+    return $filePath;
   }
 
   public function rockmigrations(): RockMigrations
