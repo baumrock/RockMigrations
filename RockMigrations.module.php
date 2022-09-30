@@ -67,7 +67,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.4',
+      'version' => '2.0.5',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -200,6 +200,40 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $field = $event->object;
     if (!$field->toolbar) return;
     $field->toolbar .= ",Source";
+  }
+
+  /**
+   * Add scripts to $config->scripts and add cache busting timestamp
+   */
+  public function addScripts($scripts)
+  {
+    if (!is_array($scripts)) $scripts = [$scripts];
+    foreach ($scripts as $script) {
+      $path = $this->filePath($script);
+      $url = str_replace(
+        $this->wire->config->paths->root,
+        $this->wire->config->urls->root,
+        $path
+      );
+      $this->wire->config->scripts->add($url . "?m=" . filemtime($path));
+    }
+  }
+
+  /**
+   * Add styles to $config->styles and add cache busting timestamp
+   */
+  public function addStyles($styles)
+  {
+    if (!is_array($styles)) $styles = [$styles];
+    foreach ($styles as $style) {
+      $path = $this->filePath($style);
+      $url = str_replace(
+        $this->wire->config->paths->root,
+        $this->wire->config->urls->root,
+        $path
+      );
+      $this->wire->config->styles->add($url . "?m=" . filemtime($path));
+    }
   }
 
   /**
