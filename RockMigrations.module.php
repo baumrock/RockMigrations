@@ -796,6 +796,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $perm = $this->wire->permissions->add($name);
       $this->log("Created permission $name");
     }
+    if(is_null($description)) $description = $name;
     $perm->setAndSave('title', $description);
     return $perm;
   }
