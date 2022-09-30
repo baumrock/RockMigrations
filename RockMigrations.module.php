@@ -2846,15 +2846,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * This will by default only ADD permissions and not remove them!
    * This is to be consistent with other SET methods (setData, migrate, etc)
    *
-   * Usage:
+   * Usage add permissions "view", "edit", "create", "add" for role "my-role" to template "my-template":
    * $rm->setTemplateAccess("my-tpl", "my-role", ["view", "edit", "create", "add"]);
+   *
+   * Usage remove permission "add" and keep permissions "view", "edit", "create":
+   * $rm->setTemplateAccess("my-tpl", "my-role", ["view", "edit", "create"], true);
    *
    * Thx @apeisa https://bit.ly/2QU1b8e
    *
    * @param mixed $tpl Template
    * @param mixed $role Role
    * @param array $access Permissions, eg ['view', 'edit']
-   * @param bool $remove Reset Permissions for this role?
+   * @param bool $remove Reset Permissions for this role? If true, first all permissions are removed and then all in $access will be added back in
    * @return void
    */
   public function setTemplateAccess($tpl, $role, $access, $remove = false)
