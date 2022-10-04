@@ -5,6 +5,18 @@
     "body": ["<?php namespace $1;", "$0"]
   },
 
+  // info
+  "info": {
+    "prefix": "info",
+    "body": [
+      "/**",
+      " * @author Bernhard Baumrock, $CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR",
+      " * @license Licensed under MIT",
+      " * @link https://www.baumrock.com",
+      " */"
+    ]
+  },
+
   // processwire namespace
   "pw": {
     "prefix": "pw",
