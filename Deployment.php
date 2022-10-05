@@ -307,6 +307,17 @@ class Deployment extends WireData
   }
 
   /**
+   * Push folder to shared folder and create symlink
+   * 
+   * Usage:
+   * $deploy->push('/site/assets/files/123');
+   */
+  public function push($folder)
+  {
+    return $this->share([$folder => 'push']);
+  }
+
+  /**
    * Get or set robots flag
    * 
    * TRUE means that the deny-all robots.txt will be written to root
