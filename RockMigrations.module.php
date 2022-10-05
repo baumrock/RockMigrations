@@ -67,7 +67,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.5',
+      'version' => '2.0.6',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -851,7 +851,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     if (!$name) return $this->log("Define a name for the role!");
 
-    $role = $this->getRole($name);
+    $role = $this->getRole($name, true);
     if (!$role) $role = $this->roles->add($name);
     foreach ($permissions as $permission) {
       $this->addPermissionToRole($permission, $role);
@@ -948,11 +948,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * @param string $username
    * @param array $data
-   * @return User
+   * @return User|false
    */
   public function createUser($username, $data = [])
   {
-    $user = $this->getUser($username);
+    $user = $this->getUser($username, true);
+    if (!$user) return false;
     if (!$user->id) {
       $user = $this->wire->users->add($username);
 
@@ -1657,10 +1658,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function getUser($name, $quiet = false)
   {
     if (!$name) return false;
-    $role = $this->wire->users->get((string)$name);
-    if ($role and $role->id) return $role;
+    $user = $this->wire->users->get((string)$name);
+    if ($user and $user->id) return $user;
     if (!$quiet) $this->log("User $name not found");
-    return false;
+    return $user;
   }
 
   /**
@@ -3044,6 +3045,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $opt->setArray($data);
 
     // set roles
+    if (is_string($opt->roles)) $opt->roles = [$opt->roles];
     foreach ($opt->roles as $role) $this->addRoleToUser($role, $user);
 
     // set password if it is set
