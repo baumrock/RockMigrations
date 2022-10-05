@@ -67,7 +67,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.6',
+      'version' => '2.0.5',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -873,7 +873,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'page-move',
       'page-sort',
       'rockfrontend-alfred',
-    ], $permissions);
+    ], $permissions ?: []);
     return $this->createRole($name, $permissions);
   }
 
