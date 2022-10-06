@@ -190,16 +190,16 @@
     ],
     "description": "Add a CKEditor field via RockMigrations"
   },
-  "rmf-rockmatrix": {
-    "prefix": "rmf-rockmatrix",
+  "rmf-rockpagebuilder": {
+    "prefix": "rmf-rockpagebuilder",
     "body": [
       "$1 => [",
-      "  'type' => 'RockMatrix',",
+      "  'type' => 'RockPageBuilder',",
       "  'label' => '$2',",
       "  'icon' => 'cubes',",
       "],"
     ],
-    "description": "Add a rockmatrix field via RockMigrations"
+    "description": "Add a RockPageBuilder field via RockMigrations"
   },
   "rmf-options": {
     "prefix": "rmf-options",
