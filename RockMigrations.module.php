@@ -68,7 +68,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.7',
+      'version' => '2.0.8',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1187,7 +1187,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     if ($this->migrateAll) return true;
     if ($file instanceof RockMatrixBlock) $file = $file->filePath();
-    if ($file instanceof RockPageBuilderBlock) $file = $file->filePath();
+    if ($file instanceof RockPageBuilderBlock) {
+      $block = $file;
+      $file = $block->filePath();
+      // block has not been created so we make sure to migrate it
+      if (!$block->template) return true;
+    }
     $watchFile = $file;
     if (is_string($watchFile)) $watchFile = $this->watchlist->get("path=$file");
     if (!$watchFile instanceof WatchFile) return false;
