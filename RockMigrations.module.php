@@ -3,7 +3,7 @@
 namespace ProcessWire;
 
 use DirectoryIterator;
-use RockMatrix\Block;
+use RockMatrix\Block as RockMatrixBlock;
 use RockMigrations\Deployment;
 use RockMigrations\MagicPages;
 use RockMigrations\RecorderFile;
@@ -11,6 +11,7 @@ use RockMigrations\WatchFile;
 use RockMigrations\WireArray;
 use RockMigrations\WireArray as WireArrayRM;
 use RockMigrations\YAML;
+use RockPageBuilder\Block as RockPageBuilderBlock;
 use TracyDebugger;
 
 /**
@@ -67,7 +68,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.6',
+      'version' => '2.0.7',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1185,7 +1186,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function doMigrate($file)
   {
     if ($this->migrateAll) return true;
-    if ($file instanceof Block) $file = $file->filePath();
+    if ($file instanceof RockMatrixBlock) $file = $file->filePath();
+    if ($file instanceof RockPageBuilderBlock) $file = $file->filePath();
     $watchFile = $file;
     if (is_string($watchFile)) $watchFile = $this->watchlist->get("path=$file");
     if (!$watchFile instanceof WatchFile) return false;
