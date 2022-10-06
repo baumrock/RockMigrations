@@ -184,7 +184,8 @@
       "  'icon' => 'align-left',",
       "  'textformatters' => [],",
       "  'inlineMode' => true,",
-      "  // 'rmx-nolabel' => true,",
+      "  // RockPageBuilder no label shortcut",
+      "  // 'rpb-nolabel' => true,",
       "],"
     ],
     "description": "Add a CKEditor field via RockMigrations"
