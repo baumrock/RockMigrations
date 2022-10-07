@@ -68,7 +68,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.8',
+      'version' => '2.0.9',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1795,8 +1795,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return $module;
   }
 
-    /**
-   * Install system permission with given name
+  /**
+   * Install system permission(s) with given name
+   * 
+   * Usage:
+   * $rm->installSystemPermissions('page-hide');
+   * $rm->installSystemPermissions([
+   *   'page-hide',
+   *   'page-publish',
+   * );
+   * 
    * available predefined system permissions:
    * 'page-hide'
    * 'page-publish'
@@ -1813,7 +1821,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function installSystemPermissions($names)
   {
-    if(!is_array($names)) $installPermissions = [$names];
+    if (!is_array($names)) $installPermissions = [$names];
     $optionalPermissions = $this->wire->permissions->getOptionalPermissions();
     $user = $this->wire->user;
     $languages = $this->wire->languages;
