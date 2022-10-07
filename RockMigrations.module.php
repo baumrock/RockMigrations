@@ -842,58 +842,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return $perm;
   }
 
-    /**
-   * Install system permission with given name
-   * available predefined system permissions:
-   * 'page-hide'
-   * 'page-publish'
-   * 'page-edit-created'
-   * 'page-edit-trash-created'
-   * 'page-edit-images'
-   * 'page-rename'
-   * 'user-admin-all'
-   * 'user-view-all'
-   * 'user-view-self'
-   *
-   * @param string $name system permission name
-   * @return Permission
-   */
-  public function installSystemPermission($name)
-  {
-    $installPermissions = [$name];
-    $optionalPermissions = $this->wire('permissions')->getOptionalPermissions();
-    $user = $this->wire('user');
-    $languages = $this->wire('languages');
-    $userLanguage = null;
-    if ($languages) {
-      $userLanguage = $user->language;
-      $user->language = $languages->getDefault();
-    }
-    foreach ($installPermissions as $name) {
-      if (!$permission = $this->getPermission($name)) { // if permission not installed yet
-        if (!isset($optionalPermissions[$name])) continue; // permission is not system permission
-        $permission = $this->wire('permissions')->add($name);
-        if (!$permission->id) continue;
-        $permission->title = $optionalPermissions[$name];
-        if ($languages && $permission->title instanceof LanguagesValueInterface) {
-          // if the permission titles have been translated, ensure that the translation goes in for each language
-          foreach ($languages as $language) {
-            if ($language->isDefault()) continue;
-            $a = $this->wire('permissions')->getOptionalPermissions();
-            if ($a[$name] == $optionalPermissions[$name]) continue;
-            $permission->title->setLanguageValue($language, $a[$name]);
-          }
-        }
-        $permission->save();
-        // $this->message(sprintf($this->_('Added optional permission: %s'), $name));
-
-        $this->log("Installed system permission $name");
-      }
-    }
-    if ($userLanguage) $user->language = $userLanguage;
-    return $permission;
-  }
-
   /**
    * Create role with given name
    * @param string $name
@@ -1846,6 +1794,59 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
     return $module;
   }
+
+    /**
+   * Install system permission with given name
+   * available predefined system permissions:
+   * 'page-hide'
+   * 'page-publish'
+   * 'page-edit-created'
+   * 'page-edit-trash-created'
+   * 'page-edit-images'
+   * 'page-rename'
+   * 'user-admin-all'
+   * 'user-view-all'
+   * 'user-view-self'
+   *
+   * @param mixed string|array $names system permission name or array of names
+   * @return Permission
+   */
+  public function installSystemPermissions($names)
+  {
+    if(!is_array($names)) $installPermissions = [$names];
+    $optionalPermissions = $this->wire->permissions->getOptionalPermissions();
+    $user = $this->wire->user;
+    $languages = $this->wire->languages;
+    $userLanguage = null;
+    if ($languages) {
+      $userLanguage = $user->language;
+      $user->language = $languages->getDefault();
+    }
+    foreach ($installPermissions as $name) {
+      if (!$permission = $this->getPermission($name)) { // if permission not installed yet
+        if (!isset($optionalPermissions[$name])) continue; // permission is not system permission
+        $permission = $this->wire->permissions->add($name);
+        if (!$permission->id) continue;
+        $permission->title = $optionalPermissions[$name];
+        if ($languages && $permission->title instanceof LanguagesValueInterface) {
+          // if the permission titles have been translated, ensure that the translation goes in for each language
+          foreach ($languages as $language) {
+            if ($language->isDefault()) continue;
+            $a = $this->wire->permissions->getOptionalPermissions();
+            if ($a[$name] == $optionalPermissions[$name]) continue;
+            $permission->title->setLanguageValue($language, $a[$name]);
+          }
+        }
+        $permission->save();
+        // $this->message(sprintf($this->_('Added optional permission: %s'), $name));
+
+        $this->log("Installed system permission $name");
+      }
+    }
+    if ($userLanguage) $user->language = $userLanguage;
+    return $permission;
+  }
+
 
   /**
    * @return bool
