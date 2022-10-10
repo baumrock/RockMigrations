@@ -266,7 +266,7 @@
       "  ],",
       "],"
     ],
-    "description": "Add a repeater field via RockMigrations"
+    "description": "Add a fieldsetpage field via RockMigrations"
   },
 
   // Place your workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and
