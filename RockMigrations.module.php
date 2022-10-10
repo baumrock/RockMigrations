@@ -68,7 +68,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.10',
+      'version' => '2.0.11',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -2974,10 +2974,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * This is to be consistent with other SET methods (setData, migrate, etc)
    *
    * Usage add permissions "view", "edit", "create", "add" for role "my-role" to template "my-template":
-   * $rm->setTemplateAccess("my-tpl", "my-role", ["view", "edit", "create", "add"]);
+   * $rm->setTemplateAccess("my-tpl", "my-role", "view, edit, create, add"]);
    *
    * Usage remove permission "add" and keep permissions "view", "edit", "create":
-   * $rm->setTemplateAccess("my-tpl", "my-role", ["view", "edit", "create"], true);
+   * $rm->setTemplateAccess("my-tpl", "my-role", "view, edit, create", true);
    *
    * Thx @apeisa https://bit.ly/2QU1b8e
    *
@@ -2993,6 +2993,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $role = $this->getRole($role);
     if ($remove) $this->removeTemplateAccess($tpl, $role);
     $this->setTemplateData($tpl, ['useRoles' => 1]);
+    if (is_string($access)) $access = $this->strToArray($access);
     foreach ($access as $acc) $this->addTemplateAccess($tpl, $role, $acc);
   }
 
@@ -3225,6 +3226,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     /** @var WireArray $arr */
     foreach ($data as $item) $arr->add($item);
     return $arr->sort('name');
+  }
+
+  /**
+   * Convert a comma separated string into an array of single values
+   */
+  public function strToArray($data): array
+  {
+    if (is_array($data)) return $data;
+    if (!is_string($data)) throw new WireException("Invalid data in strToArray");
+    return array_map('trim', explode(",", $data));
   }
 
   /**
