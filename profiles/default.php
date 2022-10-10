@@ -1,4 +1,7 @@
-<?php namespace ProcessWire;
+<?php
+
+namespace ProcessWire;
+
 /** @var RockMigrations $rm */
 $rm = $this->wire->modules->get('RockMigrations');
 
@@ -37,3 +40,4 @@ $rm->installModule(
   "https://github.com/uiii/AdminHelperLinks/archive/main.zip"
 );
 
+$rm->installSiteModule();
