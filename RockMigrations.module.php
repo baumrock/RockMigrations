@@ -68,7 +68,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.11',
+      'version' => '2.0.12',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -464,7 +464,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $this->addFieldToTemplate($closer, $template, $field);
     }
 
-    $fg->save();
+    // TODO fix this!
+    // quickfix to prevent integrity constraint errors in backend
+    try {
+      $fg->save();
+    } catch (\Throwable $th) {
+      $this->log($th->getMessage());
+    }
   }
 
   /**
