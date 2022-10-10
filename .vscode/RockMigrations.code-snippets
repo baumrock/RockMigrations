@@ -245,6 +245,30 @@
     "description": "Add a repeater field via RockMigrations"
   },
 
+  "rmf-fieldsetpage": {
+    "prefix": "rmf-fieldsetpage",
+    "body": [
+      "$1 => [",
+      "  'label' => 'FieldsetPage Label',",
+      "  'type' => 'FieldtypeFieldsetPage',",
+      "  'repeaterFields' => [",
+      "    'title',",
+      "    'foo',",
+      "    'bar',",
+      "  ],",
+      "  'tags' => '',",
+      "  'columnWidth' => 100,",
+      "  'fieldContexts' => [",
+      "    'title' => [",
+      "      'label' => 'My Label',",
+      "      'required' => 0,",
+      "    ],",
+      "  ],",
+      "],"
+    ],
+    "description": "Add a repeater field via RockMigrations"
+  },
+
   // Place your workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and
   // description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope
   // is left empty or omitted, the snippet gets applied to all languages. The prefix is what is
