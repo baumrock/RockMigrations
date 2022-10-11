@@ -68,7 +68,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.12',
+      'version' => '2.0.13',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -263,6 +263,37 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function regularSpaces($str)
   {
     return preg_replace('/\xc2\xa0/', ' ', $str);
+  }
+
+  /**
+   * Compile LESS file and save CSS version
+   * 
+   * foo.less --> foo.less.css
+   * 
+   * Requires the Less module and will silently return if anything goes wrong.
+   * The method is intended to easily develop module styles in LESS and ship
+   * the CSS version.
+   */
+  public function saveCSS($less, $onlySuperuser = true): string
+  {
+    $css = "$less.css";
+    if (!is_file($less)) return $css;
+
+    $mLESS = filemtime($less);
+    $mCSS = is_file($css) ? filemtime($css) : 0;
+
+    $sudoCheck = $onlySuperuser ? $this->wire->user->isSuperuser() : true;
+    if ($mLESS > $mCSS and $sudoCheck) {
+      if ($parser = $this->wire->modules->get('Less')) {
+        // recreate css file
+        /** @var Less $parser */
+        $parser->addFile($less);
+        $parser->saveCss($css);
+        $mCSS = time();
+        $this->log("Created new CSS file: $css");
+      }
+    }
+    return $css;
   }
 
   /**
