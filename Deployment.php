@@ -15,6 +15,7 @@ class Deployment extends WireData
   const keep = 2;
 
   public $branch;
+  public $chown = true; // chown by default
   public $delete = [];
   public $dry = false;
   private $isVerbose = false;
@@ -82,8 +83,12 @@ class Deployment extends WireData
    * chown files based on root folder
    * @return void
    */
-  public function chown()
+  protected function chown()
   {
+    if (!$this->chown) {
+      $this->echo("chown was disabled in deploy.php");
+      return;
+    }
     $root = $this->paths->root;
     $owner = fileowner($root);
     $group = filegroup($root);
@@ -285,7 +290,7 @@ class Deployment extends WireData
   /**
    * Print paths
    */
-  public function paths()
+  protected function paths()
   {
     $this->echo($this->paths->getArray());
   }
