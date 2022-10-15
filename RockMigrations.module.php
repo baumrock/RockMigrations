@@ -68,7 +68,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.13',
+      'version' => '2.0.14',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -231,6 +231,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!is_array($styles)) $styles = [$styles];
     foreach ($styles as $style) {
       $path = $this->filePath($style);
+
+      // check if it is a less file
+      if (pathinfo($path, PATHINFO_EXTENSION) === 'less') {
+        $path = $this->saveCSS($path);
+      }
+
       // if file is not found we silently skip it
       // it is silent because of MagicPages::addPageAssets
       if (!is_file($path)) continue;
