@@ -68,7 +68,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.14',
+      'version' => '2.0.15',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -409,7 +409,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * @return InputfieldFieldset
    */
-  public function wrapFields(InputfieldWrapper $form, array $fields, array $fieldset)
+  public function wrapFields(InputfieldWrapper $form, array $fields, array $fieldset, $placeAfter = null)
   {
     $_fields = [];
     $last = false;
@@ -446,10 +446,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // with a ?field or ?fields get parameter to only render specific fields
     if (!count($_fields)) return;
 
-    /** @var InputfieldFieldset $f */
+    /** @var InputfieldFieldset $fs */
     $fs = $this->wire('modules')->get('InputfieldFieldset');
     foreach ($fieldset as $k => $v) $fs->$k = $v;
-    if ($last) $form->insertAfter($fs, $last);
+    if ($placeAfter) {
+      if (!$placeAfter instanceof Inputfield) $placeAfter = $form->get((string)$placeAfter);
+      $form->insertAfter($fs, $placeAfter);
+    } elseif ($last) $form->insertAfter($fs, $last);
     else $form->add($fs);
 
     // now remove fields from the form and add them to the fieldset
