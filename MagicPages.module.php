@@ -21,7 +21,7 @@ class MagicPages extends WireData implements Module
   {
     return [
       'title' => 'MagicPages',
-      'version' => '1.0.5',
+      'version' => '1.0.6',
       'summary' => 'Autoload module to support MagicPages',
       'autoload' => true,
       'singular' => true,
@@ -134,6 +134,15 @@ class MagicPages extends WireData implements Module
         $page = $event->arguments(0);
         if ($obj->className !== $page->className) return;
         $page->onAdded();
+      });
+    }
+
+    // execute onTrashed hook
+    if (method_exists($obj, "onTrashed")) {
+      $this->wire->addHookAfter("Pages::trashed", function ($event) use ($obj) {
+        $page = $event->arguments(0);
+        if ($obj->className !== $page->className) return;
+        $page->onTrashed();
       });
     }
   }
