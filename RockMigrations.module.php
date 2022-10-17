@@ -68,7 +68,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.15',
+      'version' => '2.0.16',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -429,6 +429,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       }
 
       if (!$field instanceof Inputfield) $field = $form->get((string)$field);
+      if (!$field) continue;
       if ($fieldData) $field->setArray($fieldData);
       if ($field instanceof Inputfield) {
         $_fields[] = $field;
