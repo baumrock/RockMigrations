@@ -68,7 +68,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.16',
+      'version' => '2.0.17',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1832,19 +1832,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     if (!$module) {
       // check if module files exist
-      $filesReady = $this->config->path($name) and $this->wire->files->exists($this->config->path($name));
+      $path = $this->wire->config->path($name);
+      $pathExists = $path and $this->wire->files->exists($path);
       // download only if an url was provided and module files do not exist yet
-      if ($opt->url and !$filesReady) {
-        $filesReady = $this->downloadModule($opt->url);
+      if ($opt->url and !$pathExists) {
+        $pathExists = !!$this->downloadModule($opt->url);
       }
 
-      if($filesReady) {
+      if ($pathExists) {
         // module files are in place -> install the module
         $module = $this->modules->install($name, ['force' => $opt->force]);
         if ($module) $this->log("Installed module $name");
         else $this->log("Tried to install module $name but failed");
       }
-
     }
     if ($module and is_array($opt->conf) and count($opt->conf)) {
       $this->setModuleConfig($module, $opt->conf);
