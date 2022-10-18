@@ -273,9 +273,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Compile LESS file and save CSS version
-   * 
+   *
    * foo.less --> foo.less.css
-   * 
+   *
    * Requires the Less module and will silently return if anything goes wrong.
    * The method is intended to easily develop module styles in LESS and ship
    * the CSS version.
@@ -1252,16 +1252,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * Download module from url
    *
    * @param string $url
-   * @return void
+   * @return mixed bool|string Returns destinationDir on success, false on failure.
    */
   public function downloadModule($url)
   {
     if (!class_exists('ProcessWire\ProcessModuleInstall')) {
-      require $this->config->paths->modules
-        . "Process/ProcessModule/ProcessModuleInstall.php";
+      require_once($this->config->paths->modules . "Process/ProcessModule/ProcessModuleInstall.php");
     }
-    $install = $this->wire(new ProcessModuleInstall());
-    $install->downloadModule($url);
+    /** @var ProcessModuleInstall $installer */
+    $installer = $this->wire(new ProcessModuleInstall());
+    $downloaded = $installer->downloadModule($url);
+    if ($downloaded !== false) return $downloaded;
+    $this->log("Tried to download module from $url but failed");
+    return false;
   }
 
   /**
@@ -1826,17 +1829,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // dont return early to make sure that if module settings
     // are changed we apply the new settings at the bottom!!
     $module = $this->wire->modules->get($name);
-    if (!$module) $module = $this->modules->install($name, ['force' => $opt->force]);
-    if (!$module) {
-      // if an url was provided, download the module
-      if ($opt->url) $this->downloadModule($opt->url);
 
-      // install the module
-      $module = $this->modules->install($name, ['force' => $opt->force]);
-      if ($module) $this->log("Installed module $name");
-      else $this->log("Tried to install module $name but failed");
+    if (!$module) {
+      // check if module files exist
+      $filesReady = $this->config->path($name) and $this->wire->files->exists($this->config->path($name));
+      // download only if an url was provided and module files do not exist yet
+      if ($opt->url and !$filesReady) {
+        $filesReady = $this->downloadModule($opt->url);
+      }
+
+      if($filesReady) {
+        // module files are in place -> install the module
+        $module = $this->modules->install($name, ['force' => $opt->force]);
+        if ($module) $this->log("Installed module $name");
+        else $this->log("Tried to install module $name but failed");
+      }
+
     }
-    if (is_array($opt->conf) and count($opt->conf)) {
+    if ($module and is_array($opt->conf) and count($opt->conf)) {
       $this->setModuleConfig($module, $opt->conf);
     }
     return $module;
@@ -1861,14 +1871,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Install system permission(s) with given name
-   * 
+   *
    * Usage:
    * $rm->installSystemPermissions('page-hide');
    * $rm->installSystemPermissions([
    *   'page-hide',
    *   'page-publish',
    * );
-   * 
+   *
    * available predefined system permissions:
    * 'page-hide'
    * 'page-publish'
