@@ -68,7 +68,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.17',
+      'version' => '2.0.18',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -2838,6 +2838,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // if reset is TRUE we skip this step which means we may lose old config!
     if (!$reset) {
       $old = $this->wire->modules->getConfig($module);
+      if (!is_array($data)) $data = [];
       $data = array_merge($old, $data);
     }
 
