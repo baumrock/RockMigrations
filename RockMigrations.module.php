@@ -68,7 +68,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.18',
+      'version' => '2.0.19',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -933,15 +933,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *   'fields' => ['foo', 'bar'],
    * ]);
    *
-   * Usage for creating a template with custom pageClass (the last parameter
-   * triggers migrate() on a new runtime page having that template)
-   * $rm->createTemplate('foo', '\YourNamespace\FooPage', true);
-   *
    * @param string $name
    * @param bool|array $data
-   * @return void
+   * @param bool $migrate
+   * @return Template
    */
-  public function createTemplate($name, $data = true, $triggerMigrate = false)
+  public function createTemplate($name, $data = true, $migrate = true)
   {
     // quietly get the template
     // it is quiet to prevent "template xx not found" logs
@@ -957,6 +954,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $t->name = $name;
       $t->fieldgroup = $fg;
       $t->save();
+
+      if ($migrate) {
+        // trigger migrate() of that new template
+        $p = $this->wire->pages->newPage(['template' => $t]);
+        if (method_exists($p, "migrate")) $p->migrate();
+      }
     }
 
     // handle different types of second parameter
@@ -971,14 +974,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // second param is an array
       // that means we set the template data from array syntax
       $this->setTemplateData($t, $data);
-    }
-
-    // trigger migrate method of a runtime page with given template
-    // this is handy for migrating pageclasses in modules that
-    // ship with custom page classes
-    if ($triggerMigrate) {
-      $p = $this->wire->pages->newPage(['template' => $t]);
-      if (method_exists($p, "migrate")) $p->migrate();
     }
 
     return $t;
@@ -2263,7 +2258,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       require_once $file;
       $name = pathinfo($file, PATHINFO_FILENAME);
       $class = "$namespace\\$name";
-      $tmp = new $class();
+      $tmp = $this->wire(new $class());
       if (!$tmp->template) {
         try {
           $templatename = $tmp::tpl;
@@ -3434,7 +3429,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function uninstallModule($name)
   {
-    if(!$this->modules->isInstalled($name)) return;
+    if (!$this->modules->isInstalled($name)) return;
     $this->wire->session->noMigrate = true;
     $this->modules->uninstall((string)$name);
     $this->wire->session->noMigrate = false;
