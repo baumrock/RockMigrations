@@ -31,6 +31,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   const outputLevelQuiet = 'quiet';
   const outputLevelVerbose = 'verbose';
 
+  /** @var WireArray */
+  private $apiDirs;
+
+  /** @var WireArray */
+  private $apis;
+
   /** @var WireData */
   public $conf;
 
@@ -68,7 +74,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.0.19',
+      'version' => '2.1.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -136,6 +142,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->addHookAfter("Templates::saved", $this, "setRecordFlag");
     $this->addHookAfter("Templates::deleted", $this, "setRecordFlag");
     $this->addHookAfter("Modules::refresh", $this, "setRecordFlag");
+    $this->addHookAfter("Modules::refresh", $this, "clearApiFilesCache");
     $this->addHookAfter("Modules::saveConfig", $this, "setRecordFlag");
     $this->addHookBefore("InputfieldForm::render", $this, "showEditInfo");
     $this->addHookBefore("InputfieldForm::render", $this, "showCopyCode");
@@ -144,10 +151,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // other actions on init()
     $this->loadFilesOnDemand();
     $this->syncSnippets();
+    $this->addApiDir(__DIR__ . "/Api");
   }
 
   public function ready()
   {
+    $this->loadApi();
     $this->forceMigrate();
     $this->addLivereload();
 
@@ -167,6 +176,128 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       }
     }
   }
+
+  /** ##### RockMigrationsApi Feature ##### */
+  /**
+   * Magic method to call RockMigrationsApi methods!
+   */
+  public function __call($method, $args)
+  {
+    foreach ($this->apis as $api) {
+      if (method_exists($api, $method)) return $api->$method($args);
+    }
+    return parent::__call($method, $args);
+  }
+
+  /**
+   * Add directory to be scanned for api classes
+   */
+  public function addApiDir($dir)
+  {
+    if (!$this->apiDirs) $this->apiDirs = $this->wire(new WireArray());
+    $this->apiDirs->add($dir);
+  }
+
+  /**
+   * Load all api extension files
+   */
+  private function loadApi()
+  {
+    $files = $this->apiFiles();
+
+    // check if all files exist
+    // if not force to recreate the cache
+    foreach ($files as $file) {
+      if (!is_file($file)) $this->apiFiles(true);
+    }
+    foreach ($files as $file) {
+      $stubFile = $this->stubFile($file);
+      if (!is_file($stubFile)) $this->createStubFile($file);
+    }
+
+    // loop files and load apis
+    foreach ($files as $file) {
+      if (!is_file($file)) continue;
+      $name = pathinfo($file, PATHINFO_FILENAME);
+      $class = "\RockMigrationsApi\\$name";
+      try {
+        require_once $file;
+        $api = $this->wire(new $class());
+        if (!$this->apis) $this->apis = $this->wire(new WireArray());
+        $this->apis->add($api);
+      } catch (\Throwable $th) {
+      }
+    }
+  }
+
+  /**
+   * Return all api files
+   */
+  private function apiFiles($noCache = false): array
+  {
+    $cached = $this->wire->cache->get('rockmigrations-apifiles');
+    if (!$noCache and is_array($cached)) return $cached;
+
+    $options = ['extensions' => ['php'], 'recursive' => 1];
+    $files = [];
+
+    // scan apiDirs for api files
+    foreach ($this->apiDirs as $dir) {
+      $files = array_merge(
+        $files,
+        $this->wire->files->find(__DIR__ . "/Api", $options)
+      );
+    }
+    // make sure that the stubs folder exists
+    $dirs = [];
+    foreach ($files as $file) {
+      $dir = dirname($file) . "/stubs";
+      $dirs[$dir] = true;
+    }
+    foreach ($dirs as $dir => $v) {
+      $this->wire->files->rmdir($dir, true);
+      $this->wire->files->mkdir($dir);
+    }
+
+    // create stub files
+    foreach ($files as $file) $this->createStubFile($file);
+
+    // save filearray to cache
+    $this->wire->cache->save(
+      'rockmigrations-apifiles',
+      $files,
+      WireCache::expireNever
+    );
+
+    return $files;
+  }
+
+  private function createStubFile($file)
+  {
+    $stubFile = $this->stubFile($file);
+    $name = pathinfo($file, PATHINFO_FILENAME);
+    $content = $this->wire->files->fileGetContents($file);
+    $r = [
+      "namespace RockMigrationsApi;" => "namespace ProcessWire;",
+      "class $name extends RockMigrations" => "class RockMigrations",
+      "use ProcessWire\RockMigrations;" => "",
+    ];
+    $stubContent = str_replace(array_keys($r), array_values($r), $content);
+    $this->wire->files->filePutContents($stubFile, $stubContent);
+  }
+
+  private function stubFile($file): string
+  {
+    $name = pathinfo($file, PATHINFO_FILENAME);
+    return dirname($file) . "/stubs/$name.php";
+  }
+
+  public function clearApiFilesCache()
+  {
+    $this->wire->cache->save('rockmigrations-apifiles', null);
+  }
+
+  /** ##### End RockMigrationsApi Feature ##### */
 
   /** ########## tools ########## */
 
