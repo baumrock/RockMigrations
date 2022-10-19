@@ -3434,6 +3434,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function uninstallModule($name)
   {
+    if(!$this->modules->isInstalled($name)) return;
     $this->wire->session->noMigrate = true;
     $this->modules->uninstall((string)$name);
     $this->wire->session->noMigrate = false;
