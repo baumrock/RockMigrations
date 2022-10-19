@@ -14,4 +14,12 @@ class RockMigrations
   {
     return "pong!";
   }
+
+  /**
+   * Returns the "foo" property of the rockmigrations instance
+   */
+  public function foo()
+  {
+    return $this->foo;
+  }
 }

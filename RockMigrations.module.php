@@ -297,6 +297,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->wire->cache->save('rockmigrations-apifiles', null);
   }
 
+  public function rm(): RockMigrations
+  {
+    return $this->wire->modules->get('RockMigrations');
+  }
+
   /** ##### End RockMigrationsApi Feature ##### */
 
   /** ########## tools ########## */
