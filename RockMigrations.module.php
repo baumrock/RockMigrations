@@ -74,7 +74,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.1.1',
+      'version' => '2.1.2',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -142,8 +142,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->addHookAfter("Templates::saved", $this, "setRecordFlag");
     $this->addHookAfter("Templates::deleted", $this, "setRecordFlag");
     $this->addHookAfter("Modules::refresh", $this, "setRecordFlag");
-    $this->addHookAfter("Modules::refresh", $this, "clearApiFilesCache");
-    $this->addHookAfter("Modules::install", $this, "clearApiFilesCache");
     $this->addHookAfter("Modules::saveConfig", $this, "setRecordFlag");
     $this->addHookBefore("InputfieldForm::render", $this, "showEditInfo");
     $this->addHookBefore("InputfieldForm::render", $this, "showCopyCode");
@@ -152,7 +150,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // other actions on init()
     $this->loadFilesOnDemand();
     $this->syncSnippets();
-    $this->addApiDir(__DIR__ . "/Api");
   }
 
   public function ready()
@@ -185,18 +182,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function __call($method, $args)
   {
     foreach ($this->apis as $api) {
-      if (method_exists($api, $method)) return $api->$method($args);
+      if (method_exists($api, $method)) return $api->$method(...$args);
     }
     return parent::__call($method, $args);
-  }
-
-  /**
-   * Add directory to be scanned for api classes
-   */
-  public function addApiDir($dir)
-  {
-    if (!$this->apiDirs) $this->apiDirs = $this->wire(new WireArray());
-    $this->apiDirs->add($dir);
   }
 
   /**
@@ -204,78 +192,46 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   private function loadApi()
   {
+    if ($this->apis) return $this->apis;
+    else $this->apis = $this->wire(new WireArray());
     $files = $this->apiFiles();
-
-    // check if all files exist
-    // if not force to recreate the cache
-    foreach ($files as $file) {
-      if (!is_file($file)) $this->apiFiles(true);
-    }
-    foreach ($files as $file) {
-      $stubFile = $this->stubFile($file);
-      if (!is_file($stubFile)) $this->createStubFile($file);
-    }
-
-    // loop files and load apis
     foreach ($files as $file) {
       if (!is_file($file)) continue;
+      $this->createStubFile($file);
       $name = pathinfo($file, PATHINFO_FILENAME);
       $class = "\RockMigrationsApi\\$name";
       try {
         require_once $file;
         $api = $this->wire(new $class());
-        if (!$this->apis) $this->apis = $this->wire(new WireArray());
         $this->apis->add($api);
       } catch (\Throwable $th) {
       }
     }
+    return $this->apis;
+  }
+
+  /**
+   * See https://i.imgur.com/naKTbk2.png
+   */
+  private function apiDebugInfo(): array
+  {
+    return $this->loadApi()->each('className');
   }
 
   /**
    * Return all api files
    */
-  private function apiFiles($noCache = false): array
+  private function apiFiles(): array
   {
-    $cached = $this->wire->cache->get('rockmigrations-apifiles');
-    if (!$noCache and is_array($cached)) return $cached;
-
-    $options = ['extensions' => ['php'], 'recursive' => 1];
-    $files = [];
-
-    // scan apiDirs for api files
-    foreach ($this->apiDirs as $dir) {
-      $files = array_merge(
-        $files,
-        $this->wire->files->find($dir, $options)
-      );
-    }
-    // make sure that the stubs folder exists
-    $dirs = [];
-    foreach ($files as $file) {
-      $dir = dirname($file) . "/stubs";
-      $dirs[$dir] = true;
-    }
-    foreach ($dirs as $dir => $v) {
-      $this->wire->files->rmdir($dir, true);
-      $this->wire->files->mkdir($dir);
-    }
-
-    // create stub files
-    foreach ($files as $file) $this->createStubFile($file);
-
-    // save filearray to cache
-    $this->wire->cache->save(
-      'rockmigrations-apifiles',
-      $files,
-      WireCache::expireNever
-    );
-
-    return $files;
+    return glob($this->wire->config->paths->siteModules . "*/RockMigrationsApi/*.php");
   }
 
   private function createStubFile($file)
   {
     $stubFile = $this->stubFile($file);
+    if ($this->filemtime($stubFile) >= $this->filemtime($file)) return;
+
+    $this->wire->files->mkdir(dirname($stubFile), true);
     $name = pathinfo($file, PATHINFO_FILENAME);
     $content = $this->wire->files->fileGetContents($file);
     $r = [
@@ -291,11 +247,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $name = pathinfo($file, PATHINFO_FILENAME);
     return dirname($file) . "/stubs/$name.php";
-  }
-
-  public function clearApiFilesCache()
-  {
-    $this->wire->cache->save('rockmigrations-apifiles', null);
   }
 
   public function rm(): RockMigrations
@@ -860,91 +811,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     });
   }
 
-  /**
-   * Create a field of the given type
-   *
-   * If run multiple times it will only update field data.
-   *
-   * Usage:
-   * $rm->createField('myfield');
-   *
-   * $rm->createField('myfield', 'text', [
-   *   'label' => 'My great field',
-   * ]);
-   *
-   * Alternate array syntax:
-   * $rm->createField('myfield', [
-   *   'type' => 'text',
-   *   'label' => 'My field label',
-   * ]);
-   *
-   * @param string $name
-   * @param string|array $type|$options
-   * @param array $options
-   * @return Field|false
-   */
-  public function createField($name, $type = 'text', $options = [])
-  {
-    if (is_array($type)) {
-      $options = $type;
-      if (!array_key_exists('type', $options)) $options['type'] = 'text';
-      $type = $options['type'];
-    }
-    $field = $this->getField($name, true);
-
-    // field does not exist
-    if (!$field) {
-      // get type
-      $type = $this->getFieldtype($type);
-      if (!$type) return; // logging above
-
-      // create the new field
-      $_name = $this->wire->sanitizer->fieldName($name);
-      if ($_name !== $name) throw new WireException("Invalid fieldname ($name)!");
-      $field = $this->wire(new Field());
-      $field->type = $type;
-      $field->name = $_name;
-      $field->label = $_name; // set label (mandatory since ~3.0.172)
-      $field->save();
-
-      // create end field for fieldsets
-      if ($field->type instanceof FieldtypeFieldsetOpen) {
-        $field->type->getFieldsetCloseField($field, true);
-      }
-
-      // this will auto-generate the repeater template
-      if ($field->type instanceof FieldtypeRepeater) {
-        $field->type->getRepeaterTemplate($field);
-      }
-    }
-
-    // set options
-    $options = array_merge($options, ['type' => $type]);
-    $field = $this->setFieldData($field, $options);
-
-    return $field;
-  }
-
-  /**
-   * Create fields from array
-   *
-   * Usage:
-   * $rm->createFields([
-   *   'field1' => [...],
-   *   'field2' => [...],
-   * ]);
-   */
-  public function createFields($fields): void
-  {
-    foreach ($fields as $name => $data) {
-      if (is_int($name)) {
-        $name = $data;
-        $data = [];
-      }
-      $this->createField($name, $data);
-    }
-  }
-
   private function createNeededFolders()
   {
     $dir = $this->wire->config->paths->assets . "sessions";
@@ -1160,37 +1026,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $file = $this->wire->config->paths->templates . $template->name . ".php";
     if (is_file($content)) $content = file_get_contents($content);
     if (!is_file($file)) $this->wire->files->filePutContents($file, $content);
-  }
-
-  /**
-   * Delete the given field
-   * @param mixed $name
-   * @param bool $quiet
-   * @return void
-   */
-  public function deleteField($name, $quiet = false)
-  {
-    $field = $this->getField($name, $quiet);
-    if (!$field) return; // logging in getField()
-
-    // delete _END field for fieldsets first
-    if ($field->type instanceof FieldtypeFieldsetOpen) {
-      $closer = $field->type->getFieldsetCloseField($field, false);
-      $this->deleteField($closer, $quiet);
-    }
-
-    // make sure we can delete the field by removing all flags
-    $field->flags = Field::flagSystemOverride;
-    $field->flags = 0;
-
-    // remove the field from all fieldgroups
-    foreach ($this->fieldgroups as $fieldgroup) {
-      /** @var Fieldgroup $fieldgroup */
-      $fieldgroup->remove($field);
-      $fieldgroup->save();
-    }
-
-    return $this->fields->delete($field);
   }
 
   /**
@@ -3915,6 +3750,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'lastrun' => $lastrun,
       'recorders' => $this->recorders,
       'watchlist' => $this->watchlist,
+      'apis' => $this->apiDebugInfo(),
     ];
   }
 }
