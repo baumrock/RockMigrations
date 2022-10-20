@@ -74,7 +74,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.1.2',
+      'version' => '2.1.3',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -2590,6 +2590,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $field = $this->getField($field);
     if (!$field) return; // logging in getField()
+
+    // Support shortcut syntax
+    // $rm->setFieldData('title', 'textLanguage');
+    if (is_string($data)) $data = ['type' => $data];
 
     // check if the field type has changed
     if (array_key_exists('type', $data)) {
