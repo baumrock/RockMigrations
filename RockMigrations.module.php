@@ -143,6 +143,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->addHookAfter("Templates::deleted", $this, "setRecordFlag");
     $this->addHookAfter("Modules::refresh", $this, "setRecordFlag");
     $this->addHookAfter("Modules::refresh", $this, "clearApiFilesCache");
+    $this->addHookAfter("Modules::install", $this, "clearApiFilesCache");
     $this->addHookAfter("Modules::saveConfig", $this, "setRecordFlag");
     $this->addHookBefore("InputfieldForm::render", $this, "showEditInfo");
     $this->addHookBefore("InputfieldForm::render", $this, "showCopyCode");
@@ -245,7 +246,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     foreach ($this->apiDirs as $dir) {
       $files = array_merge(
         $files,
-        $this->wire->files->find(__DIR__ . "/Api", $options)
+        $this->wire->files->find($dir, $options)
       );
     }
     // make sure that the stubs folder exists
