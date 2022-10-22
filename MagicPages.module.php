@@ -21,7 +21,7 @@ class MagicPages extends WireData implements Module
   {
     return [
       'title' => 'MagicPages',
-      'version' => '1.0.7',
+      'version' => '1.0.8',
       'summary' => 'Autoload module to support MagicPages',
       'autoload' => true,
       'singular' => true,
@@ -152,7 +152,7 @@ class MagicPages extends WireData implements Module
         if ($event->process != "ProcessPageEdit") return;
         $page = $event->process->getPage();
         if ($page->className !== $magicPage->className) return;
-        $page->onProcessInput($event->return);
+        $page->onProcessInput($event->return, $event->arguments(0));
       });
     }
   }
