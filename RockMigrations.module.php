@@ -77,7 +77,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.1.4',
+      'version' => '2.1.5',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -2288,6 +2288,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // was called (which can be handy to get quick reloads while working on a
     // module whithout the need for migrations)
     // $rm->run() will run either way because it sets force=true
+
+    // this prevents running migrations when processwire
+    // is bootstrapped in other cli scripts
+    if (php_sapi_name() == "cli" and !$force) return;
+
     $cli = defined('RockMigrationsCLI');
     $runOnlyWhenForced = $cli || $this->noMigrate;
     if ($runOnlyWhenForced and !$force) return;
