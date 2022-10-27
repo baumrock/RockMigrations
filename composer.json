@@ -1,0 +1,11 @@
+{
+  "name": "baumrock/rockmigrations",
+  "type": "processwire-module",
+  "license": "MIT",
+  "extra": {
+    "installer-name": "RockMigrations"
+  },
+  "require": {
+    "composer/installers": "~1.0"
+  }
+}
