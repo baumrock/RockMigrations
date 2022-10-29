@@ -103,6 +103,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $config = $this->wire->config;
     $this->wire('rockmigrations', $this);
+    $this->loadApi(); // load api as early as possible!
     $this->installModule('MagicPages');
     if ($config->debug) $this->setOutputLevel(self::outputLevelVerbose);
 
@@ -140,7 +141,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // hooks
     $this->addHookAfter("Modules::refresh", $this, "triggerMigrations");
     // $this->addHookAfter("ProcessPageView::finished", $this, "triggerRecorder");
-    $this->addHookBefore("Field::getInputfield", $this, "addSourceCodeButton");
 
     // add hooks for recording changes
     $this->addHookAfter("Fields::saved", $this, "setRecordFlag");
@@ -160,7 +160,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   public function ready()
   {
-    $this->loadApi();
     $this->forceMigrate();
     $this->addLivereload();
 
@@ -261,336 +260,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /** ##### End RockMigrationsApi Feature ##### */
-
-  /** ########## tools ########## */
-
-  /**
-   * Add a runtime field to an inputfield wrapper
-   *
-   * Usage:
-   * $rm->addAfter($form, 'title', [
-   *   'type' => 'markup',
-   *   'label' => 'foo',
-   *   'value' => 'bar',
-   * ]);
-   *
-   * @return Inputfield
-   */
-  public function addAfter($wrapper, $existingItem, $newItem)
-  {
-    if (!$existingItem instanceof Inputfield) $existingItem = $wrapper->get($existingItem);
-    $wrapper->add($newItem);
-    $newItem = $wrapper->children()->last();
-    $wrapper->insertAfter($newItem, $existingItem);
-    return $newItem;
-  }
-
-  /**
-   * Add sourcecode button to ckeditor fields for superuser
-   * @return void
-   */
-  public function addSourceCodeButton(HookEvent $event)
-  {
-    if (!$this->wire->user->isSuperuser()) return;
-    $field = $event->object;
-    if (!$field->toolbar) return;
-    $field->toolbar .= ",Source";
-  }
-
-  /**
-   * Add scripts to $config->scripts and add cache busting timestamp
-   */
-  public function addScripts($scripts)
-  {
-    if (!is_array($scripts)) $scripts = [$scripts];
-    foreach ($scripts as $script) {
-      $path = $this->filePath($script);
-      // if file is not found we silently skip it
-      // it is silent because of MagicPages::addPageAssets
-      if (!is_file($path)) continue;
-      $url = str_replace(
-        $this->wire->config->paths->root,
-        $this->wire->config->urls->root,
-        $path
-      );
-      $this->wire->config->scripts->add($url . "?m=" . filemtime($path));
-    }
-  }
-
-  /**
-   * Add styles to $config->styles and add cache busting timestamp
-   */
-  public function addStyles($styles)
-  {
-    if (!is_array($styles)) $styles = [$styles];
-    foreach ($styles as $style) {
-      $path = $this->filePath($style);
-
-      // check if it is a less file
-      if (pathinfo($path, PATHINFO_EXTENSION) === 'less') {
-        $path = $this->saveCSS($path);
-      }
-
-      // if file is not found we silently skip it
-      // it is silent because of MagicPages::addPageAssets
-      if (!is_file($path)) continue;
-      $url = str_replace(
-        $this->wire->config->paths->root,
-        $this->wire->config->urls->root,
-        $path
-      );
-      $this->wire->config->styles->add($url . "?m=" . filemtime($path));
-    }
-  }
-
-  /**
-   * Add the possibility to add success messages on inputfields
-   */
-  private function addSuccessMessageFeature()
-  {
-    // setup and load the session variable that stores success messages
-    $this->fieldSuccessMessages = $this->wire(new WireData());
-    $this->fieldSuccessMessages->setArray(
-      $this->wire->session->rmFieldSuccessMessages ?: []
-    );
-
-    // add hook that renders success messages on the inputfields
-    // rendering the message will also remove the message from the storage
-    $this->addHookBefore("Inputfield::render", function ($event) {
-      $field = $event->object;
-      $messages = $this->fieldSuccessMessages;
-      foreach ($messages as $name => $msg) {
-        if ($field->name !== $name) continue;
-        $field->prependMarkup .= "<div class='uk-alert-success' uk-alert>
-          <a class='uk-alert-close' uk-close></a>
-          $msg
-        </div>";
-        $messages->remove($name);
-        $this->wire->session->rmFieldSuccessMessages = $messages->getArray();
-      }
-    });
-  }
-
-  /**
-   * Make all pages having given template be created on top of the list
-   * @return void
-   */
-  public function createOnTop($tpl)
-  {
-    $tpl = $this->wire->templates->get((string)$tpl);
-    $this->addHookAfter("Pages::added", function (HookEvent $event) {
-      $page = $event->arguments(0);
-      $this->wire->pages->sort($page, 0);
-    });
-  }
-
-  /**
-   * Remove non-breaking spaces in string
-   * @return string
-   */
-  public function regularSpaces($str)
-  {
-    return preg_replace('/\xc2\xa0/', ' ', $str);
-  }
-
-  /**
-   * Compile LESS file and save CSS version
-   *
-   * foo.less --> foo.less.css
-   *
-   * Requires the Less module and will silently return if anything goes wrong.
-   * The method is intended to easily develop module styles in LESS and ship
-   * the CSS version.
-   */
-  public function saveCSS($less, $onlySuperuser = true): string
-  {
-    $css = "$less.css";
-    if (!is_file($less)) return $css;
-
-    $mLESS = filemtime($less);
-    $mCSS = is_file($css) ? filemtime($css) : 0;
-
-    $sudoCheck = $onlySuperuser ? $this->wire->user->isSuperuser() : true;
-    if ($mLESS > $mCSS and $sudoCheck) {
-      if ($parser = $this->wire->modules->get('Less')) {
-        // recreate css file
-        /** @var Less $parser */
-        $parser->addFile($less);
-        $parser->saveCss($css);
-        $mCSS = time();
-        $this->log("Created new CSS file: $css");
-      }
-    }
-    return $css;
-  }
-
-  /**
-   * Set page name from field of template
-   *
-   * Usage:
-   * $rm->setPageNameFromField("basic-page", "headline");
-   * $rm->setPageNameFromField("basic-page", ["headline", "title"]);
-   *
-   * Make sure to install Page Path History module!
-   *
-   * @return void
-   */
-  public function setPageNameFromField($template, $fields = 'title')
-  {
-    if ($template instanceof Page) $template = $template->template;
-    $template = $this->wire->templates->get((string)$template);
-    if (!$template) return;
-    $tpl = "template=$template";
-    $this->addHookAfter("Pages::saved($tpl,id>0)", function (HookEvent $event) use ($fields) {
-      /** @var Page $page */
-      $page = $event->arguments(0);
-      if ($page->rmSetPageName) return;
-      $page->rmSetPageName = true;
-      $langs = $this->wire->languages;
-      if ($langs) {
-        foreach ($langs as $lang) {
-          try {
-            // dont know why exactly that is necessary but had problems
-            // at kaumberg "localName not callable in this context"??
-            // though the method was definitely there...
-            $old = $page->localName($lang);
-          } catch (\Throwable $th) {
-            $old = $page->name;
-          }
-
-          // get new value
-          if (is_array($fields)) {
-            $new = '';
-            foreach ($fields as $field) {
-              if ($new) continue;
-              $new = $page->getLanguageValue($lang, (string)$field);
-            }
-          } else $new = $page->getLanguageValue($lang, (string)$fields);
-
-          $new = $event->sanitizer->markupToText($new);
-          $new = $event->sanitizer->pageNameTranslate($new);
-          $new = $event->wire->pages->names()->uniquePageName($new, $page);
-          if ($old != $new) {
-            if ($lang->isDefault()) $page->setName($new);
-            else $page->setName($new, $lang);
-            $this->message($this->_("Page name updated to $new ($lang->name)"));
-          }
-        }
-        $page->save(['noHooks' => true]);
-      } else {
-        $old = $page->name;
-
-        if (is_array($fields)) $new = $page->get(implode("|", $fields));
-        else $new = $page->get((string)$fields);
-
-        $new = $event->sanitizer->markupToText($new);
-        $new = $event->sanitizer->pageNameTranslate($new);
-        if ($new and $old != $new) {
-          $new = $event->wire->pages->names()->uniquePageName($new, $page);
-          $page->name = $new;
-        }
-        $page->save(['noHooks' => true]);
-        $this->message($this->_("Page name updated to $new"));
-      }
-    });
-    $this->addHookAfter("ProcessPageEdit::buildForm", function (HookEvent $event) use ($template, $fields) {
-      $field = is_array($fields) ? implode("|", $fields) : $fields;
-      $page = $event->object->getPage();
-      if ($page->template != $template) return;
-      $form = $event->return;
-      if ($f = $form->get('_pw_page_name')) {
-        $f->prependMarkup = "<style>#wrap_{$f->id} input[type=text] { display: none; }</style>";
-        $f->notes = $this->_("Page name will be set automatically from field '$field' on save.");
-      }
-    });
-  }
-
-  /**
-   * Set page name from page title
-   *
-   * Usage:
-   * $rm->setPageNameFromTitle("basic-page");
-   *
-   * Make sure to install Page Path History module!
-   *
-   * @param mixed $object
-   */
-  public function setPageNameFromTitle($template)
-  {
-    return $this->setPageNameFromField($template, 'title');
-  }
-
-  /**
-   * Wrap fields of a form into a fieldset
-   *
-   * Usage:
-   * $rm->wrapFields($form, ['foo', 'bar'], [
-   *   'label' => 'your fieldset label',
-   *   'icon' => 'bolt',
-   * ]);
-   *
-   * @return InputfieldFieldset
-   */
-  public function wrapFields(InputfieldWrapper $form, array $fields, array $fieldset, $placeAfter = null)
-  {
-    $_fields = [];
-    $last = false;
-    foreach ($fields as $k => $v) {
-      $noLast = false;
-      $field = $v;
-      $fieldData = null;
-      if (is_string($k)) {
-        $field = $k;
-        $fieldData = $v;
-      }
-
-      if (is_array($field)) {
-        $form->add($field);
-        $field = $form->children()->last();
-        $noLast = true;
-      }
-
-      if (!$field instanceof Inputfield) $field = $form->get((string)$field);
-      if (!$field) continue;
-      if ($fieldData) $field->setArray($fieldData);
-      if ($field instanceof Inputfield) {
-        $_fields[] = $field;
-
-        // we update the "last" variable to be the current field
-        // we do not use runtime fields (applied via array syntax)
-        // this ensures that the wrapper is at the same position where
-        // the field of the form was
-        if (!$noLast) $last = $field;
-      }
-    }
-
-    // no fields, no render
-    // this can be the case in modal windows when the page editor is called
-    // with a ?field or ?fields get parameter to only render specific fields
-    if (!count($_fields)) return;
-
-    /** @var InputfieldFieldset $fs */
-    $fs = $this->wire('modules')->get('InputfieldFieldset');
-    foreach ($fieldset as $k => $v) $fs->$k = $v;
-    if ($placeAfter) {
-      if (!$placeAfter instanceof Inputfield) $placeAfter = $form->get((string)$placeAfter);
-      $form->insertAfter($fs, $placeAfter);
-    } elseif ($last) $form->insertAfter($fs, $last);
-    else $form->add($fs);
-
-    // now remove fields from the form and add them to the fieldset
-    foreach ($_fields as $f) {
-      // if the field is a runtime only field we add a temporary name
-      // otherwise the remove causes an endless loop
-      if (!$f->name) $f->name = uniqid();
-      $form->remove($f);
-      $fs->add($f);
-    }
-
-    return $fs;
-  }
-
-  /** ########## end tools ########## */
 
   /**
    * Add field to template
@@ -756,6 +425,34 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $user->of(false);
     $user->addRole($role);
     $user->save();
+  }
+
+  /**
+   * Add the possibility to add success messages on inputfields
+   */
+  private function addSuccessMessageFeature()
+  {
+    // setup and load the session variable that stores success messages
+    $this->fieldSuccessMessages = $this->wire(new WireData());
+    $this->fieldSuccessMessages->setArray(
+      $this->wire->session->rmFieldSuccessMessages ?: []
+    );
+
+    // add hook that renders success messages on the inputfields
+    // rendering the message will also remove the message from the storage
+    $this->addHookBefore("Inputfield::render", function ($event) {
+      $field = $event->object;
+      $messages = $this->fieldSuccessMessages;
+      foreach ($messages as $name => $msg) {
+        if ($field->name !== $name) continue;
+        $field->prependMarkup .= "<div class='uk-alert-success' uk-alert>
+          <a class='uk-alert-close' uk-close></a>
+          $msg
+        </div>";
+        $messages->remove($name);
+        $this->wire->session->rmFieldSuccessMessages = $messages->getArray();
+      }
+    });
   }
 
   /**
