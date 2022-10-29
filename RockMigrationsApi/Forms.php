@@ -6,10 +6,12 @@ use ProcessWire\Field;
 use ProcessWire\Inputfield;
 use ProcessWire\InputfieldWrapper;
 use ProcessWire\RockMigrations;
+use ProcessWire\RockMigrationsApiTrait;
 use ProcessWire\WireException;
 
 class Forms extends RockMigrations
 {
+  use RockMigrationsApiTrait;
 
   /**
    * Add a runtime field to an inputfield wrapper

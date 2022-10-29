@@ -3,9 +3,11 @@
 namespace RockMigrationsApi;
 
 use ProcessWire\RockMigrations;
+use ProcessWire\RockMigrationsApiTrait;
 
 class Ping extends RockMigrations
 {
+  use RockMigrationsApiTrait;
 
   /**
    * Returns pong!

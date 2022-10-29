@@ -169,7 +169,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function __call($method, $args)
   {
-    foreach ($this->apis as $api) {
+    foreach ($this->loadApi() as $api) {
       if (method_exists($api, $method)) return $api->$method(...$args);
     }
     return parent::__call($method, $args);
@@ -182,6 +182,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     if ($this->apis) return $this->apis;
     else $this->apis = $this->wire(new WireArray());
+
+    require_once __DIR__ . "/RockMigrationsApiTrait.php";
+
     $files = $this->apiFiles();
     foreach ($files as $file) {
       if (!is_file($file)) continue;
@@ -245,115 +248,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /** ##### End RockMigrationsApi Feature ##### */
 
   /**
-   * Add field to template
-   *
-   * @param Field|string $field
-   * @param Template|string $template
-   * @return void
-   */
-  public function addFieldToTemplate($field, $template, $afterfield = null, $beforefield = null)
-  {
-    $field = $this->getField($field);
-    if (!$field) return; // logging is done in getField()
-    $template = $this->getTemplate($template);
-    if (!$template) return; // logging is done in getField()
-    if (!$afterfield and !$beforefield) {
-      if ($template->fields->has($field)) return;
-    }
-
-    $afterfield = $this->getField($afterfield);
-    $beforefield = $this->getField($beforefield);
-    $fg = $template->fieldgroup;
-    /** @var Fieldgroup $fg */
-
-    if ($afterfield) $fg->insertAfter($field, $afterfield);
-    elseif ($beforefield) $fg->insertBefore($field, $beforefield);
-    else $fg->add($field);
-
-    // add end field for fieldsets
-    if (
-      $field->type instanceof FieldtypeFieldsetOpen
-      and !$field->type instanceof FieldtypeFieldsetClose
-    ) {
-      $closer = $field->type->getFieldsetCloseField($field, false);
-      $this->addFieldToTemplate($closer, $template, $field);
-    }
-
-    // TODO fix this!
-    // quickfix to prevent integrity constraint errors in backend
-    try {
-      $fg->save();
-    } catch (\Throwable $th) {
-      $this->log($th->getMessage());
-    }
-  }
-
-  /**
-   * Add fields to template.
-   *
-   * Simple:
-   * $rm->addFieldsToTemplate(['field1', 'field2'], 'yourtemplate');
-   *
-   * Add fields at special positions:
-   * $rm->addFieldsToTemplate([
-   *   'field1',
-   *   'field4' => 'field3', // this will add field4 after field3
-   * ], 'yourtemplate');
-   *
-   * @param array $fields
-   * @param string $template
-   * @param bool $sortFields
-   * @return void
-   */
-  public function addFieldsToTemplate($fields, $template, $sortFields = false)
-  {
-    foreach ($fields as $k => $v) {
-      // if the key is an integer, it's a simple field
-      if (is_int($k)) $this->addFieldToTemplate((string)$v, $template);
-      else $this->addFieldToTemplate((string)$k, $template, $v);
-    }
-    if ($sortFields) $this->setFieldOrder($fields, $template);
-  }
-
-  /**
-   * Add a new language or return existing
-   *
-   * Also installs language support if missing.
-   *
-   * @param string $name Name of the language
-   * @param string $title Optional title of the language
-   * @return Language Language that was created
-   */
-  public function addLanguage(string $name, string $title = null)
-  {
-    // Make sure Language Support is installed
-    $languages = $this->addLanguageSupport();
-    if (!$languages) return $this->log("Failed installing LanguageSupport");
-
-    $lang = $this->getLanguage($name);
-    if (!$lang->id) {
-      $lang = $languages->add($name);
-      $languages->reloadLanguages();
-    }
-    if ($title) $lang->setAndSave('title', $title);
-    return $lang;
-  }
-
-  /**
-   * Install the languagesupport module
-   * @return Languages
-   */
-  public function addLanguageSupport()
-  {
-    if (!$this->modules->isInstalled("LanguageSupport")) {
-      $this->wire->pages->setOutputFormatting(false);
-      $ls = $this->installModule("LanguageSupport", ['force' => true]);
-      if (!$this->wire->languages) $ls->init();
-    }
-    return $this->wire->languages;
-  }
-
-  /**
    * Add RockFrontend livereloading to the backend
    *
    * This is only added on some pages to prevent reloads from causing issues
@@ -373,41 +267,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $path = $this->wire->config->paths('RockFrontend');
     $m = filemtime($path . "livereload.js");
     $this->wire->config->scripts->add($url . "livereload.js?m=$m");
-  }
-
-  /**
-   * Add a permission to given role
-   *
-   * @param string|int $permission
-   * @param string|int $role
-   * @return boolean
-   */
-  public function addPermissionToRole($permission, $role)
-  {
-    $role = $this->getRole($role);
-    if (!$role) return $this->log("Role $role not found");
-    $role->of(false);
-    $role->addPermission($permission);
-    return $role->save();
-  }
-
-  /**
-   * Add role to user
-   *
-   * @param string $role
-   * @param User|string $user
-   * @return void
-   */
-  public function addRoleToUser($role, $user)
-  {
-    $role = $this->getRole($role);
-    $user = $this->getUser($user);
-    $msg = "Cannot add role to user";
-    if (!$role) return $this->log("$msg - role not found");
-    if (!$user) return $this->log("$msg - user not found");
-    $user->of(false);
-    $user->addRole($role);
-    $user->save();
   }
 
   /**
@@ -439,49 +298,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Add given permission to given template for given role
-   *
-   * Example for single template:
-   * $rm->addTemplateAccess("my-template", "my-role", "edit");
-   *
-   * Example for multiple templates/roles/permissions:
-   * $rm->addTemplateAccess([
-   *   'home',
-   *   'basic-page',
-   * ],
-   * [
-   *   'admin',
-   *   'author',
-   * ],
-   * [
-   *   'add',
-   *   'edit',
-   * ]);
-   *
-   * @param mixed string|array $templates template name or array of names
-   * @param mixed string|array $roles role name or array of names
-   * @param mixed string|array $accs permission name or array of names
-   * @return void
-   */
-  public function addTemplateAccess($templates, $roles, $accs)
-  {
-    if (!is_array($templates)) $templates = [$templates];
-    if (!is_array($roles)) $roles = [$roles];
-    if (!is_array($accs)) $accs = [$accs];
-    foreach ($roles as $role) {
-      if (!$role = $this->getRole($role)) continue;
-      foreach ($templates as $tpl) {
-        $tpl = $this->getTemplate($tpl);
-        if (!$tpl) continue; // log is done above
-        foreach ($accs as $acc) {
-          $tpl->addRole($role, $acc);
-        }
-        $tpl->save();
-      }
-    }
-  }
-
-  /**
    * Register autoloader for all classes in given folder
    * This will NOT trigger init() or ready()
    * You can also use $rm->initClasses() with setting autoload=true
@@ -495,15 +311,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $file = "$path/$name.php";
       if (is_file($file)) require_once($file);
     });
-  }
-
-  /**
-   * Get basename of file or object
-   * @return string
-   */
-  public function basename($file)
-  {
-    return basename($this->filePath($file));
   }
 
   /**
@@ -531,387 +338,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!is_dir($dir)) $this->wire->files->mkdir($dir);
   }
 
-  /**
-   * Create a new Page
-   *
-   * If the page exists it will return the existing page.
-   * Note that all available languages will be set active by default!
-   *
-   * If you need to set a multilang title use
-   * $rm->setFieldLanguageValue($page, "title", [
-   *   'default'=>'foo',
-   *   'german'=>'bar',
-   * ]);
-   *
-   * @param string $title
-   * @param string $name
-   * @param Template|string $template
-   * @param Page|string $parent
-   * @param array $status
-   * @param array $data
-   * @return Page
-   */
-  public function createPage(string $title, $name = null, $template, $parent, array $status = [], array $data = [])
-  {
-    // create pagename from page title if it is not set
-    if (!$name) $name = $this->sanitizer->pageNameTranslate($title);
-
-    $log = "Parent $parent not found";
-    $parent = $this->getPage($parent);
-    if (!$parent->id) return $this->log($log);
-
-    // get page if it exists
-    $page = $this->getPage([
-      'name' => $name,
-      'template' => $template,
-      'parent' => $parent,
-    ], true);
-
-    if ($page and $page->id) {
-      $page->status($status);
-      $page->setAndSave($data);
-      return $page;
-    }
-
-    // create a new page
-    $p = $this->wire(new Page());
-    $p->template = $template;
-    $p->title = $title;
-    $p->name = $name;
-    $p->parent = $parent;
-    $p->status($status);
-    $p->setAndSave($data);
-
-    // enable all languages for this page
-    $this->enableAllLanguagesForPage($p);
-
-    return $p;
-  }
-
-  /**
-   * Create permission with given name
-   *
-   * @param string $name
-   * @param string $description
-   * @return Permission
-   */
-  public function createPermission($name, $description = null)
-  {
-    if (!$perm = $this->getPermission($name)) {
-      $perm = $this->wire->permissions->add($name);
-      $this->log("Created permission $name");
-    }
-    if (!$description) $description = $name;
-    $perm->setAndSave('title', $description);
-    return $perm;
-  }
-
-  /**
-   * Create role with given name
-   * @param string $name
-   * @param array $permissions
-   * @return Role|null
-   */
-  public function createRole($name, $permissions = [])
-  {
-    if (!$name) return $this->log("Define a name for the role!");
-
-    $role = $this->getRole($name, true);
-    if (!$role) $role = $this->roles->add($name);
-    foreach ($permissions as $permission) {
-      $this->addPermissionToRole($permission, $role);
-    }
-
-    return $role;
-  }
-
-  /**
-   * Helper to create webmaster role
-   * @return Role
-   */
-  public function createRoleWebmaster($permissions = [], $name = 'webmaster')
-  {
-    $permissions = array_merge([
-      'page-edit',
-      'page-edit-front',
-      'page-delete',
-      'page-move',
-      'page-sort',
-      'rockfrontend-alfred',
-    ], $permissions ?: []);
-    return $this->createRole($name, $permissions);
-  }
-
-  /**
-   * Create a new ProcessWire Template
-   *
-   * Usage:
-   * $rm->createTemplate('foo', [
-   *   'fields' => ['foo', 'bar'],
-   * ]);
-   *
-   * @param string $name
-   * @param bool|array $data
-   * @param bool $migrate
-   * @return Template
-   */
-  public function createTemplate($name, $data = true, $migrate = true)
-  {
-    // quietly get the template
-    // it is quiet to prevent "template xx not found" logs
-    $t = $this->getTemplate($name, true);
-    if (!$t) {
-      // create new fieldgroup
-      $fg = $this->wire(new Fieldgroup());
-      $fg->name = $name;
-      $fg->save();
-
-      // create new template
-      $t = $this->wire(new Template());
-      $t->name = $name;
-      $t->fieldgroup = $fg;
-      $t->save();
-
-      if ($migrate) {
-        // trigger migrate() of that new template
-        $p = $this->wire->pages->newPage(['template' => $t]);
-        if (method_exists($p, "migrate")) $p->migrate();
-      }
-    }
-
-    // handle different types of second parameter
-    if (is_bool($data)) {
-      // add title field to this template if second param = TRUE
-      if ($data) $this->addFieldToTemplate('title', $t);
-    } elseif (is_string($data)) {
-      // second param is a string
-      // eg "\MyModule\MyPageClass"
-      $this->setTemplateData($t, ['pageClass' => $data]);
-    } elseif (is_array($data)) {
-      // second param is an array
-      // that means we set the template data from array syntax
-      $this->setTemplateData($t, $data);
-    }
-
-    return $t;
-  }
-
-  /**
-   * Create or return a PW user
-   *
-   * This will use a random password for the user
-   *
-   * Usage:
-   * $rm->createUser('demo', [
-   *   'roles' => ['webmaster'],
-   * ]);
-   *
-   * @param string $username
-   * @param array $data
-   * @return User|false
-   */
-  public function createUser($username, $data = [])
-  {
-    $user = $this->getUser($username, true);
-    if (!$user) return false;
-    if (!$user->id) {
-      $user = $this->wire->users->add($username);
-
-      // setup password
-      $rand = $this->wire(new WireRandom());
-      /** @var WireRandom $rand */
-      $password = $rand->alphanumeric(null, [
-        'minLength' => 10,
-        'maxLength' => 20,
-      ]);
-      $data['password'] = $password;
-    }
-    $this->setUserData($user, $data);
-    return $user;
-  }
-
-  /**
-   * Create view file for template (if it does not exist already)
-   * @return void
-   */
-  public function createViewFile($template, $content = "\n")
-  {
-    $template = $this->getTemplate($template);
-    $file = $this->wire->config->paths->templates . $template->name . ".php";
-    if (is_file($content)) $content = file_get_contents($content);
-    if (!is_file($file)) $this->wire->files->filePutContents($file, $content);
-  }
-
-  /**
-   * Delete given fields
-   *
-   * If parameter is a string we use it as selector for $fields->find()
-   *
-   * Usage:
-   * $rm->deleteFields("tags=MyModule");
-   *
-   * @param array|string $fields
-   * @return void
-   */
-  public function deleteFields($fields, $quiet = false)
-  {
-    if (is_string($fields)) $fields = $this->wire->fields->find($fields);
-    foreach ($fields as $field) $this->deleteField($field, $quiet);
-  }
-
-  /**
-   * Deletes a language
-   * @param mixed $language
-   * @return void
-   */
-  public function deleteLanguage($language, $quiet = false)
-  {
-    if (!$lang = $this->getLanguage($language, $quiet)) return;
-    $this->wire->languages->delete($lang);
-  }
-
-  /**
-   * Delete module
-   * This deletes the module files and then removes the entry in the modules
-   * table. Removing the module via uninstall() did cause an endless loop.
-   * @param mixed $name
-   * @return void
-   */
-  public function deleteModule($name, $path = null)
-  {
-    $name = (string)$name;
-    if ($this->wire->modules->isInstalled($name)) $this->uninstallModule($name);
-    if (!$path) $path = $this->wire->config->paths->siteModules . $name;
-    if (is_dir($path)) $this->wire->files->rmdir($path, true);
-    $this->wire->database->exec("DELETE FROM modules WHERE class = '$name'");
-  }
-
-  /**
-   * Delete the given page including all children.
-   *
-   * @param Page|string $page
-   * @return void
-   */
-  public function deletePage($page, $quiet = false)
-  {
-    if (!$page = $this->getPage($page, $quiet)) return;
-
-    // temporarily disable filesOnDemand feature
-    // this prevents PW from downloading files that are deleted from a local dev
-    // system but only exist on the live system
-    $ondemand = $this->wire->config->filesOnDemand;
-    $this->wire->config->filesOnDemand = false;
-
-    // make sure we can delete the page and delete it
-    // we also need to make sure that all descendants of this page are deletable
-    // todo: make this recursive?
-    $all = $this->wire(new PageArray());
-    $all->add($page);
-    $all->add($this->wire->pages->find("has_parent=$page, include=all"));
-    foreach ($all as $p) {
-      $p->addStatus(Page::statusSystemOverride);
-      $p->status = 1;
-      $p->save();
-    }
-    $this->wire->pages->delete($page, true);
-
-    $this->wire->config->filesOnDemand = $ondemand;
-  }
-
-  /**
-   * Delete the given permission
-   *
-   * @param Permission|string $permission
-   * @return void
-   */
-  public function deletePermission($permission, $quiet = false)
-  {
-    if (!$permission = $this->getPermission($permission, $quiet)) return;
-    $this->permissions->delete($permission);
-  }
-
-  /**
-   * Delete the given role
-   * @param Role|string $role
-   * @param bool $quiet
-   * @return void
-   */
-  public function deleteRole($role, $quiet = false)
-  {
-    if (!$role = $this->getRole($role, $quiet)) return;
-    $this->roles->delete($role);
-  }
-
-  /**
-   * Delete a ProcessWire Template
-   * @param mixed $tpl
-   * @param bool $quiet
-   * @return void
-   */
-  public function deleteTemplate($tpl, $quiet = false)
-  {
-    $template = $this->getTemplate($tpl, $quiet);
-    if (!$template) return;
-
-    // remove all pages having this template
-    foreach ($this->pages->find("template=$template, include=all") as $p) {
-      $this->deletePage($p);
-    }
-
-    // make sure we can delete the template by removing all flags
-    $template->flags = Template::flagSystemOverride;
-    $template->flags = 0;
-
-    // delete the template
-    $this->templates->delete($template);
-
-    // delete the fieldgroup
-    $fg = $this->fieldgroups->get((string)$tpl);
-    if ($fg) $this->fieldgroups->delete($fg);
-  }
-
-  /**
-   * Delete templates
-   *
-   * Usage
-   * $rm->deleteTemplates("tags=YourModule");
-   *
-   * @param string $selector
-   */
-  public function deleteTemplates($selector, $quiet = false)
-  {
-    $templates = $this->wire->templates->find($selector);
-    foreach ($templates as $tpl) $this->deleteTemplate($tpl, $quiet);
-  }
-
-  /**
-   * Delete a PW user
-   *
-   * @param string $username
-   * @return void
-   */
-  public function deleteUser($username, $quiet = false)
-  {
-    if (!$user = $this->getUser($username, $quiet)) return;
-    $this->wire->users->delete($user);
-  }
-
-  /**
-   * Disable module
-   *
-   * This is a quickfix for modules that are not uninstallable by
-   * uninstallModule() - I don't know why this does not work for some modules...
-   * if you do please let me know!
-   *
-   * @param string|Module $name
-   * @return void
-   */
-  public function disableModule($name)
-  {
-    $this->wire->modules->setFlag((string)$name, Modules::flagsDisabled, true);
-  }
-
-  public function doMigrate($file)
+  protected function doMigrate($file)
   {
     if ($this->migrateAll) return true;
     if ($file instanceof RockMatrixBlock) $file = $file->filePath();
@@ -927,39 +354,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($watchFile->changed) return true;
     if ($watchFile->force) return true;
     return false;
-  }
-
-  /**
-   * Download module from url
-   *
-   * @param string $url
-   * @return mixed bool|string Returns destinationDir on success, false on failure.
-   */
-  public function downloadModule($url)
-  {
-    if (!class_exists('ProcessWire\ProcessModuleInstall')) {
-      require_once($this->config->paths->modules . "Process/ProcessModule/ProcessModuleInstall.php");
-    }
-    /** @var ProcessModuleInstall $installer */
-    $installer = $this->wire(new ProcessModuleInstall());
-    $downloaded = $installer->downloadModule($url);
-    if ($downloaded !== false) return $downloaded;
-    $this->log("Tried to download module from $url but failed");
-    return false;
-  }
-
-  /**
-   * Enable all languages for given page
-   *
-   * @param mixed $page
-   * @return void
-   */
-  public function enableAllLanguagesForPage($page)
-  {
-    if (!$page) return;
-    $page = $this->getPage($page);
-    foreach ($this->languages ?: [] as $lang) $page->set("status$lang", 1);
-    $page->save();
   }
 
   /**
@@ -1042,18 +436,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $this->wire->files->copy($file2, $file1);
       touch($file2);
     }
-  }
-
-  /**
-   * DEPRECATED
-   */
-  public function fireOnRefresh($module, $method = null, $priority = [])
-  {
-    $trace = debug_backtrace()[0];
-    $trace = $trace['file'] . ":" . $trace['line'];
-    $this->warning("fireOnRefresh is DEPRECATED and does not work any more!
-      RockMigrations will migrate all watched files on Modules::refresh automatically. $trace");
-    return;
   }
 
   /**
@@ -1193,21 +575,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     ]);
     $conf->setArray($config);
     return $conf;
-  }
-
-  /**
-   * Get field by name
-   * @param Field|string $name
-   * @param bool $quiet
-   * @return mixed
-   */
-  public function getField($name, $quiet = false)
-  {
-    if (!$name) return false; // for addfieldtotemplate
-    $field = $this->fields->get((string)$name);
-    if ($field) return $field;
-    if (!$quiet) $this->log("Field $name not found");
-    return false;
   }
 
   /**

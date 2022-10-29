@@ -3,9 +3,11 @@
 namespace ProcessWire;
 
 
+use ProcessWire\RockMigrationsApiTrait;
 
 class RockMigrations
 {
+  use RockMigrationsApiTrait;
 
   /**
    * Returns pong!

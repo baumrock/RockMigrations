@@ -6,10 +6,12 @@ use ProcessWire\Field;
 use ProcessWire\FieldtypeFieldsetOpen;
 use ProcessWire\FieldtypeRepeater;
 
+use ProcessWire\RockMigrationsApiTrait;
 use ProcessWire\WireException;
 
 class RockMigrations
 {
+  use RockMigrationsApiTrait;
 
   /**
    * Create a field of the given type
@@ -125,5 +127,37 @@ class RockMigrations
     }
 
     return $this->fields->delete($field);
+  }
+
+  /**
+   * Delete given fields
+   *
+   * If parameter is a string we use it as selector for $fields->find()
+   *
+   * Usage:
+   * $rm->deleteFields("tags=MyModule");
+   *
+   * @param array|string $fields
+   * @return void
+   */
+  public function deleteFields($fields, $quiet = false)
+  {
+    if (is_string($fields)) $fields = $this->wire->fields->find($fields);
+    foreach ($fields as $field) $this->deleteField($field, $quiet);
+  }
+
+  /**
+   * Get field by name
+   * @param Field|string $name
+   * @param bool $quiet
+   * @return mixed
+   */
+  public function getField($name, $quiet = false)
+  {
+    if (!$name) return false; // for addfieldtotemplate
+    $field = $this->fields->get((string)$name);
+    if ($field) return $field;
+    if (!$quiet) $this->log("Field $name not found");
+    return false;
   }
 }

@@ -5,9 +5,11 @@ namespace RockMigrationsApi;
 use ProcessWire\HookEvent;
 use ProcessWire\Page;
 use ProcessWire\RockMigrations;
+use ProcessWire\RockMigrationsApiTrait;
 
 class Tools extends RockMigrations
 {
+  use RockMigrationsApiTrait;
 
   /**
    * Add scripts to $config->scripts and add cache busting timestamp
@@ -56,6 +58,15 @@ class Tools extends RockMigrations
   }
 
   /**
+   * Get basename of file or object
+   * @return string
+   */
+  public function basename($file)
+  {
+    return basename($this->filePath($file));
+  }
+
+  /**
    * Make all pages having given template be created on top of the list
    *
    * Usage in init():
@@ -70,6 +81,18 @@ class Tools extends RockMigrations
       $page = $event->arguments(0);
       $this->wire->pages->sort($page, 0);
     });
+  }
+
+  /**
+   * Create view file for template (if it does not exist already)
+   * @return void
+   */
+  public function createViewFile($template, $content = "\n")
+  {
+    $template = $this->getTemplate($template);
+    $file = $this->wire->config->paths->templates . $template->name . ".php";
+    if (is_file($content)) $content = file_get_contents($content);
+    if (!is_file($file)) $this->wire->files->filePutContents($file, $content);
   }
 
   /**
