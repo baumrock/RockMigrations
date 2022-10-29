@@ -4,6 +4,7 @@ namespace ProcessWire;
 
 use ProcessWire\HookEvent;
 use ProcessWire\Page;
+use ProcessWire\Paths;
 
 use ProcessWire\RockMigrationsApiTrait;
 
