@@ -30,10 +30,7 @@ $rm->installModule(
   "Less",
   "https://github.com/ryancramerdesign/Less/archive/main.zip"
 );
-$rm->installModule(
-  "AdminStyleRock",
-  "https://github.com/baumrock/AdminStyleRock/archive/refs/heads/main.zip",
-);
+// install adminstylerock as submodule
 
 $rm->installModule(
   "AdminHelperLinks",
