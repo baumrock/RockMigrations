@@ -77,7 +77,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.1.5',
+      'version' => '3.0.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -130,25 +130,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->watch($config->paths->site . "migrate", true);
     $this->watchModules();
 
-    // disabled as of 2022-06-04
-    // it created files that I did not want
-    // no need to fix something that I don't need...
-    // add recorders based on module settings (true=add, false=remove)
-    // $time = date("Y-m-d--H:i:s");
-    // $this->record($config->paths->assets.$this->className."/$time.yaml", [], !$this->saveToProject);
-    // $this->record($config->paths->site."migrate.yaml", [], !$this->saveToMigrate);
-
     // hooks
     $this->addHookAfter("Modules::refresh", $this, "triggerMigrations");
-    // $this->addHookAfter("ProcessPageView::finished", $this, "triggerRecorder");
-
-    // add hooks for recording changes
-    $this->addHookAfter("Fields::saved", $this, "setRecordFlag");
-    $this->addHookAfter("Fields::deleted", $this, "setRecordFlag");
-    $this->addHookAfter("Templates::saved", $this, "setRecordFlag");
-    $this->addHookAfter("Templates::deleted", $this, "setRecordFlag");
-    $this->addHookAfter("Modules::refresh", $this, "setRecordFlag");
-    $this->addHookAfter("Modules::saveConfig", $this, "setRecordFlag");
     $this->addHookBefore("InputfieldForm::render", $this, "showEditInfo");
     $this->addHookBefore("InputfieldForm::render", $this, "showCopyCode");
     $this->addHookBefore("Modules::uninstall", $this, "unwatchBeforeUninstall");
@@ -2704,35 +2687,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Save config to recorder file
-   * @return void
-   */
-  public function setRecordFlag(HookEvent $event)
-  {
-    // remove this part as of 2022-04-04
-    // there is no project.yaml any more
-    // we store migrations with timestamps in /site/assets/RockMigrations
-    // if($event->object instanceof Modules) {
-    //   // module was saved
-    //   $config = $this->wire->config;
-    //   $module = $event->arguments(0);
-    //   if($module != 'RockMigrations') return;
-    //   // set runtime properties to submitted values so that migrations
-    //   // fire immediately on module save
-    //   $this->record($config->paths->site."project.yaml", [],
-    //     !$this->wire->input->post('saveToProject', 'int'));
-    //   $this->record($config->paths->site."migrate.yaml", [],
-    //     !$this->wire->input->post('saveToMigrate', 'int'));
-    // }
-
-    // set the flag to write recorders after pageview::finished
-    $this->record = true;
-
-    // we remove this hook because we have already set the flag
-    $event->removeHook(null);
-  }
-
-  /**
    * Set settings of a template's access tab
    *
    * This will by default only ADD permissions and not remove them!
@@ -2912,76 +2866,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Show edit info on field and template edit screen
-   * @return void
-   */
-  public function showCopyCode(HookEvent $event)
-  {
-    $form = $event->object;
-    if (!$id = $this->wire->input->get('id', 'int')) return;
-
-    if ($event->process == 'ProcessField') {
-      $existing = $form->get('field_label');
-      $item = $this->wire->fields->get($id);
-    } elseif ($event->process == 'ProcessTemplate') {
-      $existing = $form->get('fieldgroup_fields');
-      $item = $this->wire->templates->get($id);
-    } else return;
-
-    // early exit (eg when changing fieldtype)
-    if (!$existing) return;
-
-    $form->add([
-      'name' => '_RockMigrationsCopyInfo',
-      'type' => 'markup',
-      'label' => 'RockMigrations Code',
-      'description' => 'This is the code you can use for your migrations:',
-      'value' => "<pre><code>" . $this->getCode($item) . "</code></pre>",
-      'collapsed' => Inputfield::collapsedYes,
-    ]);
-    $f = $form->get('_RockMigrationsCopyInfo');
-    $form->remove($f);
-    $form->insertBefore($f, $existing);
-  }
-
-  /**
-   * Show edit info on field and template edit screen
-   * @return void
-   */
-  public function showEditInfo(HookEvent $event)
-  {
-    $form = $event->object;
-    if (!$id = $this->wire->input->get('id', 'int')) return;
-
-    if ($event->process == 'ProcessField') {
-      $existing = $form->get('field_label');
-      $item = $this->wire->fields->get($id);
-    } elseif ($event->process == 'ProcessTemplate') {
-      $existing = $form->get('fieldgroup_fields');
-      $item = $this->wire->templates->get($id);
-    } else return;
-
-    // early exit (eg when changing fieldtype)
-    if (!$existing) return;
-
-    $form->add([
-      'name' => '_RockMigrations',
-      'type' => 'markup',
-      'label' => 'RockMigrations',
-      'description' => '<div class="uk-alert uk-alert-danger">
-        ATTENTION - This item might be under control of RockMigrations
-        </div>
-        <div>If you make any changes they might be overwritten
-        by the next migration! Here is the backtrace of the last migration:</div>',
-      'value' => "<small>" . nl2br($item->get('_rockmigrations_log') ?: '') . "</small>",
-    ]);
-    $f = $form->get('_RockMigrations');
-    $f->entityEncodeText = false;
-    $form->remove($f);
-    $form->insertBefore($f, $existing);
-  }
-
-  /**
    * Get sorted WireArray of fields
    * @return WireArray
    */
@@ -3054,21 +2938,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Trigger migrations after Modules::refresh
-   * @return void
-   */
-  public function triggerMigrations(HookEvent $event)
-  {
-    // If flags are present dont attach hooks to Modules::refresh
-    // See the readme for more information!
-    if (defined("DontFireOnRefresh")) return;
-    if ($this->wire->config->DontFireOnRefresh) return;
-    if (!$this->wire->session->noMigrate) $this->migrateAll = true;
-    $this->triggeredByRefresh = true;
-    $this->run();
-  }
-
-  /**
    * This will trigger the recorder if the flag is set
    * @return void
    */
@@ -3083,15 +2952,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function unwatchAll()
   {
     $this->watchlist->removeAll();
-  }
-
-  /**
-   * On every uninstall of a module we unwatch all files to make sure
-   * that migrations are not run immediately after uninstall.
-   */
-  public function unwatchBeforeUninstall(HookEvent $event)
-  {
-    $this->unwatchAll();
   }
 
   /**
@@ -3400,6 +3260,104 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
     return $yaml;
   }
+
+  /** ##### hook methods ##### */
+
+  /**
+   * Show edit info on field and template edit screen
+   * @return void
+   */
+  public function showCopyCode(HookEvent $event)
+  {
+    $form = $event->object;
+    if (!$id = $this->wire->input->get('id', 'int')) return;
+
+    if ($event->process == 'ProcessField') {
+      $existing = $form->get('field_label');
+      $item = $this->wire->fields->get($id);
+    } elseif ($event->process == 'ProcessTemplate') {
+      $existing = $form->get('fieldgroup_fields');
+      $item = $this->wire->templates->get($id);
+    } else return;
+
+    // early exit (eg when changing fieldtype)
+    if (!$existing) return;
+
+    $form->add([
+      'name' => '_RockMigrationsCopyInfo',
+      'type' => 'markup',
+      'label' => 'RockMigrations Code',
+      'description' => 'This is the code you can use for your migrations:',
+      'value' => "<pre><code>" . $this->getCode($item) . "</code></pre>",
+      'collapsed' => Inputfield::collapsedYes,
+    ]);
+    $f = $form->get('_RockMigrationsCopyInfo');
+    $form->remove($f);
+    $form->insertBefore($f, $existing);
+  }
+
+  /**
+   * Show edit info on field and template edit screen
+   * @return void
+   */
+  public function showEditInfo(HookEvent $event)
+  {
+    $form = $event->object;
+    if (!$id = $this->wire->input->get('id', 'int')) return;
+
+    if ($event->process == 'ProcessField') {
+      $existing = $form->get('field_label');
+      $item = $this->wire->fields->get($id);
+    } elseif ($event->process == 'ProcessTemplate') {
+      $existing = $form->get('fieldgroup_fields');
+      $item = $this->wire->templates->get($id);
+    } else return;
+
+    // early exit (eg when changing fieldtype)
+    if (!$existing) return;
+
+    $form->add([
+      'name' => '_RockMigrations',
+      'type' => 'markup',
+      'label' => 'RockMigrations',
+      'description' => '<div class="uk-alert uk-alert-danger">
+        ATTENTION - This item might be under control of RockMigrations
+        </div>
+        <div>If you make any changes they might be overwritten
+        by the next migration! Here is the backtrace of the last migration:</div>',
+      'value' => "<small>" . nl2br($item->get('_rockmigrations_log') ?: '') . "</small>",
+    ]);
+    $f = $form->get('_RockMigrations');
+    $f->entityEncodeText = false;
+    $form->remove($f);
+    $form->insertBefore($f, $existing);
+  }
+
+  /**
+   * Trigger migrations after Modules::refresh
+   * @return void
+   */
+  public function triggerMigrations(HookEvent $event)
+  {
+    // If flags are present dont attach hooks to Modules::refresh
+    // See the readme for more information!
+    if (defined("DontFireOnRefresh")) return;
+    if ($this->wire->config->DontFireOnRefresh) return;
+    if (!$this->wire->session->noMigrate) $this->migrateAll = true;
+    $this->triggeredByRefresh = true;
+    $this->run();
+  }
+
+  /**
+   * On every uninstall of a module we unwatch all files to make sure
+   * that migrations are not run immediately after uninstall.
+   */
+  public function unwatchBeforeUninstall(HookEvent $event)
+  {
+    $this->unwatchAll();
+  }
+
+  /** ##### module config and install ##### */
 
   /**
    * Config inputfields
