@@ -1218,7 +1218,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->wire->modules->setFlag((string)$name, Modules::flagsDisabled, true);
   }
 
-  public function doMigrate($file)
+  protected function doMigrate($file)
   {
     if ($this->migrateAll) return true;
     if ($file instanceof RockMatrixBlock) $file = $file->filePath();
@@ -1988,7 +1988,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * @return void
    */
-  public function loadFilesOnDemand()
+  protected function loadFilesOnDemand()
   {
     if (!$this->wire->config->filesOnDemand) return;
     $hook = function (HookEvent $event) {
@@ -2666,7 +2666,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           $this->setFieldData($c[0], $c[1], $c[2]);
         }
       }
-
 
       // add support for setting options of a select field
       // this will remove non-existing options from the field!
