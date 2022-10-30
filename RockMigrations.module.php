@@ -34,6 +34,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /** @var WireData */
   public $conf;
 
+  /** @var WireData */
+  public $fieldSuccessMessages;
+
   /**
    * Timestamp of last run migration
    * @var int
@@ -100,11 +103,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // for development
     // $this->watch($this, false);
 
-    $this->conf = new WireData();
+    $this->conf = $this->wire(new WireData());
     $this->conf->setArray($this->getArray()); // get modules config
     if (is_array($config->rockmigrations)) {
       $this->conf->setArray($config->rockmigrations); // get config from file
     }
+
+    // add hooks and session variables for inputfield success messages
+    $this->addSuccessMessageFeature();
 
     // this creates folders that are necessary for PW and that might have
     // been deleted on deploy
@@ -634,6 +640,34 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $user->of(false);
     $user->addRole($role);
     $user->save();
+  }
+
+  /**
+   * Add the possibility to add success messages on inputfields
+   */
+  private function addSuccessMessageFeature()
+  {
+    // setup and load the session variable that stores success messages
+    $this->fieldSuccessMessages = $this->wire(new WireData());
+    $this->fieldSuccessMessages->setArray(
+      $this->wire->session->rmFieldSuccessMessages ?: []
+    );
+
+    // add hook that renders success messages on the inputfields
+    // rendering the message will also remove the message from the storage
+    $this->addHookBefore("Inputfield::render", function ($event) {
+      $field = $event->object;
+      $messages = $this->fieldSuccessMessages;
+      foreach ($messages as $name => $msg) {
+        if ($field->name !== $name) continue;
+        $field->prependMarkup .= "<div class='uk-alert-success' uk-alert>
+          <a class='uk-alert-close' uk-close></a>
+          $msg
+        </div>";
+        $messages->remove($name);
+        $this->wire->session->rmFieldSuccessMessages = $messages->getArray();
+      }
+    });
   }
 
   /**
@@ -1274,6 +1308,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $page = $this->getPage($page);
     foreach ($this->languages ?: [] as $lang) $page->set("status$lang", 1);
     $page->save();
+  }
+
+  /**
+   * Show a success message on an inputfield
+   */
+  public function fieldSuccess($field, $msg)
+  {
+    if ($field instanceof Field) {
+      if (!$field->name) throw new WireException("Field must have a name");
+      $field = $field->name;
+    }
+    if (!is_string($field)) throw new WireException("Must be string");
+    $messages = $this->rm()->fieldSuccessMessages->set($field, $msg);
+    $this->wire->session->rmFieldSuccessMessages = $messages->getArray();
   }
 
   /**
