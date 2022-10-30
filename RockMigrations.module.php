@@ -6,7 +6,6 @@ use DirectoryIterator;
 use RockMatrix\Block as RockMatrixBlock;
 use RockMigrations\Deployment;
 use RockMigrations\MagicPages;
-use RockMigrations\RecorderFile;
 use RockMigrations\WatchFile;
 use RockMigrations\WireArray;
 use RockMigrations\WireArray as WireArrayRM;
@@ -52,15 +51,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /** @var string */
   public $path;
 
-  /**
-   * If true we will write data to recorder files
-   * @var bool
-   */
-  public $record = false;
-
-  /** @var WireArrayRM */
-  private $recorders;
-
   /** @var WireArrayRM */
   private $watchlist;
 
@@ -88,7 +78,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->path = $this->wire->config->paths($this);
     $this->wire->classLoader->addNamespace("RockMigrations", __DIR__ . "/classes");
 
-    $this->recorders = $this->wire(new WireArrayRM());
     $this->watchlist = $this->wire(new WireArrayRM());
     $this->lastrun = (int)$this->wire->cache->get(self::cachename);
   }
@@ -123,26 +112,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->watch($config->paths->site . "migrate", true);
     $this->watchModules();
 
-    // disabled as of 2022-06-04
-    // it created files that I did not want
-    // no need to fix something that I don't need...
-    // add recorders based on module settings (true=add, false=remove)
-    // $time = date("Y-m-d--H:i:s");
-    // $this->record($config->paths->assets.$this->className."/$time.yaml", [], !$this->saveToProject);
-    // $this->record($config->paths->site."migrate.yaml", [], !$this->saveToMigrate);
-
     // hooks
     $this->addHookAfter("Modules::refresh", $this, "triggerMigrations");
-    // $this->addHookAfter("ProcessPageView::finished", $this, "triggerRecorder");
-    $this->addHookBefore("Field::getInputfield", $this, "addSourceCodeButton");
-
-    // add hooks for recording changes
-    $this->addHookAfter("Fields::saved", $this, "setRecordFlag");
-    $this->addHookAfter("Fields::deleted", $this, "setRecordFlag");
-    $this->addHookAfter("Templates::saved", $this, "setRecordFlag");
-    $this->addHookAfter("Templates::deleted", $this, "setRecordFlag");
-    $this->addHookAfter("Modules::refresh", $this, "setRecordFlag");
-    $this->addHookAfter("Modules::saveConfig", $this, "setRecordFlag");
     $this->addHookBefore("InputfieldForm::render", $this, "showEditInfo");
     $this->addHookBefore("InputfieldForm::render", $this, "showCopyCode");
     $this->addHookBefore("Modules::uninstall", $this, "unwatchBeforeUninstall");
@@ -195,18 +166,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $newItem = $wrapper->children()->last();
     $wrapper->insertAfter($newItem, $existingItem);
     return $newItem;
-  }
-
-  /**
-   * Add sourcecode button to ckeditor fields for superuser
-   * @return void
-   */
-  public function addSourceCodeButton(HookEvent $event)
-  {
-    if (!$this->wire->user->isSuperuser()) return;
-    $field = $event->object;
-    if (!$field->toolbar) return;
-    $field->toolbar .= ",Source";
   }
 
   /**
@@ -2491,36 +2450,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Record settings to file
-   *
-   * Usage:
-   * $rm->record("/path/to/file.yaml");
-   *
-   * $rm->record("/path/to/file.json", ['type'=>'json']);
-   *
-   * @param string $path
-   * @param array $options
-   * @return void
-   */
-  public function record($path, $options = [], $remove = false)
-  {
-    if ($remove) {
-      $this->recorders->remove($this->recorders->get("path=$path"));
-      return;
-    }
-    require_once($this->path . "RecorderFile.php");
-    $data = $this->wire(new RecorderFile());
-    /** @var RecorderFile $data */
-    $data->setArray([
-      'path' => $path,
-      'type' => 'yaml', // other options: php, json
-      'system' => false, // dump system fields and templates?
-    ]);
-    $data->setArray($options);
-    $this->recorders->add($data);
-  }
-
-  /**
    * Refresh modules
    */
   public function refresh()
@@ -3049,35 +2978,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Save config to recorder file
-   * @return void
-   */
-  public function setRecordFlag(HookEvent $event)
-  {
-    // remove this part as of 2022-04-04
-    // there is no project.yaml any more
-    // we store migrations with timestamps in /site/assets/RockMigrations
-    // if($event->object instanceof Modules) {
-    //   // module was saved
-    //   $config = $this->wire->config;
-    //   $module = $event->arguments(0);
-    //   if($module != 'RockMigrations') return;
-    //   // set runtime properties to submitted values so that migrations
-    //   // fire immediately on module save
-    //   $this->record($config->paths->site."project.yaml", [],
-    //     !$this->wire->input->post('saveToProject', 'int'));
-    //   $this->record($config->paths->site."migrate.yaml", [],
-    //     !$this->wire->input->post('saveToMigrate', 'int'));
-    // }
-
-    // set the flag to write recorders after pageview::finished
-    $this->record = true;
-
-    // we remove this hook because we have already set the flag
-    $event->removeHook(null);
-  }
-
-  /**
    * Set settings of a template's access tab
    *
    * This will by default only ADD permissions and not remove them!
@@ -3414,15 +3314,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * This will trigger the recorder if the flag is set
-   * @return void
-   */
-  public function triggerRecorder(HookEvent $event)
-  {
-    if ($this->record) $this->writeRecorderFiles();
-  }
-
-  /**
    * Unwatch all files
    */
   public function unwatchAll()
@@ -3447,35 +3338,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     if ($timestamp === null) $timestamp = time();
     $this->wire->cache->save(self::cachename, $timestamp, WireCache::expireNever);
-  }
-
-  public function writeRecorderFiles()
-  {
-    $this->log('Running recorders...');
-    foreach ($this->recorders as $recorder) {
-      $path = $recorder->path;
-      $type = strtolower($recorder->type);
-      $this->log("Writing config to $path");
-
-      $arr = [
-        'fields' => [],
-        'templates' => [],
-      ];
-      foreach ($this->sort($this->wire->fields) as $field) {
-        if ($field->flags) continue;
-        $arr['fields'][$field->name] = $field->getExportData();
-        unset($arr['fields'][$field->name]['id']);
-      }
-      foreach ($this->sort($this->wire->templates) as $template) {
-        if ($template->flags) continue;
-        $arr['templates'][$template->name] = $template->getExportData();
-        unset($arr['templates'][$template->name]['id']);
-      }
-
-      if ($type == 'yaml') $this->yaml($path, $arr);
-      if ($type == 'json') $this->json($path, $arr);
-    }
-    $this->updateLastrun();
   }
 
   /**
@@ -3790,26 +3652,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $this->syncSnippets ? 'checked' : ''
     );
 
-    // disabled as of 2022-06-04
-    // this will create lots of useless files
-    // maybe better create one project.yaml that can then be shown via git?
-    // $inputfields->add([
-    //   'name' => 'saveToProject',
-    //   'type' => 'toggle',
-    //   'label' => 'Save migration data to /site/assets/RockMigrations/[timestamp].yaml?',
-    //   'value' => !!$this->saveToProject,
-    //   'columnWidth' => 100,
-    //   'description' => 'These files will NOT be watched for changes! Think of them as a read-only dumps of your project\'s config at the given time.',
-    // ]);
-    // $inputfields->add([
-    //   'name' => 'saveToMigrate',
-    //   'type' => 'toggle',
-    //   'label' => 'Save migration data to /site/migrate.yaml?',
-    //   'value' => !!$this->saveToMigrate,
-    //   'columnWidth' => 50,
-    //   'description' => 'This file will automatically be watched for changes! That means you can record changes and then edit migrate.yaml in your IDE and the changes will automatically be applied on the next reload.',
-    // ]);
-
     return $inputfields;
   }
 
@@ -3833,7 +3675,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return [
       'Version' => $this->getModuleInfo()['version'],
       'lastrun' => $lastrun,
-      'recorders' => $this->recorders,
       'watchlist' => $this->watchlist,
     ];
   }
