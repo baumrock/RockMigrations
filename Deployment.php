@@ -313,7 +313,7 @@ class Deployment extends WireData
 
   /**
    * Push folder to shared folder and create symlink
-   * 
+   *
    * Usage:
    * $deploy->push('/site/assets/files/123');
    */
@@ -324,7 +324,7 @@ class Deployment extends WireData
 
   /**
    * Get or set robots flag
-   * 
+   *
    * TRUE means that the deny-all robots.txt will be written to root
    *
    * By default it will be FALSE for master and main branch and TRUE for
@@ -345,15 +345,15 @@ class Deployment extends WireData
 
   /**
    * Add robots.txt to deny all robot requests
-   * 
+   *
    * This method is the same as robots() but the name is more verbose so the
    * deployment script gets better readable.
-   * 
+   *
    * Usage:
    * $deploy->robotsDenyAll(true); // overwrite robots.txt (deny all)
-   * 
+   *
    * $deploy->robotsDenyAll(false); // dont overwrite robots.txt
-   * 
+   *
    * deny robot requests of the root folder name is NOT yoursite.com
    * that means if the root folder name is staging.yoursite.com all robot
    * requests will be denied because on deploy RM will copy the deny-all
@@ -420,6 +420,8 @@ class Deployment extends WireData
    * Shared assets will be symlinked: releases folder --> shared folder
    *
    * Usage:
+   * $deploy->share("/your/file.txt");
+   *
    * $deploy->share([
    *   // symlink the foo folder
    *   '/foo',
@@ -431,6 +433,7 @@ class Deployment extends WireData
    */
   public function share($files = null, $reset = false)
   {
+    if (is_string($files)) $files = [$files];
     if (is_array($files)) {
       if ($reset) $this->share = [];
       $this->share = array_merge($files, $this->share);
