@@ -2619,6 +2619,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $field = $this->getField($field);
     if (!$field) return; // logging in getField()
 
+    // Support shortcut syntax
+    // $rm->setFieldData('title', 'textLanguage');
+    if (is_string($data)) $data = ['type' => $data];
+
     // check if the field type has changed
     if (array_key_exists('type', $data)) {
       $type = $this->getFieldtype($data['type']);
