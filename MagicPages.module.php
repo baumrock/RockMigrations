@@ -21,7 +21,7 @@ class MagicPages extends WireData implements Module
   {
     return [
       'title' => 'MagicPages',
-      'version' => '1.0.6',
+      'version' => '1.0.8',
       'summary' => 'Autoload module to support MagicPages',
       'autoload' => true,
       'singular' => true,
@@ -65,34 +65,34 @@ class MagicPages extends WireData implements Module
 
   /**
    * Add magic methods to this page object
-   * @param Page $obj
+   * @param Page $magicPage
    * @return void
    */
-  public function addMagicMethods($obj)
+  public function addMagicMethods($magicPage)
   {
 
-    if (method_exists($obj, "editForm")) {
-      $this->wire->addHookAfter("ProcessPageEdit::buildForm", function ($event) use ($obj) {
+    if (method_exists($magicPage, "editForm")) {
+      $this->wire->addHookAfter("ProcessPageEdit::buildForm", function ($event) use ($magicPage) {
         $page = $event->object->getPage();
-        if ($obj->className !== $page->className) return;
+        if ($page->className !== $magicPage->className) return;
         $form = $event->return;
         $page->editForm($form, $page);
       });
     }
 
-    if (method_exists($obj, "editFormContent")) {
-      $this->wire->addHookAfter("ProcessPageEdit::buildFormContent", function ($event) use ($obj) {
+    if (method_exists($magicPage, "editFormContent")) {
+      $this->wire->addHookAfter("ProcessPageEdit::buildFormContent", function ($event) use ($magicPage) {
         $page = $event->object->getPage();
-        if ($obj->className !== $page->className) return;
+        if ($page->className !== $magicPage->className) return;
         $form = $event->return;
         $page->editFormContent($form, $page);
       });
     }
 
-    if (method_exists($obj, "editFormSettings")) {
-      $this->wire->addHookAfter("ProcessPageEdit::buildFormSettings", function ($event) use ($obj) {
+    if (method_exists($magicPage, "editFormSettings")) {
+      $this->wire->addHookAfter("ProcessPageEdit::buildFormSettings", function ($event) use ($magicPage) {
         $page = $event->object->getPage();
-        if ($obj->className !== $page->className) return;
+        if ($page->className !== $magicPage->className) return;
         $form = $event->return;
         $page->editFormSettings($form, $page);
       });
@@ -100,56 +100,66 @@ class MagicPages extends WireData implements Module
 
     // execute onSaved on every save
     // this will also fire when id=0
-    if (method_exists($obj, "onSaved")) {
-      $this->wire->addHookAfter("Pages::saved", function ($event) use ($obj) {
+    if (method_exists($magicPage, "onSaved")) {
+      $this->wire->addHookAfter("Pages::saved", function ($event) use ($magicPage) {
         $page = $event->arguments(0);
-        if ($obj->className !== $page->className) return;
+        if ($page->className !== $magicPage->className) return;
         $page->onSaved();
       });
     }
 
     // execute onSaveReady on every save
     // this will also fire when id=0
-    if (method_exists($obj, "onSaveReady")) {
-      $this->wire->addHookAfter("Pages::saveReady", function ($event) use ($obj) {
+    if (method_exists($magicPage, "onSaveReady")) {
+      $this->wire->addHookAfter("Pages::saveReady", function ($event) use ($magicPage) {
         $page = $event->arguments(0);
-        if ($obj->className !== $page->className) return;
+        if ($page->className !== $magicPage->className) return;
         $page->onSaveReady();
       });
     }
 
     // execute onCreate on saveReady when id=0
-    if (method_exists($obj, "onCreate")) {
-      $this->wire->addHookAfter("Pages::saveReady", function ($event) use ($obj) {
+    if (method_exists($magicPage, "onCreate")) {
+      $this->wire->addHookAfter("Pages::saveReady", function ($event) use ($magicPage) {
         $page = $event->arguments(0);
         if ($page->id) return;
-        if ($obj->className !== $page->className) return;
+        if ($page->className !== $magicPage->className) return;
         $page->onCreate();
       });
     }
 
     // execute onAdded on saved when id=0
-    if (method_exists($obj, "onAdded")) {
-      $this->wire->addHookAfter("Pages::added", function ($event) use ($obj) {
+    if (method_exists($magicPage, "onAdded")) {
+      $this->wire->addHookAfter("Pages::added", function ($event) use ($magicPage) {
         $page = $event->arguments(0);
-        if ($obj->className !== $page->className) return;
+        if ($page->className !== $magicPage->className) return;
         $page->onAdded();
       });
     }
 
     // execute onTrashed hook
-    if (method_exists($obj, "onTrashed")) {
-      $this->wire->addHookAfter("Pages::trashed", function ($event) use ($obj) {
+    if (method_exists($magicPage, "onTrashed")) {
+      $this->wire->addHookAfter("Pages::trashed", function ($event) use ($magicPage) {
         $page = $event->arguments(0);
-        if ($obj->className !== $page->className) return;
+        if ($page->className !== $magicPage->className) return;
         $page->onTrashed();
+      });
+    }
+
+    // form processing
+    if (method_exists($magicPage, "onProcessInput")) {
+      $this->wire->addHookAfter("InputfieldForm::processInput", function ($event) use ($magicPage) {
+        if ($event->process != "ProcessPageEdit") return;
+        $page = $event->process->getPage();
+        if ($page->className !== $magicPage->className) return;
+        $page->onProcessInput($event->return, $event->arguments(0));
       });
     }
   }
 
   /**
    * Add assets having the same filename as the magic page
-   * 
+   *
    * FooPage.php would load FooPage.css/.js on page edit screen
    */
   public function addPageAssets(HookEvent $event): void
