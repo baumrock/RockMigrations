@@ -1,6 +1,6 @@
 <style>
   textarea.inputarea {
-    padding: 1px !important;
+    padding: 0 !important;
     border: 0 !important;
   }
 
