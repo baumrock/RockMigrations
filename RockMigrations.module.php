@@ -61,7 +61,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.2.0',
+      'version' => '2.2.1',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -3628,6 +3628,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         . 'Note that settings in config.php have precedence over GUI settings!',
     ]);
 
+    $inputfields->add([
+      'type' => 'checkbox',
+      'name' => 'syncSnippets',
+      'label' => 'Sync VSCode Snippets to PW root',
+      'description' => "If this option is enabled the module will copy the vscode snippets file to the PW root directory. If you are using VSCode I highly recommend using this option. See readme for details.",
+      'collapsed' => Inputfield::collapsedBlank,
+    ]);
+    $inputfields->children()->last()->attr(
+      'checked',
+      $this->syncSnippets ? 'checked' : ''
+    );
+
     $this->profileExecute();
     $f = new InputfieldSelect();
     $f->label = "Execute one of the existing profile migrations";
@@ -3646,21 +3658,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'label' => 'Console',
       'icon' => 'code',
       'description' => "",
-      'value' => $this->wire->files->render(__DIR__ . "/profileeditor.php"),
+      'value' => $this->wire->files->render(__DIR__ . "/profileeditor.php", [
+        'code' => $this->getConsoleCode(),
+      ]),
     ]);
-
-    $inputfields->add([
-      'type' => 'checkbox',
-      'name' => 'syncSnippets',
-      'label' => 'Sync VSCode Snippets to PW root',
-      'description' => "If this option is enabled the module will copy the vscode snippets file to the PW root directory. If you are using VSCode I highly recommend using this option. See readme for details.",
-    ]);
-    $inputfields->children()->last()->attr(
-      'checked',
-      $this->syncSnippets ? 'checked' : ''
-    );
 
     return $inputfields;
+  }
+
+  private function getConsoleCode()
+  {
+    $code = $this->wire->pages->get(1)->meta('rockmigrations-consolecode');
+    if ($code) return $code;
+    return $this->wire->sanitizer->entities(
+      $this->wire->files->fileGetContents(__DIR__ . "/profiles/default.php")
+    );
   }
 
   /**
@@ -3672,12 +3684,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$this->wire->user->isSuperuser()) {
       throw new WireException("Console only allowed for superusers");
     }
+    $this->wire->pages->get(1)->meta('rockmigrations-consolecode', $code);
     if (!$this->wire->input->post->runcode) return;
 
     // write code to temp file that we can execute
     $file = $this->wire->config->paths->cache . "rmconsole.php";
     $this->wire->files->filePutContents($file, $code);
-    $this->wire->files->include($file, ['options' => []]);
+    $this->wire->files->include($file, ['code' => $code]);
     $this->wire->files->unlink($file);
   }
 
