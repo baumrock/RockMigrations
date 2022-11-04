@@ -3,7 +3,7 @@
 namespace ProcessWire;
 
 /** @var RockMigrations $rm */
-$rm = $this->wire->modules->get('RockMigrations');
+$rm = $modules->get('RockMigrations');
 
 // install tracydebugger
 // no settings here because I prefer to set them in config-local.php
