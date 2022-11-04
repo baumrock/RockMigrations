@@ -6,7 +6,7 @@ namespace ProcessWire;
 $rm = $this->wire->modules->get('RockMigrations');
 
 // install tracydebugger
-// I prefer to set settings in config-local.php
+// no settings here because I prefer to set them in config-local.php
 $rm->installModule(
   "TracyDebugger",
   "https://github.com/adrianbj/TracyDebugger/archive/refs/heads/master.zip"

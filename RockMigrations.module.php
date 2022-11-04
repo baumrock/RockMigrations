@@ -61,7 +61,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.1.0',
+      'version' => '2.2.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -3613,7 +3613,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function getModuleConfigInputfields($inputfields)
   {
-
     $video = new InputfieldMarkup();
     $video->label = 'processwire-rocks.com';
     $video->value = '<iframe width="560" height="315" src="https://www.youtube.com/embed/eBOB8dZvRN4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
@@ -3638,7 +3637,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
     $path = $this->wire->config->paths->assets . "RockMigrations/profiles";
     $f->notes = "You can place your own profiles in $path";
+    $f->collapsed = Inputfield::collapsedYes;
     $inputfields->add($f);
+
+    $this->console(); // run console code
+    $inputfields->add([
+      'type' => 'markup',
+      'label' => 'Console',
+      'icon' => 'code',
+      'description' => "",
+      'value' => $this->wire->files->render(__DIR__ . "/profileeditor.php"),
+    ]);
 
     $inputfields->add([
       'type' => 'checkbox',
@@ -3652,6 +3661,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     );
 
     return $inputfields;
+  }
+
+  /**
+   * Execute console code
+   */
+  private function console()
+  {
+    if (!$code = $this->wire->input->post->code) return;
+    if (!$this->wire->user->isSuperuser()) {
+      throw new WireException("Console only allowed for superusers");
+    }
+    if (!$this->wire->input->post->runcode) return;
+
+    // write code to temp file that we can execute
+    $file = $this->wire->config->paths->cache . "rmconsole.php";
+    $this->wire->files->filePutContents($file, $code);
+    $this->wire->files->include($file, ['options' => []]);
+    $this->wire->files->unlink($file);
   }
 
   public function ___install(): void
