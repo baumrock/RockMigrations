@@ -35,5 +35,11 @@ echo $box->render();
     editor.getModel().onDidChangeContent((e) => {
       area.value = editor.getValue();
     });
+
+    // auto-resize editor
+    let ro = new ResizeObserver(() => {
+      editor.layout()
+    });
+    ro.observe(document.querySelector("html"));
   });
 </script>
