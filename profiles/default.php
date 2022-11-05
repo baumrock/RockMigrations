@@ -43,7 +43,10 @@ $rm->installModule(
 $rm->installModule(
   "RockFrontend",
   [
-    'features' => ['postCSS'],
+    'features' => [
+      'postCSS',
+      'minify',
+    ],
     'migrations' => [
       'favicon',
       'ogimage',
