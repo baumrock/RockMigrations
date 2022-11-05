@@ -4,6 +4,9 @@ namespace ProcessWire;
 
 /** @var RockMigrations $rm */
 $rm = $modules->get('RockMigrations');
+$rm->setModuleConfig("RockMigrations", [
+  "syncSnippets" => true,
+]);
 
 // install tracydebugger
 // no settings here because I prefer to set them in config-local.php
@@ -50,6 +53,7 @@ $rm->installModule(
     'migrations' => [
       'favicon',
       'ogimage',
+      'footerlinks',
     ],
   ],
   "https://github.com/baumrock/RockFrontend/archive/refs/heads/main.zip"
