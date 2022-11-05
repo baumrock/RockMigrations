@@ -30,7 +30,27 @@ $rm->installModule(
   "Less",
   "https://github.com/ryancramerdesign/Less/archive/main.zip"
 );
-// install adminstylerock as submodule
+
+$rm->installModule(
+  "AdminStyleRock",
+  [
+    // 'rockprimary' => '#00ff00',
+    // 'logo' => 'site/templates/img/yourlogo.svg',
+  ],
+  "https://github.com/baumrock/AdminStyleRock/archive/refs/heads/main.zip"
+);
+
+$rm->installModule(
+  "RockFrontend",
+  [
+    'features' => ['postCSS'],
+    'migrations' => [
+      'favicon',
+      'ogimage',
+    ],
+  ],
+  "https://github.com/baumrock/RockFrontend/archive/refs/heads/main.zip"
+);
 
 $rm->installModule(
   "AdminHelperLinks",
