@@ -34,7 +34,11 @@
       "]);",
       "// install german language pack for the default language",
       "// this will install language support, download the ZIP and install it",
-      "\\$rm->setLanguageTranslations('DE');"
+      "\\$rm->setLanguageTranslations('DE');",
+      "\\$rm->installModule('LanguageSupportFields');",
+      "\\$rm->installModule('LanguageSupportPageNames');",
+      "\\$rm->installModule('LanguageTabs');",
+      "\\$rm->setFieldData('title', ['type' => 'textLanguage']);"
     ],
     "description": "Set some custom PW defaults"
   },
