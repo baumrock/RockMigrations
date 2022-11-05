@@ -3690,6 +3690,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // write code to temp file that we can execute
     $file = $this->wire->config->paths->cache . "rmconsole.php";
     $this->wire->files->filePutContents($file, $code);
+    $this->refresh();
     $this->wire->files->include($file, ['code' => $code]);
     $this->wire->files->unlink($file);
   }
