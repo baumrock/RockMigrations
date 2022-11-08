@@ -3179,9 +3179,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'name' => '_RockMigrationsCopyInfo',
       'type' => 'markup',
       'label' => 'RockMigrations Code',
-      'description' => 'This is the code you can use for your migrations:',
+      'description' => 'This is the code you can use for your migrations. Use it in $rockmigrations->migrate():',
       'value' => "<pre><code>" . $this->getCode($item) . "</code></pre>",
       'collapsed' => Inputfield::collapsedYes,
+      'icon' => 'code',
     ]);
     $f = $form->get('_RockMigrationsCopyInfo');
     $form->remove($f);
@@ -3208,16 +3209,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // early exit (eg when changing fieldtype)
     if (!$existing) return;
 
+    $log = $item->get('_rockmigrations_log') ?: '';
+    if ($log) $log = "<small>" . nl2br($log) . "</small>";
     $form->add([
       'name' => '_RockMigrations',
       'type' => 'markup',
       'label' => 'RockMigrations',
-      'description' => '<div class="uk-alert uk-alert-danger">
-        ATTENTION - This item might be under control of RockMigrations
-        </div>
-        <div>If you make any changes they might be overwritten
-        by the next migration! Here is the backtrace of the last migration:</div>',
-      'value' => "<small>" . nl2br($item->get('_rockmigrations_log') ?: '') . "</small>",
+      'value' => '<div class="uk-alert">
+        ATTENTION - RockMigrations is installed on this system. You can apply
+        changes in the GUI as usual but if any settings are set via code in a
+        migration file they will be overwritten on the next migration cycle!
+        </div>' . $log,
     ]);
     $f = $form->get('_RockMigrations');
     $f->entityEncodeText = false;

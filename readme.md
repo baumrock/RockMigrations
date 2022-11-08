@@ -20,9 +20,9 @@ Check out the [WIKI for a Quickstart and Docs](https://github.com/baumrock/RockM
 
 ## Limitations
 
-RockMigrations might not support all external fields, especially not ProFields like RepeaterMatrix. Adding support has no priority for me because I'm not using it. If you need support for it please provide a PR or if you are interested in sponsoring that feature please contact me via PM in the forum.
+RockMigrations might not support all external fields, especially not ProFields like RepeaterMatrix. Adding support has no priority for me because I'm not using them. If you need support for any field that is currently not supported please provide a PR or if you are interested in sponsoring that feature please contact me via PM in the forum.
 
-But not to forget: You can still use the regular PW API to create fields and manipulate all kinds of things. It might just not be as convenient as the RockMigrations API.
+But not to forget: You can still use the regular PW API to create fields and manipulate all kinds of things the way you would do it if RockMigrations did not exist. It might just not be as convenient as when using the RockMigrations API.
 
 ## Where do I find out all those field and template properties?
 
