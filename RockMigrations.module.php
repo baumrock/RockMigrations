@@ -61,7 +61,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.2.3',
+      'version' => '2.2.4',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -2652,7 +2652,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           $index++;
         }
 
-        if($key === 'repeaterFields') $data[$key] = $addFields;
+        if ($key === 'repeaterFields') $data[$key] = $addFields;
 
         if ($tpl) {
           // add fields to repeater template
