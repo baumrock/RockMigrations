@@ -2627,43 +2627,41 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $data[$key] = $this->templates->get($val)->id;
       }
 
-      // support repeater field array
-      if ($key === "repeaterFields") {
+      // support key 'repeaterFields' => sequential fields array with fieldnames only
+      // support key 'repeaterFields' => assoc fields array with fieldname and contextual fielddata
+      // also support separate key 'fieldContexts' with assoc contextual fielddata
+      if ($key === "repeaterFields" || $key === "fieldContexts") {
         $fields = $data[$key];
+        $hasFielddata = count(array_filter(array_keys($fields), 'is_string')) > 0;
         $addFields = [];
+        $contexts = [];
         $index = 0;
-        foreach ($fields as $i => $_field) {
-          // field without field context info
-          $fieldname = $_field;
+        $tpl = $field->type->getRepeaterTemplate($field);
+
+        foreach ($fields as $key => $value) {
+          $fieldname = ($hasFielddata) ? $key : $value;
+          $fielddata = ($hasFielddata) ? $value : false;
           $addFields[$index] = $this->fields->get((string)$fieldname)->id;
+          if ($fielddata) {
+            $contexts[] = [
+              $fieldname,
+              $fielddata,
+              $tpl,
+            ];
+          }
           $index++;
         }
-        $data[$key] = $addFields;
 
-        // add fields to repeater template
-        if ($tpl = $field->type->getRepeaterTemplate($field)) {
+        if($key === 'repeaterFields') $data[$key] = $addFields;
+
+        if ($tpl) {
+          // add fields to repeater template
           $this->addFieldsToTemplate($addFields, $tpl);
-        }
-      }
 
-      // support repeater field contexts
-      if ($key === "fieldContexts") {
-        $contexts = [];
-        $fields = $data[$key];
-        foreach ($fields as $i => $_field) {
-          // we've got a field with field context info here
-          $fieldname = $i;
-          $fielddata = $_field;
-          $contexts[] = [
-            $fieldname,
-            $fielddata,
-            $field->type->getRepeaterTemplate($field),
-          ];
-        }
-
-        // set field contexts now that the fields are present
-        foreach ($contexts as $c) {
-          $this->setFieldData($c[0], $c[1], $c[2]);
+          // set field contexts now that the fields are present
+          foreach ($contexts as $c) {
+            $this->setFieldData($c[0], $c[1], $c[2]);
+          }
         }
       }
 
