@@ -3,6 +3,7 @@
 namespace ProcessWire;
 
 use DirectoryIterator;
+use ProcessWire\WireArray as ProcessWireWireArray;
 use RockMatrix\Block as RockMatrixBlock;
 use RockMigrations\Deployment;
 use RockMigrations\MagicPages;
@@ -61,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.2.4',
+      'version' => '2.3.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -98,6 +99,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $this->conf->setArray($config->rockmigrations); // get config from file
     }
 
+    // load tweaks
+    $this->loadTweaks();
+
     // add hooks and session variables for inputfield success messages
     $this->addSuccessMessageFeature();
 
@@ -123,6 +127,37 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->syncSnippets();
   }
 
+  private function loadTweaks()
+  {
+    $path = __DIR__ . "/tweaks";
+    $options = ['extensions' => ['php']];
+    $tweaks = $this->wire(new ProcessWireWireArray());
+    foreach ($this->wire->files->find($path, $options) as $file) {
+      $tweak = $this->loadTweak($file);
+      $tweaks->add($tweak);
+      if ($tweak->enabled) $tweak->init();
+    }
+    $this->tweaks = $tweaks;
+  }
+
+  private function loadTweak($file)
+  {
+    require_once __DIR__ . "/Tweak.php";
+    require_once $file;
+    $base = pathinfo($file, PATHINFO_FILENAME);
+    $class = "\RockMigrations\Tweaks\\$base";
+    try {
+      $tweak = new $class();
+      $tweak->name = $base;
+      $tweak->enabled = in_array($base, (array)$this->enabledTweaks);
+      return $tweak;
+    } catch (\Throwable $th) {
+      if ($this->wire->user->isSuperuser()) {
+        throw new WireException($th->getMessage());
+      }
+    }
+  }
+
   public function ready()
   {
     $this->forceMigrate();
@@ -131,6 +166,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // other actions
     $this->migrateWatchfiles();
     $this->changeFooter();
+
+    // trigger ready() of tweaks
+    foreach ($this->tweaks->find("enabled=1") as $tweak) $tweak->ready();
 
     // load RockMigrations.js on backend
     if ($this->wire->page->template == 'admin') {
@@ -3627,6 +3665,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         . '];</pre>'
         . 'Note that settings in config.php have precedence over GUI settings!',
     ]);
+
+    $f = $this->wire->modules->get('InputfieldCheckboxes');
+    $f->name = 'enabledTweaks';
+    $f->label = "Tweaks";
+    foreach ($this->tweaks as $tweak) {
+      $f->addOption($tweak->name, implode(' - ', array_filter([$tweak->name, $tweak->description])));
+    }
+    $f->value = (array)$this->enabledTweaks;
+    $inputfields->add($f);
 
     $inputfields->add([
       'type' => 'checkbox',
