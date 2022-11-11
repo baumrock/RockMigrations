@@ -8,8 +8,9 @@ class QuickAdd extends Tweak
 {
   public $description = "Skip template selection on page add if only a single template is allowed.";
 
-  public function init()
+  public function ready()
   {
+    if ($this->wire->page->template != 'admin') return;
     $this->wire->addHookBefore("ProcessPageAdd::buildForm", $this, "skipAdd");
   }
 
