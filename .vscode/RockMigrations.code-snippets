@@ -78,7 +78,7 @@
       "$1 => [",
       "  'type' => 'page',",
       "  'label' => '$2',",
-      "  'derefAsPage' => ${4:FieldtypePage::derefAsPageArray},",
+      "  'derefAsPage' => ${4:FieldtypePage::derefAsPageOrFalse},",
       "  'inputfield' => ${5:'InputfieldPageListSelect'},",
       "  'findPagesSelector' => '${6:id>0,template!=admin}',",
       "  'labelFieldName' => ${7:'title'},",
