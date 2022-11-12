@@ -98,7 +98,7 @@
       "  'maxSize' => ${7:3}, // max 3 megapixels",
       "  'okExtensions' => ['svg'],",
       "  'icon' => 'picture-o',",
-      "  'outputFormat' => FieldtypeFile::outputFormatArray,",
+      "  'outputFormat' => FieldtypeFile::outputFormatSingle,",
       "],"
     ],
     "description": "Add an image field via RockMigrations"
