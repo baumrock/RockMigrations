@@ -16,6 +16,7 @@ class QuickAdd extends Tweak
 
   public function skipAdd(HookEvent $event)
   {
+    if ($event->process != "ProcessPageAdd") return;
     $templates = $event->process->getAllowedTemplates();
     if (count($templates) !== 1) return;
     foreach ($templates as $k => $tpl) {
