@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.3.1',
+      'version' => '2.3.2',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1758,7 +1758,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $user = $this->wire->users->get((string)$name);
     if ($user and $user->id) return $user;
     if (!$quiet) $this->log("User $name not found");
-    return $user;
+    return false;
   }
 
   /**
