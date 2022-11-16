@@ -2397,7 +2397,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       if ($file->pageClass) {
         if ($this->doMigrate($file->path)) {
           $tmp = $this->wire->pages->newPage($file->template);
-          if (method_exists($tmp, 'migrate')) {
+          if (method_exists($tmp, 'migrate') or method_exists($module, "___migrate")) {
             $this->log("Triggering {$file->pageClass}::migrate()");
             $tmp->migrate();
           }
