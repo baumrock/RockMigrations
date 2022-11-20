@@ -2,6 +2,7 @@
 
 namespace RockMigrations;
 
+use ProcessWire\RockFrontend;
 use ProcessWire\RockMigrations;
 
 trait MagicPage
@@ -11,6 +12,14 @@ trait MagicPage
   public function createOnTop()
   {
     return $this->rockmigrations()->createOnTop($this->template);
+  }
+
+  /**
+   * Get instance of RockFrontend
+   */
+  public function rockfrontend(): RockFrontend
+  {
+    return $this->wire->modules->get('RockFrontend');
   }
 
   /**
