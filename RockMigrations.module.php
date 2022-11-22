@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.3.3',
+      'version' => '2.3.4',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1976,6 +1976,25 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function isDebug()
   {
     return $this->outputLevel == self::outputLevelDebug;
+  }
+
+  /**
+   * Check if given string is a valid email
+   * This does also support IDN emails
+   * See https://github.com/processwire/processwire-issues/issues/1647
+   */
+  public function isEmail($mail): bool
+  {
+    $atom = "[-a-z0-9!#$%&'*+/=?^_`{|}~]"; // RFC 5322 unquoted characters in local-part
+    $alpha = "a-z\x80-\xFF"; // superset of IDN
+    return (bool) preg_match(<<<XX
+      (^
+        ("([ !#-[\\]-~]*|\\\\[ -~])+"|$atom+(\\.$atom+)*)  # quoted or unquoted
+        @
+        ([0-9$alpha]([-0-9$alpha]{0,61}[0-9$alpha])?\\.)+  # domain - RFC 1034
+        [$alpha]([-0-9$alpha]{0,17}[$alpha])?              # top domain
+      $)Dix
+      XX, $mail);
   }
 
   /**
