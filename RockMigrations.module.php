@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.3.4',
+      'version' => '2.3.5',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1051,6 +1051,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function createViewFile($template, $content = "\n")
   {
     $template = $this->getTemplate($template);
+    if (!$template) return;
     $file = $this->wire->config->paths->templates . $template->name . ".php";
     if (is_file($content)) $content = file_get_contents($content);
     if (!is_file($file)) $this->wire->files->filePutContents($file, $content);
