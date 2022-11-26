@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.3.6',
+      'version' => '2.3.7',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -283,9 +283,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * The method is intended to easily develop module styles in LESS and ship
    * the CSS version.
    */
-  public function saveCSS($less, $onlySuperuser = true): string
+  public function saveCSS($less, $onlySuperuser = true, $css = null): string
   {
-    $css = "$less.css";
+    $css = $css ?: "$less.css";
     if (!is_file($less)) return $css;
 
     $mLESS = filemtime($less);
