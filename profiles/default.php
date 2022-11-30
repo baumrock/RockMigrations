@@ -18,6 +18,15 @@ $rm->installModule(
   "ProcessDatabaseBackups",
   "https://github.com/ryancramerdesign/ProcessDatabaseBackups/archive/master.zip"
 );
+$rm->installModule("LazyCron");
+$rm->installModule(
+  "CronjobDatabaseBackup",
+  [
+    "cycle" => "everyDay",
+    "max" => 14,
+  ],
+  "https://github.com/kixe/CronjobDatabaseBackup/archive/master.zip"
+);
 
 $rm->installModule(
   "ProcessWireUpgrade",
