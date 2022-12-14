@@ -16,7 +16,7 @@ use TracyDebugger;
 
 /**
  * @author Bernhard Baumrock, 19.01.2022
- * @license COMMERCIAL DO NOT DISTRIBUTE
+ * @license MIT
  * @link https://www.baumrock.com
  */
 require_once __DIR__ . "/MagicPage.php";
@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.3.7',
+      'version' => '2.3.8',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1973,6 +1973,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return $permission;
   }
 
+  /**
+   * Are we in CLI environment?
+   */
+  public function isCLI(): bool
+  {
+    return php_sapi_name() == "cli" or defined('RockMigrationsCLI');
+  }
 
   /**
    * @return bool
@@ -2353,9 +2360,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // this prevents running migrations when processwire
     // is bootstrapped in other cli scripts
-    if (php_sapi_name() == "cli" and !$force) return;
+    $cli = $this->isCLI();
+    if ($cli and !$force) return;
 
-    $cli = defined('RockMigrationsCLI');
     $runOnlyWhenForced = $cli || $this->noMigrate;
     if ($runOnlyWhenForced and !$force) return;
 
@@ -2420,7 +2427,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       if ($file->pageClass) {
         if ($this->doMigrate($file->path)) {
           $tmp = $this->wire->pages->newPage($file->template);
-          if (method_exists($tmp, 'migrate') or method_exists($module, "___migrate")) {
+          if (
+            method_exists($tmp, 'migrate') or
+            (is_object($module) and method_exists($module, "___migrate"))
+          ) {
             $this->log("Triggering {$file->pageClass}::migrate()");
             $tmp->migrate();
           }
@@ -3541,7 +3551,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // if path already exists we skip adding this file
     $exists = $this->watchlist->get("path=$path");
     if ($exists) {
-      $this->log("Did not add $path to watchlist because it already exists. Called in $tracefile:$traceline");
+      if (!$this->isCLI()) {
+        $this->log("Did not add $path to watchlist because it already exists.
+          Called in $tracefile:$traceline");
+      }
       return;
     }
 
@@ -3571,7 +3584,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$this->wire->user) return false;
     if ($this->wire->user->isSuperuser()) return true;
     if ($this->wire->config->forceWatch) return true;
-    if (defined('RockMigrationsCLI')) return true;
+    if ($this->isCLI()) return true;
     if ($this->wire->modules->isInstalled('TracyDebugger')) {
       $tracy = $this->wire->modules->get('TracyDebugger');
       if ($tracy->forceIsLocal) return true;
