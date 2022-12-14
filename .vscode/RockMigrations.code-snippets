@@ -55,6 +55,19 @@
     ],
     "description": "Add a text field via RockMigrations"
   },
+  "rmf-url": {
+    "prefix": "rmf-url",
+    "body": [
+      "$1 => [",
+      "  'type' => 'URL',",
+      "  'label' => '$3',",
+      "  'icon' => 'link',",
+      "  'textformatters' => [",
+      "    'TextformatterEntities',",
+      "  ],",
+      "],"
+    ]
+  },
   "rmf-checkbox": {
     "prefix": "rmf-checkbox",
     "body": ["$1 => [", "  'type' => 'checkbox',", "  'label' => '$2',", "],"]
