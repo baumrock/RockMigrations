@@ -98,17 +98,13 @@ RockMigrations will run migrations automatically when a watched file was changed
 php site/modules/RockMigrations/migrate.php
 ```
 
-Sometimes you want to work on a file and you want it to be watched for changes, but you don't want to trigger the migrations all the time. For example when working on markup or LESS. In that case you can disable automatic running of migrations either by enabling CLI mode or by calling `noMigrate()`:
+Sometimes you want to work on a file and you want it to be watched for changes, but you don't want to trigger the migrations all the time. For example when working on markup or LESS. In that case you can disable automatic running of migrations:
 
 ```php
-// in site/ready.php
-/** @var RockMigrations $rm */
-$rm = $this->wire->modules->get('RockMigrations');
-$rm->noMigrate();
-
-// in your cli script
-define('RockMigrationsCLI', true);
+$config->noMigrate = true;
 ```
+
+This prevents running migrations but files will still be watched for changes and you will still be able to trigger migrations from the CLI.
 
 ## Files On Demand
 

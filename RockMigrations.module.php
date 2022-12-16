@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.3.8',
+      'version' => '2.4.8',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -2353,6 +2353,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function migrateWatchfiles($force = false)
   {
+    if (!$this->isCLI() and $this->wire->config->noMigrate) {
+      $this->log("Migrations disabled via \$config->noMigrate");
+      return;
+    }
+
     // prevent auto-migrate when CLI mode is enabled or when $rm->noMigrate()
     // was called (which can be handy to get quick reloads while working on a
     // module whithout the need for migrations)
