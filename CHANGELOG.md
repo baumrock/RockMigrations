@@ -1,3 +1,12 @@
+# [2.5.0](https://github.com/baumrock/RockMigrations/compare/v2.4.0...v2.5.0) (2022-12-21)
+
+
+### Features
+
+* add removePermissionFromRole() and comments ([08a28d0](https://github.com/baumrock/RockMigrations/commit/08a28d09ee2c3a282d7f278576812542f871bb9b))
+
+
+
 # [2.4.0](https://github.com/baumrock/RockMigrations/compare/v2.3.8...v2.4.0) (2022-12-16)
 
 
