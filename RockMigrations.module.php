@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.4.0',
+      'version' => '2.5.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -922,6 +922,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Create role with given name
+   *
+   * Provided permissions will be added to the role. If you remove permissions
+   * they will not be removed unless you explicitly remove them via
+   * $rm->removePermissionFromRole()
+   *
+   * If you change permissions later (if the role was already created)
+   * permissions will be updated.
+   *
    * @param string $name
    * @param array $permissions
    * @return Role|null
@@ -941,6 +949,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Helper to create webmaster role
+   *
+   * You can provide permissions that will be added to the role.
+   * By default it will use the default permissions and merge provided ones.
+   *
+   * If you change permissions later (if the role was already created)
+   * permissions will be updated.
+   *
    * @return Role
    */
   public function createRoleWebmaster($permissions = [], $name = 'webmaster')
@@ -2568,6 +2583,39 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function removeFieldsFromTemplate($fields, $template, $force = false)
   {
     foreach ($fields as $field) $this->removeFieldFromTemplate($field, $template, $force);
+  }
+
+  /**
+   * Remove a permission from given role
+   *
+   * @param string|int $permission
+   * @param string|int $role
+   * @return void
+   */
+  public function removePermissionFromRole($permission, $role)
+  {
+    if (!$role = $this->getRole($role)) return;
+    $role->of(false);
+    $role->removePermission($permission);
+    return $role->save();
+  }
+
+  /**
+   * Remove an array of permissions to an array of roles
+   *
+   * @param array|string $permissions
+   * @param array|string $roles
+   * @return void
+   */
+  public function removePermissionsFromRoles($permissions, $roles)
+  {
+    if (!is_array($permissions)) $permissions = [(string)$permissions];
+    if (!is_array($roles)) $roles = [(string)$roles];
+    foreach ($permissions as $permission) {
+      foreach ($roles as $role) {
+        $this->removePermissionFromRole($permission, $role);
+      }
+    }
   }
 
   /**
