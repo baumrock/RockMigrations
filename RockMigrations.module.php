@@ -2921,6 +2921,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * specified as $data parameter. If you want to reset old parameters
    * set the $reset param to true.
    *
+   * Note that the update feature will only work for simple settings like
+   * single checkboxes or text fields. If you set a field with multiple checkboxes
+   * from this:
+   * [foo, bar]
+   * to this:
+   * [baz]
+   * The result will be [baz] no matter what you set in $reset
+   *
+   *
+   *
    * @param string|Module $module
    * @param array $data
    * @param bool $merge
