@@ -171,6 +171,22 @@
     ],
     "description": "Add a textarea field via RockMigrations"
   },
+  "rmf-textarea-tinymce": {
+    "prefix": "rmf-textarea-tinymce",
+    "body": [
+      "$1 => [",
+      "  'type' => 'textarea',",
+      "  'inputfieldClass' => 'InputfieldTinyMCE',",
+      "  'contentType' => FieldtypeTextarea::contentTypeHTML,",
+      "  'label' => '$3',",
+      "  'rows' => ${4:5},",
+      "  'icon' => '${5:align-left}',",
+      "  'inlineMode' => true,",
+      "  // 'rpb-nolabel' => true, // hide label in backend",
+      "],"
+    ],
+    "description": "Add a TinyMCE field via RockMigrations"
+  },
   "rmf-textarea-cke": {
     "prefix": "rmf-textarea-cke",
     "body": [

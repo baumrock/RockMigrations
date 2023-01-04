@@ -1,0 +1,7 @@
+{
+  "menubar": false,
+  "toolbar": "bold italic pwlink bullist numlist hr table anchor",
+  "quickbars_selection_toolbar": "bold italic pwlink",
+  "quickbars_insert_toolbar": "bullist numlist hr",
+  "toolbar_sticky": true
+}
