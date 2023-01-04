@@ -1,3 +1,12 @@
+# [2.6.0](https://github.com/baumrock/RockMigrations/compare/v2.5.0...v2.6.0) (2023-01-04)
+
+
+### Features
+
+* add tinymce snippets and settings files ([ade4ef5](https://github.com/baumrock/RockMigrations/commit/ade4ef53875daa7a0cc95183597779d29ad20b0d))
+
+
+
 # [2.5.0](https://github.com/baumrock/RockMigrations/compare/v2.4.0...v2.5.0) (2022-12-21)
 
 
