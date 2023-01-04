@@ -3,5 +3,6 @@
   "toolbar": "bold italic pwlink bullist numlist hr table anchor",
   "quickbars_selection_toolbar": "bold italic pwlink",
   "quickbars_insert_toolbar": "bullist numlist hr",
+  "plugins": "autolink autoresize quickbars",
   "toolbar_sticky": true
 }
