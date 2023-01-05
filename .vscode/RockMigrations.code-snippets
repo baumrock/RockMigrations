@@ -183,6 +183,7 @@
       "  'icon' => '${5:align-left}',",
       "  'inlineMode' => true,",
       "  // 'rpb-nolabel' => true, // hide label in backend",
+      "  'settingsFile' => '/site/modules/RockMigrations/TinyMCE/simple.json',",
       "],"
     ],
     "description": "Add a TinyMCE field via RockMigrations"
