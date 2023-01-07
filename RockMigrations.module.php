@@ -3432,6 +3432,33 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Make sure that the given file/directory path is absolute
+   * This will NOT check if the directory or path exists!
+   * It will always prepend the PW root directory so this method does not work
+   * for absolute paths outside of PW!
+   */
+  public function toPath($url): string
+  {
+    $url = $this->toUrl($url);
+    return $this->wire->config->paths->root . ltrim($url, "/");
+  }
+
+  /**
+   * Make sure that the given file/directory path is relative to PW root
+   * This will NOT check if the directory or path exists!
+   * If provided a path outside of PW root it will return that path because
+   * the str_replace only works if the path starts with the pw root path!
+   */
+  public function toUrl($path): string
+  {
+    return str_replace(
+      $this->wire->config->paths->root,
+      $this->wire->config->urls->root,
+      Paths::normalizeSeparators((string)$path)
+    );
+  }
+
+  /**
    * Trigger migrations after Modules::refresh
    * @return void
    */
