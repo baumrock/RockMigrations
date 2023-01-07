@@ -6,6 +6,12 @@
     "installer-name": "RockMigrations"
   },
   "require": {
-    "composer/installers": "~1.0"
+    "composer/installers": "~1.0",
+    "symfony/yaml": "^6.2"
+  },
+  "config": {
+    "allow-plugins": {
+      "composer/installers": true
+    }
   }
 }
