@@ -10,8 +10,8 @@ use RockMigrations\MagicPages;
 use RockMigrations\WatchFile;
 use RockMigrations\WireArray;
 use RockMigrations\WireArray as WireArrayRM;
-use RockMigrations\YAML;
 use RockPageBuilder\Block as RockPageBuilderBlock;
+use Symfony\Component\Yaml\Yaml;
 use TracyDebugger;
 
 /**
@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.6.0',
+      'version' => '2.7.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1487,6 +1487,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Get code (export data)
+   *
+   * raw = 1 --> get string
+   * raw = 2 --> get PHP array
+   *
    * @return string
    */
   public function getCode($item, $raw = false)
@@ -1548,6 +1552,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (array_key_exists('_rockmigrations_log', $data)) {
       unset($data['_rockmigrations_log']);
     }
+
+    // if code was requested as array return it now
+    if ($raw == 2) return $data;
+
     $code = $this->varexport($data);
     if ($raw) return $code;
     return "'{$item->name}' => $code";
@@ -2406,6 +2414,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // this is just to indicate that behaviour
     if (!count($this->watchlist)) return;
 
+    // set flat that indicates that migrations are in progress
+    // this can be helpful in other modules to check if save actions
+    // are triggered during a migration or not
+    $this->ismigrating = true;
+
     // logging
     $this->wire->log->delete($this->className);
     if (!$cli) {
@@ -2473,6 +2486,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $this->migrate($migrate);
       }
     }
+  }
+
+  /**
+   * Migrate yaml file
+   */
+  public function migrateYAML($path)
+  {
+    $data = $this->yaml($path);
+    if (is_array($data)) $this->migrate($data);
   }
 
   /**
@@ -3744,10 +3766,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Interface to the YAML class based on Spyc
-   *
-   * Get YAML instance:
-   * $rm->yaml();
+   * Interface to the Symfony YAML class
    *
    * Get array from YAML file
    * $rm->yaml('/path/to/file.yaml');
@@ -3757,18 +3776,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * @return mixed
    */
-  public function yaml($path = null, $data = null)
+  public function yaml($path, $data = null)
   {
-    require_once('spyc/Spyc.php');
-    require_once('YAML.php');
-    $yaml = $this->yaml ?: new YAML();
-    if ($path and $data === null) return $yaml->load($path);
-    elseif ($path and $data !== null) {
-      $dir = dirname($path);
-      if (!is_dir($dir)) $this->wire->files->mkdir($dir, true);
-      return $yaml->save($path, $data);
+    if (!$path) return;
+    require_once(__DIR__ . '/vendor/autoload.php');
+
+    // write yaml data to file
+    if ($data) {
+      $yaml = Yaml::dump($data, 99, 2);
+      $this->wire->files->filePutContents($path, $yaml);
+      return $yaml;
     }
-    return $yaml;
+
+    if (!is_file($path)) return false;
+    return Yaml::parseFile($path);
   }
 
   /**
