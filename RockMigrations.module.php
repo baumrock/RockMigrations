@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.7.0',
+      'version' => '2.8.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -414,6 +414,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function wrapFields(InputfieldWrapper $form, array $fields, array $fieldset, $placeAfter = null)
   {
+    // If we only want to show a single field we exit early
+    // as we dont need the wrapper in that case. If you still want to show the
+    // wrapper add &wrapper=1 to your url.
+    if (!$this->wire->input->get('wrapper')) {
+      // check for single field
+      if ($this->wire->input->get('field')) return;
+      if (!strpos($this->wire->input->get('fields'), ",")) return;
+    }
+
     $_fields = [];
     $last = false;
     foreach ($fields as $k => $v) {
