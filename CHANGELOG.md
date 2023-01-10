@@ -1,3 +1,12 @@
+# [2.10.0](https://github.com/baumrock/RockMigrations/compare/v2.9.2...v2.10.0) (2023-01-10)
+
+
+### Features
+
+* support $this for template in RockPageBuilder blocks ([6856bb9](https://github.com/baumrock/RockMigrations/commit/6856bb95c9bda0643564d8ab513e04a881bac82a))
+
+
+
 ## [2.9.2](https://github.com/baumrock/RockMigrations/compare/v2.9.1...v2.9.2) (2023-01-10)
 
 
@@ -31,17 +40,6 @@
 ### Features
 
 * improve wrapFields() method ([efc1057](https://github.com/baumrock/RockMigrations/commit/efc1057d05e9dab6e1677537bf4b01595fb4f7bf))
-
-
-
-# [2.7.0](https://github.com/baumrock/RockMigrations/compare/v2.6.0...v2.7.0) (2023-01-07)
-
-
-### Features
-
-* add support for yaml migrations ([e8dd0e5](https://github.com/baumrock/RockMigrations/commit/e8dd0e59fdb141778b7b1d3f84a23467d7dd53f9))
-* add toPath() and toUrl() ([bf48954](https://github.com/baumrock/RockMigrations/commit/bf48954349db491b40c7a7242bad11e4a07b34c0))
-* update snippets ([cf16796](https://github.com/baumrock/RockMigrations/commit/cf167967be341e6c2a9bfdf93b8ce31310b76cb7))
 
 
 
