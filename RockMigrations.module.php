@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.9.1',
+      'version' => '2.9.2',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -420,7 +420,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$this->wire->input->get('wrapper')) {
       // check for single field
       if ($this->wire->input->get('field')) return;
-      if (!strpos($this->wire->input->get('fields'), ",")) return;
+      if (!strpos((string)$this->wire->input->get('fields'), ",")) return;
     }
 
     $_fields = [];
