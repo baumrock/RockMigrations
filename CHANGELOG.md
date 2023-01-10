@@ -1,3 +1,12 @@
+# [2.9.0](https://github.com/baumrock/RockMigrations/compare/v2.8.0...v2.9.0) (2023-01-10)
+
+
+### Features
+
+* new syntax for repeater fields ([134a706](https://github.com/baumrock/RockMigrations/commit/134a706b8289b950f09c4ce7acefec06cbd4bcf6))
+
+
+
 # [2.8.0](https://github.com/baumrock/RockMigrations/compare/v2.7.0...v2.8.0) (2023-01-10)
 
 
@@ -33,15 +42,6 @@
 ### Features
 
 * add removePermissionFromRole() and comments ([08a28d0](https://github.com/baumrock/RockMigrations/commit/08a28d09ee2c3a282d7f278576812542f871bb9b))
-
-
-
-# [2.4.0](https://github.com/baumrock/RockMigrations/compare/v2.3.8...v2.4.0) (2022-12-16)
-
-
-### Features
-
-* add config setting to disable migrations ([8127543](https://github.com/baumrock/RockMigrations/commit/8127543f6e0d6afb9f750c20990b3242d18f5ef8))
 
 
 
