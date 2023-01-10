@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.9.0',
+      'version' => '2.9.1',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -2782,12 +2782,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
       // this makes it possible to set the template via name
       if ($key === "template_id") {
-        $data[$key] = $this->templates->get($val)->id;
+        $tpl = $this->getTemplate($val);
+        if (!$tpl) continue;
+        $data[$key] = $tpl->id;
       }
 
-      // support key 'repeaterFields' => sequential fields array with fieldnames only
-      // support key 'repeaterFields' => assoc fields array with fieldname and contextual fielddata
-      // also support separate key 'fieldContexts' with assoc contextual fielddata
+      // support repeater fields short syntax
       if ($field->type instanceof FieldtypeRepeater) {
         // check for old syntax and throw an error
         if ($key == 'repeaterFields' or $key == 'fieldContexts') {
