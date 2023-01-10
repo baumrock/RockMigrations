@@ -1,3 +1,12 @@
+## [2.9.1](https://github.com/baumrock/RockMigrations/compare/v2.9.0...v2.9.1) (2023-01-10)
+
+
+### Bug Fixes
+
+* prevent warning of missing template id ([25051a5](https://github.com/baumrock/RockMigrations/commit/25051a59a1a73ece93a9dc6e2b23859ab7f9e87b))
+
+
+
 # [2.9.0](https://github.com/baumrock/RockMigrations/compare/v2.8.0...v2.9.0) (2023-01-10)
 
 
@@ -33,15 +42,6 @@
 ### Features
 
 * add tinymce snippets and settings files ([ade4ef5](https://github.com/baumrock/RockMigrations/commit/ade4ef53875daa7a0cc95183597779d29ad20b0d))
-
-
-
-# [2.5.0](https://github.com/baumrock/RockMigrations/compare/v2.4.0...v2.5.0) (2022-12-21)
-
-
-### Features
-
-* add removePermissionFromRole() and comments ([08a28d0](https://github.com/baumrock/RockMigrations/commit/08a28d09ee2c3a282d7f278576812542f871bb9b))
 
 
 
