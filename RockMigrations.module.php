@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.8.0',
+      'version' => '2.9.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1512,7 +1512,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       unset($data['rockmigrations']);
 
       // we have a different syntax for options of an options field
-      if ($item->type instanceof FieldtypeOptions) {
+      if ($item->type instanceof FieldtypeRepeater) {
+        unset($data['repeaterFields']);
+        unset($data['fieldContexts']);
+      } elseif ($item->type instanceof FieldtypeOptions) {
         $options = [];
         foreach ($item->type->manager->getOptions($item) as $opt) {
           $options[$opt->id] =
@@ -2785,38 +2788,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // support key 'repeaterFields' => sequential fields array with fieldnames only
       // support key 'repeaterFields' => assoc fields array with fieldname and contextual fielddata
       // also support separate key 'fieldContexts' with assoc contextual fielddata
-      if ($key === "repeaterFields" || $key === "fieldContexts") {
-        $fields = $data[$key];
-        $hasFielddata = count(array_filter(array_keys($fields), 'is_string')) > 0;
-        $addFields = [];
-        $contexts = [];
-        $index = 0;
-        $tpl = $field->type->getRepeaterTemplate($field);
-
-        foreach ($fields as $key => $value) {
-          $fieldname = ($hasFielddata) ? $key : $value;
-          $fielddata = ($hasFielddata) ? $value : false;
-          $addFields[$index] = $this->fields->get((string)$fieldname)->id;
-          if ($fielddata) {
-            $contexts[] = [
-              $fieldname,
-              $fielddata,
-              $tpl,
-            ];
-          }
-          $index++;
+      if ($field->type instanceof FieldtypeRepeater) {
+        // check for old syntax and throw an error
+        if ($key == 'repeaterFields' or $key == 'fieldContexts') {
+          throw new WireException("Please use the new fields syntax, see https://bit.ly/3WVB2Dc");
         }
 
-        if ($key === 'repeaterFields') $data[$key] = $addFields;
-
-        if ($tpl) {
-          // add fields to repeater template
-          $this->addFieldsToTemplate($addFields, $tpl);
-
-          // set field contexts now that the fields are present
-          foreach ($contexts as $c) {
-            $this->setFieldData($c[0], $c[1], $c[2]);
-          }
+        // new "fields" syntax for repeater fields as of v2.9.0
+        if ($key === 'fields' or $key === 'fields-') {
+          $tpl = $field->type->getRepeaterTemplate($field);
+          $this->setTemplateData($tpl, [$key => $data[$key]]);
         }
       }
 
