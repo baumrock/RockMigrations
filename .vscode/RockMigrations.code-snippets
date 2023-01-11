@@ -51,6 +51,9 @@
       "  'type' => 'text',",
       "  'label' => '$3',",
       "  'icon' => 'align-left',",
+      "  'textformatters' => [",
+      "    'TextformatterEntities',",
+      "   ],",
       "],"
     ],
     "description": "Add a text field via RockMigrations"
