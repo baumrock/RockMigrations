@@ -115,6 +115,7 @@
       "  'okExtensions' => ['svg'],",
       "  'icon' => 'picture-o',",
       "  'outputFormat' => FieldtypeFile::outputFormatSingle,",
+      "  'gridMode' => 'grid', // left, list",
       "],"
     ],
     "description": "Add an image field via RockMigrations"
