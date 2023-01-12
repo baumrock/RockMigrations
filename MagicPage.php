@@ -4,6 +4,7 @@ namespace RockMigrations;
 
 use ProcessWire\RockFrontend;
 use ProcessWire\RockMigrations;
+use ProcessWire\Site;
 
 trait MagicPage
 {
@@ -41,5 +42,10 @@ trait MagicPage
   public function setPageNameFromTitle()
   {
     return $this->rockmigrations()->setPageNameFromTitle($this->template);
+  }
+
+  public function site(): Site
+  {
+    return $this->wire->modules->get('Site');
   }
 }
