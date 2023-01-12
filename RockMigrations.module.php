@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.11.0',
+      'version' => '2.11.1',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -2717,8 +2717,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function run()
   {
+    $user = $this->wire->user;
     $this->sudo();
     $this->migrateWatchfiles(true);
+    $this->wire->users->setCurrentUser($user);
   }
 
   /**
