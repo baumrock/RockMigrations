@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.11.1',
+      'version' => '2.12.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -3464,12 +3464,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * If provided a path outside of PW root it will return that path because
    * the str_replace only works if the path starts with the pw root path!
    */
-  public function toUrl($path): string
+  public function toUrl($path, $cachebuster = false): string
   {
+    $cache = '';
+    if ($cachebuster) {
+      $path = $this->toPath($path);
+      if (is_file($path)) $cache = "?m=" . filemtime($path);
+    }
     return str_replace(
       $this->wire->config->paths->root,
       $this->wire->config->urls->root,
-      Paths::normalizeSeparators((string)$path)
+      Paths::normalizeSeparators((string)$path) . $cache
     );
   }
 
