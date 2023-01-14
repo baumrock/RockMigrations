@@ -1,3 +1,12 @@
+# [2.12.0](https://github.com/baumrock/RockMigrations/compare/v2.11.1...v2.12.0) (2023-01-14)
+
+
+### Features
+
+* add cachebuster on toUrl() ([63e67a3](https://github.com/baumrock/RockMigrations/commit/63e67a3dcbe8e006d11f8321c4e2e88ab4a8c0b4))
+
+
+
 ## [2.11.1](https://github.com/baumrock/RockMigrations/compare/v2.11.0...v2.11.1) (2023-01-12)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * prevent strpos deprecation warning ([dc18960](https://github.com/baumrock/RockMigrations/commit/dc18960a2ed76bcb9ce9b97d3281c39c909cb245))
-
-
-
-## [2.9.1](https://github.com/baumrock/RockMigrations/compare/v2.9.0...v2.9.1) (2023-01-10)
-
-
-### Bug Fixes
-
-* prevent warning of missing template id ([25051a5](https://github.com/baumrock/RockMigrations/commit/25051a59a1a73ece93a9dc6e2b23859ab7f9e87b))
 
 
 
