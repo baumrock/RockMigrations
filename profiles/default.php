@@ -55,6 +55,7 @@ $rm->installModule(
     'features' => [
       'postCSS',
       'minify',
+      'topbar',
     ],
     'migrations' => [
       'favicon',
