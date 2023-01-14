@@ -353,8 +353,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           $new = $event->wire->pages->names()->uniquePageName($new, $page);
           if ($old != $new) {
             if ($lang->isDefault()) $page->setName($new);
-            else $page->setName($new, $lang);
-            $this->message($this->_("Page name updated to $new ($lang->name)"));
+            else $page->setName($new, $lang->name);
+            $this->message($this->_("Page name updated to '$new' ($lang->name)"));
           }
         }
         $page->save(['noHooks' => true]);
