@@ -4,7 +4,8 @@
 
 See the video here:
 
-<a href="https://www.youtube.com/watch?v=eBOB8dZvRN4"><img src=thumb.png></a>
+<a href="https://www.youtube.com/watch?v=eBOB8dZvRN4"><img src=thumb.png></a><br>
+<a href="https://www.youtube.com/watch?v=o6O859d3cFA"><img src=thumb2.webp></a>
 
 <br>
 
