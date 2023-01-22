@@ -3461,6 +3461,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Make sure that the given file/directory path is relative to PW root
    * This will NOT check if the directory or path exists!
+   * Other than PWs url feature it will remove trailing slashes!
    * If provided a path outside of PW root it will return that path because
    * the str_replace only works if the path starts with the pw root path!
    */
@@ -3471,11 +3472,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $path = $this->toPath($path);
       if (is_file($path)) $cache = "?m=" . filemtime($path);
     }
-    return str_replace(
+    return rtrim(str_replace(
       $this->wire->config->paths->root,
       $this->wire->config->urls->root,
       Paths::normalizeSeparators((string)$path) . $cache
-    );
+    ), "/");
   }
 
   /**
