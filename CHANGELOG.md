@@ -1,3 +1,12 @@
+# [2.13.0](https://github.com/baumrock/RockMigrations/compare/v2.12.0...v2.13.0) (2023-01-28)
+
+
+### Features
+
+* allow livereload on module edit screens ([7bfd6c1](https://github.com/baumrock/RockMigrations/commit/7bfd6c1d12796b49d63080adba46c1793b6bb8ed))
+
+
+
 # [2.12.0](https://github.com/baumrock/RockMigrations/compare/v2.11.1...v2.12.0) (2023-01-14)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * support $this for template in RockPageBuilder blocks ([6856bb9](https://github.com/baumrock/RockMigrations/commit/6856bb95c9bda0643564d8ab513e04a881bac82a))
-
-
-
-## [2.9.2](https://github.com/baumrock/RockMigrations/compare/v2.9.1...v2.9.2) (2023-01-10)
-
-
-### Bug Fixes
-
-* prevent strpos deprecation warning ([dc18960](https://github.com/baumrock/RockMigrations/commit/dc18960a2ed76bcb9ce9b97d3281c39c909cb245))
 
 
 
