@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.12.0',
+      'version' => '2.13.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -601,11 +601,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     if (!$this->wire->modules->isInstalled('RockFrontend')) return;
     if (!$this->wire->config->livereload) return;
-    $process = $this->wire->page->process;
-
-    // on some pages in the backend live reloading can cause problems
-    // or is just not helpful so we exclude it
-    if ($process == "ProcessModule") return;
 
     $url = $this->wire->config->urls('RockFrontend');
     $path = $this->wire->config->paths('RockFrontend');
