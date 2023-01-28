@@ -1,3 +1,12 @@
+# [2.14.0](https://github.com/baumrock/RockMigrations/compare/v2.13.0...v2.14.0) (2023-01-28)
+
+
+### Features
+
+* add unset() for better yaml code ([564b9d6](https://github.com/baumrock/RockMigrations/commit/564b9d67fdd2cf3e7c55dec065fe0717002d953a))
+
+
+
 # [2.13.0](https://github.com/baumrock/RockMigrations/compare/v2.12.0...v2.13.0) (2023-01-28)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * add site() method to magicpage ([8e74c63](https://github.com/baumrock/RockMigrations/commit/8e74c638ccbc5f2606c15fd2271df27ca316e21e))
-
-
-
-# [2.10.0](https://github.com/baumrock/RockMigrations/compare/v2.9.2...v2.10.0) (2023-01-10)
-
-
-### Features
-
-* support $this for template in RockPageBuilder blocks ([6856bb9](https://github.com/baumrock/RockMigrations/commit/6856bb95c9bda0643564d8ab513e04a881bac82a))
 
 
 
