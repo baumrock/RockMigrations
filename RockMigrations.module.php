@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.13.0',
+      'version' => '2.14.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -3530,6 +3530,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->wire->session->noMigrate = false;
   }
 
+  public function unset(&$array, $property)
+  {
+    if (!array_key_exists($property, $array)) return;
+    unset($array[$property]);
+  }
+
   /**
    * PHP var_export() with short array syntax (square brackets) indented 2 spaces.
    *
@@ -3777,6 +3783,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // write yaml data to file
     if ($data) {
+      // remove properties that are not helpful in yaml files
+      $this->unset($data, 'configPhpHash');
+
       $yaml = Yaml::dump($data, 99, 2);
       $this->wire->files->filePutContents($path, $yaml);
       return $yaml;
