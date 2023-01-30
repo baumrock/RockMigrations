@@ -47,6 +47,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   private $noMigrate = false;
 
+  public $noYaml = false;
+
   private $outputLevel = self::outputLevelQuiet;
 
   /** @var string */
@@ -62,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.14.0',
+      'version' => '2.15.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1555,7 +1557,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       }
       unset($data['fieldgroupFields']);
       unset($data['fieldgroupContexts']);
+    } elseif ($item instanceof Module) {
+      $data = $this->wire->modules->getConfig($item->className());
     }
+
+    if (!isset($data) or !is_array($data)) return false;
+
     if (array_key_exists('_rockmigrations_log', $data)) {
       unset($data['_rockmigrations_log']);
     }
@@ -3783,10 +3790,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // write yaml data to file
     if ($data) {
+      // early exit if noYaml flag is set
+      if ($this->noYaml) return;
+
       // remove properties that are not helpful in yaml files
       $this->unset($data, 'configPhpHash');
 
       $yaml = Yaml::dump($data, 99, 2);
+      $yaml = str_replace("''", '""', $yaml);
+      $yaml = str_replace(" '", ' "', $yaml);
+      $yaml = str_replace("'\n", "\"\n", $yaml);
+      $this->wire->files->mkdir(dirname($path), true);
       $this->wire->files->filePutContents($path, $yaml);
       return $yaml;
     }
@@ -3819,6 +3833,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $f = $this->wire->modules->get('InputfieldCheckboxes');
     $f->name = 'enabledTweaks';
     $f->label = "Tweaks";
+    $f->entityEncodeText = false;
     foreach ($this->tweaks as $tweak) {
       $f->addOption($tweak->name, implode(' - ', array_filter([$tweak->name, $tweak->description])));
     }
