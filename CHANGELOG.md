@@ -1,3 +1,12 @@
+# [2.15.0](https://github.com/baumrock/RockMigrations/compare/v2.14.0...v2.15.0) (2023-01-30)
+
+
+### Features
+
+* add ImageDownload icon ([ed58386](https://github.com/baumrock/RockMigrations/commit/ed58386899dc5cced30243cb6fcc49cd635fbbcd))
+
+
+
 # [2.14.0](https://github.com/baumrock/RockMigrations/compare/v2.13.0...v2.14.0) (2023-01-28)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * reset sudo() permissions after migration ([1926b61](https://github.com/baumrock/RockMigrations/commit/1926b6115fed0a71ac19abb6a4d2a68bcdb2b0c0))
-
-
-
-# [2.11.0](https://github.com/baumrock/RockMigrations/compare/v2.10.0...v2.11.0) (2023-01-12)
-
-
-### Features
-
-* add site() method to magicpage ([8e74c63](https://github.com/baumrock/RockMigrations/commit/8e74c638ccbc5f2606c15fd2271df27ca316e21e))
 
 
 
