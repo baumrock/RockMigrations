@@ -263,6 +263,22 @@
     ]
   },
 
+  // rockshell config
+  "rockshell-config": {
+    "prefix": "rockshell-config",
+    "body": [
+      "// rockshell config",
+      "\\$config->rockshell = [",
+      "  'remotes' => [",
+      "    'staging' => [",
+      "      'ssh' => 'user@host.com',",
+      "      'dir' => '/path/to/webroot/current',",
+      "    ],",
+      "  ],",
+      "];"
+    ]
+  },
+
   // this is a placeholder so that all items above can have a trailing slash
   "": { "body": "" }
 }
