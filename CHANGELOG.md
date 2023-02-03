@@ -1,3 +1,12 @@
+## [2.15.1](https://github.com/baumrock/RockMigrations/compare/v2.15.0...v2.15.1) (2023-02-03)
+
+
+### Bug Fixes
+
+* prevent module migrate file from running if module is not installed ([43ff7fb](https://github.com/baumrock/RockMigrations/commit/43ff7fb6cc8c41e2de3104c4d154d29783552412))
+
+
+
 # [2.15.0](https://github.com/baumrock/RockMigrations/compare/v2.14.0...v2.15.0) (2023-01-30)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * add cachebuster on toUrl() ([63e67a3](https://github.com/baumrock/RockMigrations/commit/63e67a3dcbe8e006d11f8321c4e2e88ab4a8c0b4))
-
-
-
-## [2.11.1](https://github.com/baumrock/RockMigrations/compare/v2.11.0...v2.11.1) (2023-01-12)
-
-
-### Bug Fixes
-
-* reset sudo() permissions after migration ([1926b61](https://github.com/baumrock/RockMigrations/commit/1926b6115fed0a71ac19abb6a4d2a68bcdb2b0c0))
 
 
 
