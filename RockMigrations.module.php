@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.15.0',
+      'version' => '2.15.1',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -112,7 +112,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // for example this will create the sessions folder if it does not exist
     $this->createNeededFolders();
 
-    // always watch + migrate /site/migrate.[yaml|json|php]
+    // always watch + migrate /site/migrate.[yaml|php]
     // the third parameter makes it use the migrateNew() method
     // this will be the first file that is watched!
     $this->watch($config->paths->site . "migrate", true);
@@ -123,6 +123,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->addHookBefore("InputfieldForm::render", $this, "showEditInfo");
     $this->addHookBefore("InputfieldForm::render", $this, "showCopyCode");
     $this->addHookBefore("Modules::uninstall", $this, "unwatchBeforeUninstall");
+    $this->addHookAfter("Modules::install", $this, "migrateAfterModuleInstall");
 
     // other actions on init()
     $this->loadFilesOnDemand();
@@ -1354,7 +1355,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $path = Paths::normalizeSeparators($path);
     if (is_file($path)) return $path;
-    foreach (['yaml', 'json', 'php'] as $ext) {
+    foreach (['yaml', 'php'] as $ext) {
       if (is_file($f = "$path.$ext")) return $f;
     }
     return false;
@@ -2342,6 +2343,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Hook fired after module install
+   */
+  public function migrateAfterModuleInstall(HookEvent $event)
+  {
+    $name = $event->arguments(0);
+    $migrateFile = $this->wire->config->paths->siteModules . "$name/$name.migrate.php";
+    if (is_file($migrateFile)) $this->runFile($migrateFile);
+  }
+
+  /**
    * Call $module::migrate() on modules::refresh
    * @return void
    */
@@ -2490,9 +2501,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // first we render the file
       // this will already execute commands inside the file if it is PHP
       $this->log("Loading {$file->path}...");
-      $migrate = $this->wire->files->render($file->path, [], [
-        'allowedPaths' => [dirname($file->path)],
-      ]);
+      $migrate = $this->runFile($file->path);
       // if rendering the file returned a string we state that it is YAML code
       if (is_string($migrate)) $migrate = $this->yaml($migrate);
       if (is_array($migrate)) {
@@ -2723,6 +2732,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->sudo();
     $this->migrateWatchfiles(true);
     $this->wire->users->setCurrentUser($user);
+  }
+
+  /**
+   * Run migrations from file
+   */
+  private function runFile($file)
+  {
+    if (!is_file($file)) return;
+    return $this->wire->files->render($file, [], [
+      'allowedPaths' => [dirname($file)],
+    ]);
   }
 
   /**
@@ -3571,7 +3591,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * $rm->watch(what, migrate/priority, options);
    *
    * If you dont specify an extension it will watch all available extensions:
-   * $rm->watch('/path/to/module'); // watches module.[yaml|json|php]
+   * $rm->watch('/path/to/module'); // watches module.[yaml|php]
    *
    * Watch a module: Put this in your module's init()
    * $rm->watch($this);
@@ -3735,9 +3755,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       if (!$fileInfo->isDir()) continue;
       if ($fileInfo->isDot()) continue;
       $name = $fileInfo->getFilename();
+      if (!$this->wire->modules->isInstalled($name)) continue;
       $migrateFile = $fileInfo->getPath() . "/$name/$name.migrate";
       $this->watch("$migrateFile.yaml");
-      $this->watch("$migrateFile.json");
       $this->watch("$migrateFile.php");
     }
   }
