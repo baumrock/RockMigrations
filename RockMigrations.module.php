@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.15.1',
+      'version' => '2.16.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -2371,14 +2371,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * Note that every pageclass needs to have the template name defined in
    * the "tpl" constant, eg YourPageClass::tpl = 'your-template-name'
    */
-  public function migratePageClasses($path, $namespace = 'ProcessWire'): void
+  public function migratePageClasses($path, $namespace = 'ProcessWire', $tags = ''): void
   {
     $options = [
       'extensions' => ['php'],
       'recursive' => 1,
     ];
     $namespace = "\\" . ltrim($namespace, "\\");
-    foreach ($this->wire->files->find($path, $options) as $file) {
+
+    // first create all templates
+    $files = $this->wire->files->find($path, $options);
+    foreach ($files as $file) {
       require_once $file;
       $name = pathinfo($file, PATHINFO_FILENAME);
       $class = "$namespace\\$name";
@@ -2388,10 +2391,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           $templatename = $tmp::tpl;
           $tpl = $this->wire->templates->get($templatename);
           if (!$tpl) $tpl = $this->createTemplate($templatename, $class);
+          if ($tags) $this->setTemplateData($templatename, ['tags' => $tags]);
           $tmp->template = $tpl;
         } catch (\Throwable $th) {
         }
       }
+    }
+    // then migrate all templates
+    foreach ($files as $file) {
+      $name = pathinfo($file, PATHINFO_FILENAME);
+      $class = "$namespace\\$name";
+      $tmp = $this->wire(new $class());
       if (method_exists($tmp, "migrate")) $tmp->migrate();
     }
   }
