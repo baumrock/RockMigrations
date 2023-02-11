@@ -1,3 +1,12 @@
+# [2.16.0](https://github.com/baumrock/RockMigrations/compare/v2.15.1...v2.16.0) (2023-02-11)
+
+
+### Features
+
+* improve migratePageClasses() ([c398884](https://github.com/baumrock/RockMigrations/commit/c39888427079ce67c60187f253a0ed4b88454f2c))
+
+
+
 ## [2.15.1](https://github.com/baumrock/RockMigrations/compare/v2.15.0...v2.15.1) (2023-02-03)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * allow livereload on module edit screens ([7bfd6c1](https://github.com/baumrock/RockMigrations/commit/7bfd6c1d12796b49d63080adba46c1793b6bb8ed))
-
-
-
-# [2.12.0](https://github.com/baumrock/RockMigrations/compare/v2.11.1...v2.12.0) (2023-01-14)
-
-
-### Features
-
-* add cachebuster on toUrl() ([63e67a3](https://github.com/baumrock/RockMigrations/commit/63e67a3dcbe8e006d11f8321c4e2e88ab4a8c0b4))
 
 
 
