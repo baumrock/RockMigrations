@@ -58,6 +58,17 @@
     ],
     "description": "Add a text field via RockMigrations"
   },
+  "rmf-integer": {
+    "prefix": "rmf-integer",
+    "body": [
+      "$1 => [",
+      "  'type' => 'integer',",
+      "  'label' => '$3',",
+      "  'icon' => 'list-ol',",
+      "],"
+    ],
+    "description": "Add an integer field via RockMigrations"
+  },
   "rmf-url": {
     "prefix": "rmf-url",
     "body": [

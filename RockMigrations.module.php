@@ -2,6 +2,7 @@
 
 namespace ProcessWire;
 
+use DateTime;
 use DirectoryIterator;
 use ProcessWire\WireArray as ProcessWireWireArray;
 use RockMatrix\Block as RockMatrixBlock;
@@ -64,7 +65,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.16.0',
+      'version' => '2.17.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1442,6 +1443,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Get first second of year/month/day
+   */
+  public function firstSecond($year, $month = null, $day = null): int
+  {
+    $date = new DateTime();
+    $date->setDate($year, $month ?: 1, $day ?: 1);
+    $date->setTime(0, 0, 0);
+    return $date->getTimestamp();
+  }
+
+  /**
    * Run migrations during development on every request
    * This is handy to code rapidly and get instant output via RockFrontend's
    * livereload feature!
@@ -2080,6 +2092,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       if ($m > $last) $last = $m;
     }
     return $last;
+  }
+
+  /**
+   * Get last second of year/month/day
+   */
+  public function lastSecond($year, $month = null, $day = null): int
+  {
+    $date = new DateTime();
+    $date->setDate($year, $month ?: 1, $day ?: 1);
+    $date->setTime(0, 0, 0);
+    if ($day) $date->modify("+1 day");
+    elseif ($month) $date->modify("+1 month");
+    elseif ($year) $date->modify("+1 year");
+    $date->modify("-1 second");
+    return $date->getTimestamp();
   }
 
   /**
