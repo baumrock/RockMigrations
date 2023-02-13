@@ -866,14 +866,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * ]);
    *
    * @param string $title
-   * @param string $name
    * @param Template|string $template
    * @param Page|string $parent
-   * @param array $status
-   * @param array $data
+   * @param string $name optional defaults to null
+   * @param array $status optional defaults to []
+   * @param array $data optional defaults to []
    * @return Page
    */
-  public function createPage(string $title, $name = null, $template, $parent, array $status = [], array $data = [])
+  public function createPage(string $title, $template, $parent, $name = null, array $status = [], array $data = [])
   {
     // create pagename from page title if it is not set
     if (!$name) $name = $this->sanitizer->pageNameTranslate($title);
