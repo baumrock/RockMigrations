@@ -7,11 +7,14 @@
   },
   "require": {
     "composer/installers": "~1.0",
-    "symfony/yaml": "^6.2"
+    "symfony/yaml": "^5.4"
   },
   "config": {
     "allow-plugins": {
       "composer/installers": true
+    },
+    "platform": {
+      "php": "8.0"
     }
   }
 }

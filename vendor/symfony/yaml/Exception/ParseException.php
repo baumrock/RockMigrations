@@ -18,10 +18,10 @@ namespace Symfony\Component\Yaml\Exception;
  */
 class ParseException extends RuntimeException
 {
-    private ?string $parsedFile;
-    private int $parsedLine;
-    private ?string $snippet;
-    private string $rawMessage;
+    private $parsedFile;
+    private $parsedLine;
+    private $snippet;
+    private $rawMessage;
 
     /**
      * @param string      $message    The error message
@@ -43,8 +43,10 @@ class ParseException extends RuntimeException
 
     /**
      * Gets the snippet of code near the error.
+     *
+     * @return string
      */
-    public function getSnippet(): string
+    public function getSnippet()
     {
         return $this->snippet;
     }
@@ -63,8 +65,10 @@ class ParseException extends RuntimeException
      * Gets the filename where the error occurred.
      *
      * This method returns null if a string is parsed.
+     *
+     * @return string
      */
-    public function getParsedFile(): string
+    public function getParsedFile()
     {
         return $this->parsedFile;
     }
@@ -81,8 +85,10 @@ class ParseException extends RuntimeException
 
     /**
      * Gets the line where the error occurred.
+     *
+     * @return int
      */
-    public function getParsedLine(): int
+    public function getParsedLine()
     {
         return $this->parsedLine;
     }
@@ -102,7 +108,7 @@ class ParseException extends RuntimeException
         $this->message = $this->rawMessage;
 
         $dot = false;
-        if (str_ends_with($this->message, '.')) {
+        if ('.' === substr($this->message, -1)) {
             $this->message = substr($this->message, 0, -1);
             $dot = true;
         }

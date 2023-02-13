@@ -58,18 +58,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /** @var WireArrayRM */
   private $watchlist;
 
-  /** @var YAML */
-  private $yaml;
-
   public static function getModuleInfo()
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.17.0',
+      'version' => '2.18.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
       'icon' => 'magic',
+      'requires' => [
+        'PHP>=8.0', // also set in composer.json (because of symfony yaml)
+      ],
       'installs' => [
         'MagicPages',
       ],

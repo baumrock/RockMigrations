@@ -11,7 +11,6 @@
 
 namespace Symfony\Component\Yaml\Command;
 
-use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\CI\GithubActionReporter;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Completion\CompletionInput;
@@ -33,26 +32,32 @@ use Symfony\Component\Yaml\Yaml;
  * @author Grégoire Pineau <lyrixx@lyrixx.info>
  * @author Robin Chalas <robin.chalas@gmail.com>
  */
-#[AsCommand(name: 'lint:yaml', description: 'Lint a YAML file and outputs encountered errors')]
 class LintCommand extends Command
 {
-    private Parser $parser;
-    private ?string $format = null;
-    private bool $displayCorrectFiles;
-    private ?\Closure $directoryIteratorProvider;
-    private ?\Closure $isReadableProvider;
+    protected static $defaultName = 'lint:yaml';
+    protected static $defaultDescription = 'Lint a YAML file and outputs encountered errors';
+
+    private $parser;
+    private $format;
+    private $displayCorrectFiles;
+    private $directoryIteratorProvider;
+    private $isReadableProvider;
 
     public function __construct(string $name = null, callable $directoryIteratorProvider = null, callable $isReadableProvider = null)
     {
         parent::__construct($name);
 
-        $this->directoryIteratorProvider = null === $directoryIteratorProvider ? null : $directoryIteratorProvider(...);
-        $this->isReadableProvider = null === $isReadableProvider ? null : $isReadableProvider(...);
+        $this->directoryIteratorProvider = $directoryIteratorProvider;
+        $this->isReadableProvider = $isReadableProvider;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     protected function configure()
     {
         $this
+            ->setDescription(self::$defaultDescription)
             ->addArgument('filename', InputArgument::IS_ARRAY, 'A file, a directory or "-" for reading from STDIN')
             ->addOption('format', null, InputOption::VALUE_REQUIRED, 'The output format')
             ->addOption('exclude', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Path(s) to exclude')
@@ -83,7 +88,7 @@ EOF
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = new SymfonyStyle($input, $output);
         $filenames = (array) $input->getArgument('filename');
@@ -151,12 +156,16 @@ EOF
 
     private function display(SymfonyStyle $io, array $files): int
     {
-        return match ($this->format) {
-            'txt' => $this->displayTxt($io, $files),
-            'json' => $this->displayJson($io, $files),
-            'github' => $this->displayTxt($io, $files, true),
-            default => throw new InvalidArgumentException(sprintf('The format "%s" is not supported.', $this->format)),
-        };
+        switch ($this->format) {
+            case 'txt':
+                return $this->displayTxt($io, $files);
+            case 'json':
+                return $this->displayJson($io, $files);
+            case 'github':
+                return $this->displayTxt($io, $files, true);
+            default:
+                throw new InvalidArgumentException(sprintf('The format "%s" is not supported.', $this->format));
+        }
     }
 
     private function displayTxt(SymfonyStyle $io, array $filesInfo, bool $errorAsGithubAnnotations = false): int
@@ -177,7 +186,7 @@ EOF
                 $io->text('<error> ERROR </error>'.($info['file'] ? sprintf(' in %s', $info['file']) : ''));
                 $io->text(sprintf('<error> >> %s</error>', $info['message']));
 
-                if (str_contains($info['message'], 'PARSE_CUSTOM_TAGS')) {
+                if (false !== strpos($info['message'], 'PARSE_CUSTOM_TAGS')) {
                     $suggestTagOption = true;
                 }
 
@@ -206,7 +215,7 @@ EOF
                 ++$errors;
             }
 
-            if (isset($v['message']) && str_contains($v['message'], 'PARSE_CUSTOM_TAGS')) {
+            if (isset($v['message']) && false !== strpos($v['message'], 'PARSE_CUSTOM_TAGS')) {
                 $v['message'] .= ' Use the --parse-tags option if you want parse custom tags.';
             }
         });
@@ -235,7 +244,11 @@ EOF
 
     private function getParser(): Parser
     {
-        return $this->parser ??= new Parser();
+        if (!$this->parser) {
+            $this->parser = new Parser();
+        }
+
+        return $this->parser;
     }
 
     private function getDirectoryIterator(string $directory): iterable
