@@ -62,7 +62,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '2.18.0',
+      'version' => '2.19.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -859,24 +859,40 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * If the page exists it will return the existing page.
    * Note that all available languages will be set active by default!
    *
+   * Usage:
+   * $rm->createPage(
+   *   template: 'foo',
+   *   title: 'My foo page',
+   *   parent: 1
+   * );
+   *
    * If you need to set a multilang title use
    * $rm->setFieldLanguageValue($page, "title", [
    *   'default'=>'foo',
    *   'german'=>'bar',
    * ]);
    *
-   * @param string $title
-   * @param string $name
    * @param Template|string $template
-   * @param Page|string $parent
+   * @param Page|string|int $parent
+   * @param string $name
+   * @param string $title
    * @param array $status
    * @param array $data
+   * @param bool $allLanguages
    * @return Page
    */
-  public function createPage(string $title, $name = null, $template, $parent, array $status = [], array $data = [])
-  {
+  public function createPage(
+    $template,
+    $parent,
+    string $name = null,
+    string $title = null,
+    array $status = [],
+    array $data = [],
+    bool $allLanguages = true
+  ) {
     // create pagename from page title if it is not set
     if (!$name) $name = $this->sanitizer->pageNameTranslate($title);
+    if (!$name) $name = $this->wire->pages->names()->uniquePageName();
 
     $log = "Parent $parent not found";
     $parent = $this->getPage($parent);
@@ -898,14 +914,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // create a new page
     $p = $this->wire(new Page());
     $p->template = $template;
-    $p->title = $title;
-    $p->name = $name;
     $p->parent = $parent;
+    if ($title !== null) $p->title = $title;
+    $p->name = $name;
     $p->status($status);
     $p->setAndSave($data);
 
     // enable all languages for this page
-    $this->enableAllLanguagesForPage($p);
+    if ($allLanguages) $this->enableAllLanguagesForPage($p);
 
     return $p;
   }
@@ -2359,12 +2375,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       /** @var WireData $d */
       $d->setArray($data);
       $this->createPage(
-        $d->title ?: $name,
-        $name,
-        $d->template,
-        $d->parent,
-        $d->status,
-        $d->data
+        title: $d->title ?: $name,
+        name: $name,
+        template: $d->template,
+        parent: $d->parent,
+        status: $d->status,
+        data: $d->data
       );
     }
   }
