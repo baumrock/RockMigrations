@@ -32,6 +32,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   const outputLevelQuiet = 'quiet';
   const outputLevelVerbose = 'verbose';
 
+  const field_pagename = "_pw_page_name";
+
   /** @var WireData */
   public $conf;
 
@@ -62,13 +64,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '3.0.0',
+      'version' => '3.1.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
       'icon' => 'magic',
+      // requires php8.0 because of symfony yaml (also set in composer.json)
       'requires' => [
-        'PHP>=8.0', // also set in composer.json (because of symfony yaml)
+        'PHP>=8.0',
       ],
       'installs' => [
         'MagicPages',
@@ -2175,6 +2178,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Lock the page name field
+   */
+  public function lockPageName($form)
+  {
+    if (!$f = $form->get(self::field_pagename)) return;
+    $f->collapsed = Inputfield::collapsedNoLocked;
+    if (!$this->wire->user->isSuperuser()) return;
+    $f->notes .= "Locked by RM in " . $this->traceFile("Invoice.php");
+  }
+
+  /**
    * Log message
    *
    * Usage:
@@ -3552,6 +3566,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $this->wire->config->urls->root,
       Paths::normalizeSeparators((string)$path) . $cache
     ), "/");
+  }
+
+  /**
+   * Return file reference of debug backtrace
+   */
+  public function traceFile($find): string
+  {
+    $trace = Debug::backtrace();
+    foreach ($trace as $item) {
+      $file = $item['file'];
+      if (strpos($file, $find) === false) continue;
+      return $file;
+    }
+    return '';
   }
 
   /**
