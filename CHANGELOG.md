@@ -1,3 +1,12 @@
+# [3.1.0](https://github.com/baumrock/RockMigrations/compare/v3.0.0...v3.1.0) (2023-02-17)
+
+
+### Features
+
+* add lockPageName + traceFile ([2669616](https://github.com/baumrock/RockMigrations/commit/266961653a8c382c09602c42ac291e97bd0a905d))
+
+
+
 # [3.0.0](https://github.com/baumrock/RockMigrations/compare/v2.18.0...v3.0.0) (2023-02-14)
 
 
@@ -36,15 +45,6 @@
 ### Features
 
 * improve migratePageClasses() ([c398884](https://github.com/baumrock/RockMigrations/commit/c39888427079ce67c60187f253a0ed4b88454f2c))
-
-
-
-## [2.15.1](https://github.com/baumrock/RockMigrations/compare/v2.15.0...v2.15.1) (2023-02-03)
-
-
-### Bug Fixes
-
-* prevent module migrate file from running if module is not installed ([43ff7fb](https://github.com/baumrock/RockMigrations/commit/43ff7fb6cc8c41e2de3104c4d154d29783552412))
 
 
 
