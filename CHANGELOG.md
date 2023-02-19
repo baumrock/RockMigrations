@@ -1,3 +1,12 @@
+# [3.2.0](https://github.com/baumrock/RockMigrations/compare/v3.1.0...v3.2.0) (2023-02-19)
+
+
+### Features
+
+* add isNewer() method ([aaf36ee](https://github.com/baumrock/RockMigrations/commit/aaf36ee032209ab6241aae46411833201166df06))
+
+
+
 # [3.1.0](https://github.com/baumrock/RockMigrations/compare/v3.0.0...v3.1.0) (2023-02-17)
 
 
@@ -36,15 +45,6 @@
 ### Features
 
 * add firstSecond() and lastSecond() ([f0eb68c](https://github.com/baumrock/RockMigrations/commit/f0eb68cd7c9549633108123dbb524d37c3796e83))
-
-
-
-# [2.16.0](https://github.com/baumrock/RockMigrations/compare/v2.15.1...v2.16.0) (2023-02-11)
-
-
-### Features
-
-* improve migratePageClasses() ([c398884](https://github.com/baumrock/RockMigrations/commit/c39888427079ce67c60187f253a0ed4b88454f2c))
 
 
 
