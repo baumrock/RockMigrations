@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '3.1.0',
+      'version' => '3.2.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -2076,6 +2076,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         [$alpha]([-0-9$alpha]{0,17}[$alpha])?              # top domain
       $)Dix
       XX, $mail);
+  }
+
+  /**
+   * Is given file newer than the comparison file?
+   * Returns true if comparison file does not exist
+   * Returns false if file does not exist
+   */
+  public function isNewer($file, $comparison): bool
+  {
+    return $this->filemtime($file) > $this->filemtime($comparison);
   }
 
   /**
