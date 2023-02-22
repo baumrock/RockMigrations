@@ -1,3 +1,12 @@
+# [3.4.0](https://github.com/baumrock/RockMigrations/compare/v3.3.1...v3.4.0) (2023-02-22)
+
+
+### Features
+
+* add method to get module config data ([da8894d](https://github.com/baumrock/RockMigrations/commit/da8894d946731372a570989aa44619a73377d428))
+
+
+
 ## [3.3.1](https://github.com/baumrock/RockMigrations/compare/v3.3.0...v3.3.1) (2023-02-22)
 
 
@@ -31,20 +40,6 @@
 ### Features
 
 * add lockPageName + traceFile ([2669616](https://github.com/baumrock/RockMigrations/commit/266961653a8c382c09602c42ac291e97bd0a905d))
-
-
-
-# [3.0.0](https://github.com/baumrock/RockMigrations/compare/v2.18.0...v3.0.0) (2023-02-14)
-
-
-### Features
-
-* change order of params in createPage() ([360c64d](https://github.com/baumrock/RockMigrations/commit/360c64de2e8e07eaae8e00b0556d43fb33553a49))
-
-
-### BREAKING CHANGES
-
-* see https://processwire.com/talk/topic/27504-rockmigrations-%F0%9F%9A%80%F0%9F%9A%80-the-ultimate-automation-and-deployment-tool-for-processwire/?do=findComment&comment=230651
 
 
 
