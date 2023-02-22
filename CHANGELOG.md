@@ -1,3 +1,12 @@
+# [3.3.0](https://github.com/baumrock/RockMigrations/compare/v3.2.0...v3.3.0) (2023-02-22)
+
+
+### Features
+
+* add form helper methods ([fe2b2db](https://github.com/baumrock/RockMigrations/commit/fe2b2dbfffcd580bddff0e6085b2a05b6276b0a3))
+
+
+
 # [3.2.0](https://github.com/baumrock/RockMigrations/compare/v3.1.0...v3.2.0) (2023-02-19)
 
 
@@ -36,15 +45,6 @@
 ### Features
 
 * refactor to support php8.0 ([a7faadf](https://github.com/baumrock/RockMigrations/commit/a7faadf11d9cca927a8af931f532e12a119de67c))
-
-
-
-# [2.17.0](https://github.com/baumrock/RockMigrations/compare/v2.16.0...v2.17.0) (2023-02-12)
-
-
-### Features
-
-* add firstSecond() and lastSecond() ([f0eb68c](https://github.com/baumrock/RockMigrations/commit/f0eb68cd7c9549633108123dbb524d37c3796e83))
 
 
 
