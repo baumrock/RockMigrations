@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '3.3.1',
+      'version' => '3.4.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -1774,6 +1774,25 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (strtoupper($code) == 'DE') return "https://github.com/jmartsch/pw-lang-de/archive/refs/heads/main.zip";
     if (strtoupper($code) == 'FI') return "https://github.com/apeisa/Finnish-ProcessWire/archive/refs/heads/master.zip";
     return $code;
+  }
+
+  /**
+   * Get module config as WireData object
+   *
+   * Usage:
+   * $conf = $rm->getModuleConfig('ProcessLanguageTranslator');
+   * echo $conf->extensions;
+   *
+   * $ext = $rm->getModuleConfig('ProcessLanguageTranslator', 'extensions');
+   * echo $ext;
+   */
+  public function getModuleConfig($module, $property = null)
+  {
+    $conf = $this->wire->modules->getConfig($module);
+    $data = $this->wire(new WireData());
+    if (is_array($conf)) $data->setArray($conf);
+    if ($property) return $data->get($property);
+    return $data;
   }
 
   /**
