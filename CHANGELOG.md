@@ -1,3 +1,12 @@
+## [3.3.1](https://github.com/baumrock/RockMigrations/compare/v3.3.0...v3.3.1) (2023-02-22)
+
+
+### Bug Fixes
+
+* wrapFields() not working ([cc519bf](https://github.com/baumrock/RockMigrations/commit/cc519bf2ca16678a5d1021c643850dfbe9106ab0))
+
+
+
 # [3.3.0](https://github.com/baumrock/RockMigrations/compare/v3.2.0...v3.3.0) (2023-02-22)
 
 
@@ -36,15 +45,6 @@
 ### BREAKING CHANGES
 
 * see https://processwire.com/talk/topic/27504-rockmigrations-%F0%9F%9A%80%F0%9F%9A%80-the-ultimate-automation-and-deployment-tool-for-processwire/?do=findComment&comment=230651
-
-
-
-# [2.18.0](https://github.com/baumrock/RockMigrations/compare/v2.17.0...v2.18.0) (2023-02-13)
-
-
-### Features
-
-* refactor to support php8.0 ([a7faadf](https://github.com/baumrock/RockMigrations/commit/a7faadf11d9cca927a8af931f532e12a119de67c))
 
 
 
