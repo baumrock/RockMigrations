@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '3.2.0',
+      'version' => '3.3.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -260,6 +260,23 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Set columnWidth for multiple fields of a form
+   *
+   * Usage:
+   * $rm->columnWidth($form, [
+   *   'foo' => 33,
+   *   'bar' => 33,
+   *   'baz' => 33,
+   * ]);
+   */
+  public function columnWidth(InputfieldWrapper $form, array $fields)
+  {
+    foreach ($fields as $name => $width) {
+      if ($f = $form->get($name)) $f->columnWidth($width);
+    }
+  }
+
+  /**
    * Make all pages having given template be created on top of the list
    * @return void
    */
@@ -273,12 +290,41 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Hide fields of given form
+   *
+   * Usage:
+   * $rm->hideFormFields($form, ['foo', 'bar', 'baz']);
+   * $rm->hideFormFields($form, 'foo, bar, baz');
+   */
+  public function hideFormFields(InputfieldWrapper $form, $fields)
+  {
+    if (is_string($fields)) $fields = array_map('trim', explode(",", $fields));
+    foreach ($fields as $field) {
+      $f = $form->get($field);
+      if ($f) $f->collapsed = Inputfield::collapsedHidden;
+    }
+  }
+
+  /**
    * Remove non-breaking spaces in string
    * @return string
    */
   public function regularSpaces($str)
   {
     return preg_replace('/\xc2\xa0/', ' ', $str);
+  }
+
+  /**
+   * Remove fields of given form
+   *
+   * Usage:
+   * $rm->removeFormFields($form, ['foo', 'bar', 'baz']);
+   * $rm->removeFormFields($form, 'foo, bar, baz');
+   */
+  public function removeFormFields(InputfieldWrapper $form, $fields)
+  {
+    if (is_string($fields)) $fields = array_map('trim', explode(",", $fields));
+    foreach ($fields as $field) $form->remove($field);
   }
 
   /**
@@ -406,6 +452,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function setPageNameFromTitle($template)
   {
     return $this->setPageNameFromField($template, 'title');
+  }
+
+  public function sortFormFields(InputfieldWrapper $form, $fields)
+  {
+    $current = array_shift($fields);
+    $current = $form->get($current) ?: $form->children()->last();
+    foreach ($fields as $field) {
+      if (!$f = $form->get($field)) continue;
+      $form->insertAfter($f, $current);
+      $current = $f;
+    }
   }
 
   /**
