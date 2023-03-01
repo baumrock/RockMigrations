@@ -1,3 +1,12 @@
+# [3.6.0](https://github.com/baumrock/RockMigrations/compare/v3.5.0...v3.6.0) (2023-03-01)
+
+
+### Features
+
+* add yamlParse() method ([51c09b2](https://github.com/baumrock/RockMigrations/commit/51c09b2ce97119569cabe41e25264593b8c2799d))
+
+
+
 # [3.5.0](https://github.com/baumrock/RockMigrations/compare/v3.4.0...v3.5.0) (2023-03-01)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * add form helper methods ([fe2b2db](https://github.com/baumrock/RockMigrations/commit/fe2b2dbfffcd580bddff0e6085b2a05b6276b0a3))
-
-
-
-# [3.2.0](https://github.com/baumrock/RockMigrations/compare/v3.1.0...v3.2.0) (2023-02-19)
-
-
-### Features
-
-* add isNewer() method ([aaf36ee](https://github.com/baumrock/RockMigrations/commit/aaf36ee032209ab6241aae46411833201166df06))
 
 
 
