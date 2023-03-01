@@ -64,7 +64,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     return [
       'title' => 'RockMigrations',
-      'version' => '3.4.0',
+      'version' => '3.5.0',
       'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
       'autoload' => 2,
       'singular' => true,
@@ -3966,15 +3966,23 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * Get array from YAML file
    * $rm->yaml('/path/to/file.yaml');
    *
+   * Get yaml from php array
+   * $rm->yaml(['foo' => 'bar']);
+   *
    * Save data to file
    * $rm->yaml('/path/to/file.yaml', ['foo'=>'bar']);
    *
    * @return mixed
    */
-  public function yaml($path, $data = null)
+  public function yaml($pathOrArray, $data = null)
   {
-    if (!$path) return;
+    if (!$pathOrArray) return;
     require_once(__DIR__ . '/vendor/autoload.php');
+
+    if (is_array($pathOrArray)) {
+      $yaml = Yaml::dump($pathOrArray);
+      return $yaml;
+    }
 
     // write yaml data to file
     if ($data) {
@@ -3988,13 +3996,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $yaml = str_replace("''", '""', $yaml);
       $yaml = str_replace(" '", ' "', $yaml);
       $yaml = str_replace("'\n", "\"\n", $yaml);
-      $this->wire->files->mkdir(dirname($path), true);
-      $this->wire->files->filePutContents($path, $yaml);
+      $this->wire->files->mkdir(dirname($pathOrArray), true);
+      $this->wire->files->filePutContents($pathOrArray, $yaml);
       return $yaml;
     }
 
-    if (!is_file($path)) return false;
-    return Yaml::parseFile($path);
+    if (!is_file($pathOrArray)) return false;
+    return Yaml::parseFile($pathOrArray);
   }
 
   /**
