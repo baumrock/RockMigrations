@@ -1105,7 +1105,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // handle different types of second parameter
     if (is_bool($data)) {
       // add title field to this template if second param = TRUE
-      if ($data) $this->addFieldToTemplate('title', $t);
+      // if ($data) $this->addFieldToTemplate('title', $t);
     } elseif (is_string($data)) {
       // second param is a string
       // eg "\MyModule\MyPageClass"
@@ -2569,6 +2569,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $this->log("Migrations disabled via \$config->noMigrate");
       return;
     }
+    if (!$this->isCLI() and $this->disabled) {
+      $this->log("Migrations disabled via module settings");
+      return;
+    }
 
     // prevent auto-migrate when CLI mode is enabled or when $rm->noMigrate()
     // was called (which can be handy to get quick reloads while working on a
@@ -4027,8 +4031,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $video = new InputfieldMarkup();
     $video->label = 'processwire-rocks.com';
-    $video->value = '<iframe width="560" height="315" src="https://www.youtube.com/embed/eBOB8dZvRN4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+    $video->value = '<iframe width="420" height="236" src="https://www.youtube.com/embed/eBOB8dZvRN4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+    $video->value .= '<iframe width="420" height="236" src="https://www.youtube.com/embed/o6O859d3cFA" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
     $inputfields->add($video);
+
+    $inputfields->add([
+      'type' => 'checkbox',
+      'name' => 'disabled',
+      'label' => 'Disable all migrations',
+      'notes' => 'This can be helpful for debugging or if you just want to use some useful methods of RockMigrations (like the asset minify feature).',
+      'checked' => $this->disabled ? 'checked' : '',
+    ]);
 
     $inputfields->add([
       'type' => 'markup',
