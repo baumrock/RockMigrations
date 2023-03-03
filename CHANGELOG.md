@@ -1,3 +1,12 @@
+# [3.10.0](https://github.com/baumrock/RockMigrations/compare/v3.9.0...v3.10.0) (2023-03-03)
+
+
+### Features
+
+* add checkbox to disable migrations ([8f1efec](https://github.com/baumrock/RockMigrations/commit/8f1efec9fa6e3e82f6ad86a17aec73009738891c))
+
+
+
 # [3.9.0](https://github.com/baumrock/RockMigrations/compare/v3.8.0...v3.9.0) (2023-03-03)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * add yamlParse() method ([51c09b2](https://github.com/baumrock/RockMigrations/commit/51c09b2ce97119569cabe41e25264593b8c2799d))
-
-
-
-# [3.5.0](https://github.com/baumrock/RockMigrations/compare/v3.4.0...v3.5.0) (2023-03-01)
-
-
-### Features
-
-* add support for php array to yaml ([90e203f](https://github.com/baumrock/RockMigrations/commit/90e203fb41e4d1684ea942a64b69f0d2e73a9bfc))
 
 
 
