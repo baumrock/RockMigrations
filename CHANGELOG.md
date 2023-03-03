@@ -1,3 +1,12 @@
+## [3.10.1](https://github.com/baumrock/RockMigrations/compare/v3.10.0...v3.10.1) (2023-03-03)
+
+
+### Bug Fixes
+
+* remove comment ([6a92ed4](https://github.com/baumrock/RockMigrations/commit/6a92ed4db6031f67fd971edc99fb4d52dee1c504))
+
+
+
 # [3.10.0](https://github.com/baumrock/RockMigrations/compare/v3.9.0...v3.10.0) (2023-03-03)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * create module info.php ([c6d2bdf](https://github.com/baumrock/RockMigrations/commit/c6d2bdfefa00f8f3a3c8b6dc7ad4988694277793))
-
-
-
-# [3.6.0](https://github.com/baumrock/RockMigrations/compare/v3.5.0...v3.6.0) (2023-03-01)
-
-
-### Features
-
-* add yamlParse() method ([51c09b2](https://github.com/baumrock/RockMigrations/commit/51c09b2ce97119569cabe41e25264593b8c2799d))
 
 
 
