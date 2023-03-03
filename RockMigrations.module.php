@@ -340,6 +340,34 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Minify given css or js file
+   *
+   * Usage:
+   * $rm->minify("/path/to/style.css"); // creates /path/to/style.min.css
+   * $rm->minify("/path/to/style.css", "/newpath/style.min.css");
+   */
+  public function minify($file, $minFile = null)
+  {
+    $ext = pathinfo($file, PATHINFO_EXTENSION);
+    require_once __DIR__ . "/vendor/autoload.php";
+    if ($ext == 'css') {
+      if (!$minFile) $minFile = substr($file, 0, -4) . ".min.css";
+      if ($this->isNewer($minFile, $file)) return;
+      $minify = new \MatthiasMullie\Minify\CSS($file);
+      $minify->minify($minFile);
+      $this->log("Minified $minFile");
+    } elseif ($ext == 'js') {
+      if (!$minFile) $minFile = substr($file, 0, -3) . ".min.js";
+      if ($this->isNewer($minFile, $file)) return;
+      $minify = new \MatthiasMullie\Minify\JS($file);
+      $minify->minify($minFile);
+      $this->log("Minified $minFile");
+    } else {
+      throw new WireException("Invalid Extension $ext");
+    }
+  }
+
+  /**
    * Set page name from field of template
    *
    * Usage:
@@ -3780,7 +3808,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     $module = false;
     $callback = false;
-    $pageClass = false;
     $hash = false;
 
     $trace = debug_backtrace()[1];

@@ -17,6 +17,11 @@ class ComposerStaticInit671ddd28ced629423195f85177aa8669
             'Symfony\\Polyfill\\Ctype\\' => 23,
             'Symfony\\Component\\Yaml\\' => 23,
         ),
+        'M' => 
+        array (
+            'MatthiasMullie\\PathConverter\\' => 29,
+            'MatthiasMullie\\Minify\\' => 22,
+        ),
         'C' => 
         array (
             'Composer\\Installers\\' => 20,
@@ -31,6 +36,14 @@ class ComposerStaticInit671ddd28ced629423195f85177aa8669
         'Symfony\\Component\\Yaml\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/yaml',
+        ),
+        'MatthiasMullie\\PathConverter\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/matthiasmullie/path-converter/src',
+        ),
+        'MatthiasMullie\\Minify\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/matthiasmullie/minify/src',
         ),
         'Composer\\Installers\\' => 
         array (
