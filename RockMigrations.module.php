@@ -1105,7 +1105,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // handle different types of second parameter
     if (is_bool($data)) {
       // add title field to this template if second param = TRUE
-      // if ($data) $this->addFieldToTemplate('title', $t);
+      if ($data) $this->addFieldToTemplate('title', $t);
     } elseif (is_string($data)) {
       // second param is a string
       // eg "\MyModule\MyPageClass"
