@@ -2,9 +2,11 @@
 
 namespace ProcessWire;
 
+$package = json_decode(file_get_contents(__DIR__ . "/package.json"));
+
 $info = [
   'title' => 'RockMigrations',
-  'version' => '3.7.0',
+  'version' => $package->version,
   'summary' => 'The Ultimate Automation and Deployment-Tool for ProcessWire',
   'autoload' => 2,
   'singular' => true,
