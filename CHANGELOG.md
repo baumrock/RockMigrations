@@ -1,3 +1,12 @@
+# [3.8.0](https://github.com/baumrock/RockMigrations/compare/v3.7.0...v3.8.0) (2023-03-03)
+
+
+### Features
+
+* read version from package.json ([96426a2](https://github.com/baumrock/RockMigrations/commit/96426a2820b25576867659d0502bbd2f0b69dc21))
+
+
+
 # [3.7.0](https://github.com/baumrock/RockMigrations/compare/v3.6.0...v3.7.0) (2023-03-03)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * add method to get module config data ([da8894d](https://github.com/baumrock/RockMigrations/commit/da8894d946731372a570989aa44619a73377d428))
-
-
-
-## [3.3.1](https://github.com/baumrock/RockMigrations/compare/v3.3.0...v3.3.1) (2023-02-22)
-
-
-### Bug Fixes
-
-* wrapFields() not working ([cc519bf](https://github.com/baumrock/RockMigrations/commit/cc519bf2ca16678a5d1021c643850dfbe9106ab0))
 
 
 
