@@ -3545,6 +3545,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // early exit (eg when changing fieldtype)
     if (!$existing) return;
 
+    if (!$item) throw new WireException("Item does not exist");
+
     $log = $item->get('_rockmigrations_log') ?: '';
     if ($log) $log = "<small>" . nl2br($log) . "</small>";
     $form->add([
