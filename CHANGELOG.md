@@ -1,3 +1,12 @@
+## [3.10.3](https://github.com/baumrock/RockMigrations/compare/v3.10.2...v3.10.3) (2023-03-04)
+
+
+### Bug Fixes
+
+* throw exception when editing a field or template that does not exist ([faf46a7](https://github.com/baumrock/RockMigrations/commit/faf46a7ca10162dd63237e8ce98439cd3ed033c0))
+
+
+
 ## [3.10.2](https://github.com/baumrock/RockMigrations/compare/v3.10.1...v3.10.2) (2023-03-04)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * add minify() feature for CSS/JS files ([21df3b9](https://github.com/baumrock/RockMigrations/commit/21df3b9de8b52af39f750248c6ff6e0c50d15bc2))
-
-
-
-# [3.8.0](https://github.com/baumrock/RockMigrations/compare/v3.7.0...v3.8.0) (2023-03-03)
-
-
-### Features
-
-* read version from package.json ([96426a2](https://github.com/baumrock/RockMigrations/commit/96426a2820b25576867659d0502bbd2f0b69dc21))
 
 
 
