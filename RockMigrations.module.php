@@ -1430,7 +1430,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $field = $field->name;
     }
     if (!is_string($field)) throw new WireException("Must be string");
-    $messages = $this->rm()->fieldSuccessMessages->set($field, $msg);
+    $messages = $this->fieldSuccessMessages->set($field, $msg);
     $this->wire->session->rmFieldSuccessMessages = $messages->getArray();
   }
 

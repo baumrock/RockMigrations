@@ -260,10 +260,15 @@ class Deployment extends WireData
 
   public function hello()
   {
+    // https://patorjk.com/software/taag/#p=display&f=Standard&t=RockMigrations
     $this->echo("
-      #########################################
-      RockMigrations Deployment by baumrock.com
-      #########################################
+      ____            _    __  __ _                 _   _
+      |  _ \ ___   ___| | _|  \/  (_) __ _ _ __ __ _| |_(_) ___  _ __  ___
+      | |_) / _ \ / __| |/ / |\/| | |/ _` | '__/ _` | __| |/ _ \| '_ \/ __|
+      |  _ < (_) | (__|   <| |  | | | (_| | | | (_| | |_| | (_) | | | \__ \
+      |_| \_\___/ \___|_|\_\_|  |_|_|\__, |_|  \__,_|\__|_|\___/|_| |_|___/
+                                    |___/
+      by baumrock.com
     ");
     $this->echo("Creating new release at {$this->paths->release}\n");
     $this->echo("Root folder name: " . $this->rootFolderName());
