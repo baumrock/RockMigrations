@@ -966,6 +966,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     $log = "Parent $parent not found";
     $parent = $this->getPage($parent);
+    if ($parent === false) {
+      $url = "https://github.com/baumrock/RockMigrations/pull/20";
+      throw new WireException("It looks like you are using an outdated syntax for createPage(), see $url");
+    }
     if (!$parent->id) return $this->log($log);
 
     // get page if it exists
