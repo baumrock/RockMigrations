@@ -1,3 +1,12 @@
+# [3.13.0](https://github.com/baumrock/RockMigrations/compare/v3.12.0...v3.13.0) (2023-03-05)
+
+
+### Features
+
+* share database folder by default ([23b5064](https://github.com/baumrock/RockMigrations/commit/23b506406b41cf141eb24c60033c8a4413b2057a))
+
+
+
 # [3.12.0](https://github.com/baumrock/RockMigrations/compare/v3.11.0...v3.12.0) (2023-03-05)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * fieldsuccessmessage calling non-existing rm() method ([fe26836](https://github.com/baumrock/RockMigrations/commit/fe26836bb8adf18de32a779b7b29b5d72497f59c))
-
-
-
-## [3.10.1](https://github.com/baumrock/RockMigrations/compare/v3.10.0...v3.10.1) (2023-03-03)
-
-
-### Bug Fixes
-
-* remove comment ([6a92ed4](https://github.com/baumrock/RockMigrations/commit/6a92ed4db6031f67fd971edc99fb4d52dee1c504))
 
 
 
