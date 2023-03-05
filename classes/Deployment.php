@@ -189,7 +189,7 @@ class Deployment extends WireData
       // load config
       $config = new Config();
       include $configFile;
-      $dir = "$current/site/assets/backups/database";
+      $dir = "$current/site/assets/backups";
       $sql = "$dir/rm-deploy.sql";
       $this->exec("
         mkdir -p $dir
