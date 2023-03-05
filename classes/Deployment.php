@@ -55,6 +55,7 @@ class Deployment extends WireData
       '/site/config-local.php',
       '/site/assets/files',
       '/site/assets/logs',
+      '/site/assets/backups/database',
     ];
 
     // setup default delete directories
@@ -62,7 +63,6 @@ class Deployment extends WireData
       '/.ddev',
       '/.git',
       '/.github',
-      '/site/assets/backups',
       '/site/assets/cache',
       '/site/assets/ProCache',
       '/site/assets/pwpc-*',
