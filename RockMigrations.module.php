@@ -20,8 +20,6 @@ use TracyDebugger;
  * @license MIT
  * @link https://www.baumrock.com
  */
-require_once __DIR__ . "/MagicPage.php";
-require_once __DIR__ . "/PageClass.php";
 class RockMigrations extends WireData implements Module, ConfigurableModule
 {
 
@@ -72,6 +70,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   public function init()
   {
+    $this->wire->classLoader->addNamespace("RockMigrations", __DIR__ . "/classes");
     $config = $this->wire->config;
     $this->wire('rockmigrations', $this);
     $this->installModule('MagicPages');
@@ -1718,7 +1717,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function getDeployment($argv = null, $whitelistedPath = null): Deployment
   {
-    require_once __DIR__ . "/Deployment.php";
     return new Deployment($argv, $whitelistedPath);
   }
 
@@ -3883,7 +3881,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       return;
     }
 
-    require_once($this->path . "WatchFile.php");
     $data = $this->wire(new WatchFile());
     /** @var WatchFile $data */
     $data->setArray([

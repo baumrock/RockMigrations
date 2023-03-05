@@ -6,8 +6,8 @@ use ProcessWire\Config;
 use ProcessWire\Paths;
 use ProcessWire\WireData;
 
-// we make sure that the current working directory is the PW root
-chdir(dirname(dirname(dirname(__DIR__))));
+chdir(__DIR__);
+chdir("../../../../");
 require_once "wire/core/ProcessWire.php";
 class Deployment extends WireData
 {
