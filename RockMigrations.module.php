@@ -828,7 +828,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $file = $event->arguments(0); // full path/file being rendered
       if (basename($file) !== '_footer.php') return;
       $event->return = str_replace("ProcessWire", $str, $event->return);
-    });
+    }, ['priority' => 999]);
   }
 
   /**
@@ -2192,6 +2192,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     if ($data === null) return json_decode(file_get_contents($path));
     file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT));
+  }
+
+  /**
+   * Get WireData object from json file
+   */
+  public function jsonData($file)
+  {
+    $data = $this->wire(new WireData());
+    if (!is_file($file)) $file = $this->wire->config->paths->root . $file;
+    if (!is_file($file)) return $data;
+    $arr = json_decode(file_get_contents($file), true);
+    $data->setArray($arr);
+    return $data;
   }
 
   /**
