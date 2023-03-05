@@ -286,6 +286,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * TRUE = httpHost ends with .ddev.site
+   * FALSE = httpHost does not end with .ddev.site
+   */
+  public function isDDEV(): bool
+  {
+    return substr($this->wire->config->httpHost, -10) === ".ddev.site";
+  }
+
+  /**
    * Remove non-breaking spaces in string
    * @return string
    */
