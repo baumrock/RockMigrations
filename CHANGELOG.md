@@ -1,3 +1,12 @@
+# [3.14.0](https://github.com/baumrock/RockMigrations/compare/v3.13.1...v3.14.0) (2023-03-05)
+
+
+### Features
+
+* add isDDEV() method ([41ade33](https://github.com/baumrock/RockMigrations/commit/41ade33c4dd6563940f3a45aa6d275e3522f1cbb))
+
+
+
 ## [3.13.1](https://github.com/baumrock/RockMigrations/compare/v3.13.0...v3.13.1) (2023-03-05)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * throw exception on old syntax of createPage() ([bffe492](https://github.com/baumrock/RockMigrations/commit/bffe492698092a79c410675ea348d66ffcaf9b3b))
-
-
-
-## [3.10.3](https://github.com/baumrock/RockMigrations/compare/v3.10.2...v3.10.3) (2023-03-04)
-
-
-### Bug Fixes
-
-* throw exception when editing a field or template that does not exist ([faf46a7](https://github.com/baumrock/RockMigrations/commit/faf46a7ca10162dd63237e8ce98439cd3ed033c0))
 
 
 
