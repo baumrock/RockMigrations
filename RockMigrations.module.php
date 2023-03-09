@@ -108,6 +108,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->addHookBefore("InputfieldForm::render", $this, "showCopyCode");
     $this->addHookBefore("Modules::uninstall", $this, "unwatchBeforeUninstall");
     $this->addHookAfter("Modules::install", $this, "migrateAfterModuleInstall");
+    $this->addHookAfter("Page(template=admin)::render", $this, "addColorBar");
 
     // other actions on init()
     $this->loadFilesOnDemand();
@@ -563,6 +564,29 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /** ########## end tools ########## */
+
+  /**
+   * Add color-bar to DDEV and staging sites
+   */
+  public function addColorBar(HookEvent $event)
+  {
+    if ($this->noColorbar) return;
+    $search = "</body";
+    $host = $this->wire->config->httpHost;
+    if (str_contains($host, ".ddev.site")) {
+      $col = '#2E7D32';
+      $label = 'DEV';
+    } elseif (str_contains($host, "staging")) {
+      $col = '#EF6C00';
+      $label = 'STAGING';
+    } else return;
+    $style = "position:fixed;left:0;top:0;width:100%;background-color:$col;color:white;text-align:center;font-size:8px;";
+    $event->return = str_replace(
+      $search,
+      "<div style='$style'>$label</div>$search",
+      $event->return
+    );
+  }
 
   /**
    * Add field to template
@@ -4067,6 +4091,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'label' => 'Disable all migrations',
       'notes' => 'This can be helpful for debugging or if you just want to use some useful methods of RockMigrations (like the asset minify feature).',
       'checked' => $this->disabled ? 'checked' : '',
+    ]);
+
+    $inputfields->add([
+      'type' => 'checkbox',
+      'name' => 'noColorbar',
+      'label' => 'Don\'t add colorbar to DEV and STAGING sites',
+      'notes' => 'Adds a green colorbar to .ddev.site hosts and an organge bar to hosts containing the word staging.',
+      'checked' => $this->noColorbar ? 'checked' : '',
     ]);
 
     $inputfields->add([
