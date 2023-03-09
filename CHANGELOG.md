@@ -1,3 +1,12 @@
+# [3.15.0](https://github.com/baumrock/RockMigrations/compare/v3.14.0...v3.15.0) (2023-03-09)
+
+
+### Features
+
+* add colorbar feature ([bccb322](https://github.com/baumrock/RockMigrations/commit/bccb3220f625f8dc2dc5d546db93eadf4565a631))
+
+
+
 # [3.14.0](https://github.com/baumrock/RockMigrations/compare/v3.13.1...v3.14.0) (2023-03-05)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * add jsonData() method ([1e479dd](https://github.com/baumrock/RockMigrations/commit/1e479dd39c81ce145d350f95c0f8e8215535812d))
-
-
-
-# [3.11.0](https://github.com/baumrock/RockMigrations/compare/v3.10.3...v3.11.0) (2023-03-05)
-
-
-### Features
-
-* throw exception on old syntax of createPage() ([bffe492](https://github.com/baumrock/RockMigrations/commit/bffe492698092a79c410675ea348d66ffcaf9b3b))
 
 
 
