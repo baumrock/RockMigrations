@@ -2205,6 +2205,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Get WireData object from json file
+   * Will look in PW root folder for file if a relative path is provided
    */
   public function jsonData($file)
   {
