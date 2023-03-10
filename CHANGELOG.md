@@ -1,3 +1,12 @@
+# [3.16.0](https://github.com/baumrock/RockMigrations/compare/v3.15.0...v3.16.0) (2023-03-10)
+
+
+### Features
+
+* add xdebug launcher file and checkbox ([6cbc873](https://github.com/baumrock/RockMigrations/commit/6cbc87364ba9c3a86918b59c66ff48a704143f76))
+
+
+
 # [3.15.0](https://github.com/baumrock/RockMigrations/compare/v3.14.0...v3.15.0) (2023-03-09)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * share database folder by default ([23b5064](https://github.com/baumrock/RockMigrations/commit/23b506406b41cf141eb24c60033c8a4413b2057a))
-
-
-
-# [3.12.0](https://github.com/baumrock/RockMigrations/compare/v3.11.0...v3.12.0) (2023-03-05)
-
-
-### Features
-
-* add jsonData() method ([1e479dd](https://github.com/baumrock/RockMigrations/commit/1e479dd39c81ce145d350f95c0f8e8215535812d))
 
 
 
