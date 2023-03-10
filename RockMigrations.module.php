@@ -113,6 +113,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // other actions on init()
     $this->loadFilesOnDemand();
     $this->syncSnippets();
+    $this->addXdebugLauncher();
   }
 
   private function loadTweaks()
@@ -818,6 +819,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $tpl->save();
       }
     }
+  }
+
+  /**
+   * Add xdebug launcher file for DDEV to PW root
+   */
+  public function addXdebugLauncher()
+  {
+    if (!$this->addXdebugLauncher) return;
+    $src = __DIR__ . "/.vscode/launch.json";
+    $dst = $this->wire->config->paths->root . ".vscode/launch.json";
+    if (!is_file($dst)) $this->wire->files->copy($src, $dst);
   }
 
   /**
@@ -4127,11 +4139,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'label' => 'Sync VSCode Snippets to PW root',
       'description' => "If this option is enabled the module will copy the vscode snippets file to the PW root directory. If you are using VSCode I highly recommend using this option. See readme for details.",
       'collapsed' => Inputfield::collapsedBlank,
+      'checked' => $this->syncSnippets ? 'checked' : '',
     ]);
-    $inputfields->children()->last()->attr(
-      'checked',
-      $this->syncSnippets ? 'checked' : ''
-    );
+    $inputfields->add([
+      'type' => 'checkbox',
+      'name' => 'addXdebugLauncher',
+      'label' => 'Add xDebug launcher file for DDEV to .vscode folder',
+      'notes' => 'All you have to do to use xDebug is "ddev xdebug on" and then start an xDebug session from within VSCode - see [docs](https://ddev.readthedocs.io/en/latest/users/debugging-profiling/step-debugging/#visual-studio-code-vs-code-debugging-setup)',
+      'collapsed' => Inputfield::collapsedBlank,
+      'checked' => $this->addXdebugLauncher ? 'checked' : '',
+    ]);
 
     $this->profileExecute();
     $f = new InputfieldSelect();
