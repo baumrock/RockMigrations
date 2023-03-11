@@ -4138,7 +4138,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     $f = $this->wire->modules->get('InputfieldCheckboxes');
     $f->name = 'enabledTweaks';
-    $f->label = "Tweaks";
+    $f->label = "ProcessWire Tweaks";
     $f->entityEncodeText = false;
     foreach ($this->tweaks as $tweak) {
       $f->addOption($tweak->name, implode(' - ', array_filter([$tweak->name, $tweak->description])));
