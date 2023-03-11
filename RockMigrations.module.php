@@ -571,7 +571,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function addColorBar(HookEvent $event)
   {
-    if ($this->noColorbar) return;
+    if (!$this->colorBar) return;
     $search = "</body";
     $host = $this->wire->config->httpHost;
     if (str_contains($host, ".ddev.site")) {
@@ -4111,22 +4111,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $inputfields->add($video);
 
     $inputfields->add([
-      'type' => 'checkbox',
-      'name' => 'disabled',
-      'label' => 'Disable all migrations',
-      'notes' => 'This can be helpful for debugging or if you just want to use some useful methods of RockMigrations (like the asset minify feature).',
-      'checked' => $this->disabled ? 'checked' : '',
-    ]);
-
-    $inputfields->add([
-      'type' => 'checkbox',
-      'name' => 'noColorbar',
-      'label' => 'Don\'t add colorbar to DEV and STAGING sites',
-      'notes' => 'Adds a green colorbar to .ddev.site hosts and an organge bar to hosts containing the word staging.',
-      'checked' => $this->noColorbar ? 'checked' : '',
-    ]);
-
-    $inputfields->add([
       'type' => 'markup',
       'label' => 'RockMigrations Config Options',
       'value' => 'You can set all settings either here via GUI or alternatively via config array:<br>
@@ -4134,23 +4118,29 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         . '  "syncSnippets" => true,<br>'
         . '];</pre>'
         . 'Note that settings in config.php have precedence over GUI settings!',
+      'icon' => 'cogs',
     ]);
 
-    $f = $this->wire->modules->get('InputfieldCheckboxes');
-    $f->name = 'enabledTweaks';
-    $f->label = "ProcessWire Tweaks";
-    $f->entityEncodeText = false;
-    foreach ($this->tweaks as $tweak) {
-      $f->addOption($tweak->name, implode(' - ', array_filter([$tweak->name, $tweak->description])));
-    }
-    $f->value = (array)$this->enabledTweaks;
-    $inputfields->add($f);
+    $inputfields->add([
+      'type' => 'checkbox',
+      'name' => 'disabled',
+      'label' => 'Disable all migrations',
+      'notes' => 'This can be helpful for debugging or if you just want to use some useful methods of RockMigrations (like the asset minify feature).',
+      'checked' => $this->disabled ? 'checked' : '',
+    ]);
+    $inputfields->add([
+      'type' => 'checkbox',
+      'name' => 'colorBar',
+      'label' => 'Add colorbar to DEV and STAGING sites',
+      'notes' => 'Adds a green colorbar to .ddev.site hosts and an organge bar to hosts containing the word staging.',
+      'checked' => $this->colorBar ? 'checked' : '',
+    ]);
 
     $inputfields->add([
       'type' => 'checkbox',
       'name' => 'syncSnippets',
       'label' => 'Sync VSCode Snippets to PW root',
-      'description' => "If this option is enabled the module will copy the vscode snippets file to the PW root directory. If you are using VSCode I highly recommend using this option. See readme for details.",
+      'notes' => "If this option is enabled the module will copy the vscode snippets file to the PW root directory. If you are using VSCode I highly recommend using this option. See readme for details.",
       'collapsed' => Inputfield::collapsedBlank,
       'checked' => $this->syncSnippets ? 'checked' : '',
     ]);
@@ -4174,6 +4164,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'label' => 'Add version number from package.json in root folder to the PW admin footer',
       'checked' => $this->addVersion ? 'checked' : '',
     ]);
+
+    $this->wrapFields($inputfields, [
+      'disabled' => ['columnWidth' => 100],
+      'addXdebugLauncher' => ['columnWidth' => 50],
+      'addHost' => ['columnWidth' => 50],
+      'addVersion' => ['columnWidth' => 50],
+      'colorBar' => ['columnWidth' => 50],
+      'syncSnippets' => ['columnWidth' => 100],
+    ], [
+      'label' => 'RockMigrations Options',
+    ]);
+
+    $f = $this->wire->modules->get('InputfieldCheckboxes');
+    $f->name = 'enabledTweaks';
+    $f->label = "ProcessWire Tweaks";
+    $f->entityEncodeText = false;
+    foreach ($this->tweaks as $tweak) {
+      $f->addOption($tweak->name, implode(' - ', array_filter([$tweak->name, $tweak->description])));
+    }
+    $f->value = (array)$this->enabledTweaks;
+    $inputfields->add($f);
 
     $this->profileExecute();
     $f = new InputfieldSelect();
