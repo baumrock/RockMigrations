@@ -863,12 +863,25 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function changeFooter()
   {
     if ($this->wire->page->template != 'admin') return;
-    $str = $this->wire->config->httpHost;
-    $time = date("Y-m-d H:i:s", filemtime($this->wire->config->paths->root));
-    if ($this->wire->user->isSuperuser()) {
-      $dir = $this->wire->config->paths->root;
-      $str = "<span title='$dir @ $time' uk-tooltip>$str</span>";
+    $str = "";
+
+    if ($this->addHost) {
+      $str = $this->wire->config->httpHost;
+      $time = date("Y-m-d H:i:s", filemtime($this->wire->config->paths->root));
+      if ($this->wire->user->isSuperuser()) {
+        $dir = $this->wire->config->paths->root;
+        $str = "<span title='$dir @ $time' uk-tooltip>$str</span>";
+      }
     }
+
+    // add version number if package.json is found in root
+    $f = $this->wire->config->paths->root . "package.json";
+    if ($this->addVersion and file_exists($f)) {
+      $version = json_decode(file_get_contents($f))->version;
+      $str .= " <small>v$version</small>";
+    }
+
+    if (!$str) return;
     $this->wire->addHookAfter('AdminThemeUikit::renderFile', function ($event) use ($str) {
       $file = $event->arguments(0); // full path/file being rendered
       if (basename($file) !== '_footer.php') return;
@@ -4146,8 +4159,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'name' => 'addXdebugLauncher',
       'label' => 'Add xDebug launcher file for DDEV to .vscode folder',
       'notes' => 'All you have to do to use xDebug is "ddev xdebug on" and then start an xDebug session from within VSCode - see [docs](https://ddev.readthedocs.io/en/latest/users/debugging-profiling/step-debugging/#visual-studio-code-vs-code-debugging-setup)',
-      'collapsed' => Inputfield::collapsedBlank,
       'checked' => $this->addXdebugLauncher ? 'checked' : '',
+    ]);
+    $inputfields->add([
+      'type' => 'checkbox',
+      'name' => 'addHost',
+      'label' => 'Add hostname to the PW admin footer',
+      'checked' => $this->addHost ? 'checked' : '',
+      'notes' => 'Superusers will also see a the root folders name and modified date on hover in a tooltip!',
+    ]);
+    $inputfields->add([
+      'type' => 'checkbox',
+      'name' => 'addVersion',
+      'label' => 'Add version number from package.json in root folder to the PW admin footer',
+      'checked' => $this->addVersion ? 'checked' : '',
     ]);
 
     $this->profileExecute();
