@@ -1,3 +1,12 @@
+# [3.18.0](https://github.com/baumrock/RockMigrations/compare/v3.17.0...v3.18.0) (2023-03-11)
+
+
+### Features
+
+* improve ui for module config ([c7401dd](https://github.com/baumrock/RockMigrations/commit/c7401dd8b727e5b999b7cf6b2c55d9cf87040e8d))
+
+
+
 # [3.17.0](https://github.com/baumrock/RockMigrations/compare/v3.16.0...v3.17.0) (2023-03-11)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * add isDDEV() method ([41ade33](https://github.com/baumrock/RockMigrations/commit/41ade33c4dd6563940f3a45aa6d275e3522f1cbb))
-
-
-
-## [3.13.1](https://github.com/baumrock/RockMigrations/compare/v3.13.0...v3.13.1) (2023-03-05)
-
-
-### Bug Fixes
-
-* path of rm-deploy.sql ([12da687](https://github.com/baumrock/RockMigrations/commit/12da687e43808babac6eb62df8bddbc88c3fd171))
 
 
 
