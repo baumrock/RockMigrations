@@ -1,3 +1,12 @@
+# [3.17.0](https://github.com/baumrock/RockMigrations/compare/v3.16.0...v3.17.0) (2023-03-11)
+
+
+### Features
+
+* add version number feature for backend footer ([95f18eb](https://github.com/baumrock/RockMigrations/commit/95f18eb738a52fd00cb4fa3e9867ced798c57c6e))
+
+
+
 # [3.16.0](https://github.com/baumrock/RockMigrations/compare/v3.15.0...v3.16.0) (2023-03-10)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * path of rm-deploy.sql ([12da687](https://github.com/baumrock/RockMigrations/commit/12da687e43808babac6eb62df8bddbc88c3fd171))
-
-
-
-# [3.13.0](https://github.com/baumrock/RockMigrations/compare/v3.12.0...v3.13.0) (2023-03-05)
-
-
-### Features
-
-* share database folder by default ([23b5064](https://github.com/baumrock/RockMigrations/commit/23b506406b41cf141eb24c60033c8a4413b2057a))
 
 
 
