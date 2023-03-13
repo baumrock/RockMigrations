@@ -4141,7 +4141,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'name' => 'syncSnippets',
       'label' => 'Sync VSCode Snippets to PW root',
       'notes' => "If this option is enabled the module will copy the vscode snippets file to the PW root directory. If you are using VSCode I highly recommend using this option. See readme for details.",
-      'collapsed' => Inputfield::collapsedBlank,
       'checked' => $this->syncSnippets ? 'checked' : '',
     ]);
     $inputfields->add([
