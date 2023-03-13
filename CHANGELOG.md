@@ -1,3 +1,12 @@
+## [3.18.1](https://github.com/baumrock/RockMigrations/compare/v3.18.0...v3.18.1) (2023-03-13)
+
+
+### Bug Fixes
+
+* remove collapsed state ([43ef9e0](https://github.com/baumrock/RockMigrations/commit/43ef9e0560a41689c6f93f336c730bb427afd0b6))
+
+
+
 # [3.18.0](https://github.com/baumrock/RockMigrations/compare/v3.17.0...v3.18.0) (2023-03-11)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * add colorbar feature ([bccb322](https://github.com/baumrock/RockMigrations/commit/bccb3220f625f8dc2dc5d546db93eadf4565a631))
-
-
-
-# [3.14.0](https://github.com/baumrock/RockMigrations/compare/v3.13.1...v3.14.0) (2023-03-05)
-
-
-### Features
-
-* add isDDEV() method ([41ade33](https://github.com/baumrock/RockMigrations/commit/41ade33c4dd6563940f3a45aa6d275e3522f1cbb))
 
 
 
