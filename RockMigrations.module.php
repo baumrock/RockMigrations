@@ -382,6 +382,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * Usage:
    * $rm->setPageNameFromField("basic-page", "headline");
+   *
+   * // set page name from headline (fallback to title)
    * $rm->setPageNameFromField("basic-page", ["headline", "title"]);
    *
    * Make sure to install Page Path History module!
