@@ -1,3 +1,12 @@
+# [3.19.0](https://github.com/baumrock/RockMigrations/compare/v3.18.1...v3.19.0) (2023-03-15)
+
+
+### Features
+
+* add setPageName magic method ([4c5f53c](https://github.com/baumrock/RockMigrations/commit/4c5f53c88d58c32720fa82823ecd83fa3cb1397b))
+
+
+
 ## [3.18.1](https://github.com/baumrock/RockMigrations/compare/v3.18.0...v3.18.1) (2023-03-13)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * add xdebug launcher file and checkbox ([6cbc873](https://github.com/baumrock/RockMigrations/commit/6cbc87364ba9c3a86918b59c66ff48a704143f76))
-
-
-
-# [3.15.0](https://github.com/baumrock/RockMigrations/compare/v3.14.0...v3.15.0) (2023-03-09)
-
-
-### Features
-
-* add colorbar feature ([bccb322](https://github.com/baumrock/RockMigrations/commit/bccb3220f625f8dc2dc5d546db93eadf4565a631))
 
 
 
