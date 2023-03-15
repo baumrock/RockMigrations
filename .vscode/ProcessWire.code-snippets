@@ -5,6 +5,17 @@
     "body": ["<?php namespace $1;", "$0"]
   },
 
+  // RockFrontend
+  "rf": {
+    "prefix": "rf",
+    "body": [
+      "/** @var RockFrontend \\$rf */",
+      "\\$rf = \\$this->wire->modules->get('RockFrontend');",
+      "\\$rf->"
+    ],
+    "description": "Get RockFrontend Module"
+  },
+
   // info
   "info": {
     "prefix": "info",
