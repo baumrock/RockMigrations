@@ -1,3 +1,12 @@
+# [3.21.0](https://github.com/baumrock/RockMigrations/compare/v3.20.0...v3.21.0) (2023-03-15)
+
+
+### Features
+
+* add rockfrontend snippet ([06e4a6f](https://github.com/baumrock/RockMigrations/commit/06e4a6f853e9cab69e04f97bf1354d6b3ad823f2))
+
+
+
 # [3.20.0](https://github.com/baumrock/RockMigrations/compare/v3.19.0...v3.20.0) (2023-03-15)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * improve ui for module config ([c7401dd](https://github.com/baumrock/RockMigrations/commit/c7401dd8b727e5b999b7cf6b2c55d9cf87040e8d))
-
-
-
-# [3.17.0](https://github.com/baumrock/RockMigrations/compare/v3.16.0...v3.17.0) (2023-03-11)
-
-
-### Features
-
-* add version number feature for backend footer ([95f18eb](https://github.com/baumrock/RockMigrations/commit/95f18eb738a52fd00cb4fa3e9867ced798c57c6e))
 
 
 
