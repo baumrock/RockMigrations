@@ -1,3 +1,12 @@
+# [3.20.0](https://github.com/baumrock/RockMigrations/compare/v3.19.0...v3.20.0) (2023-03-15)
+
+
+### Features
+
+* add hookable method migrationsDone ([907e0ba](https://github.com/baumrock/RockMigrations/commit/907e0ba6b7963c2f7327227ecba948d8dc668be2))
+
+
+
 # [3.19.0](https://github.com/baumrock/RockMigrations/compare/v3.18.1...v3.19.0) (2023-03-15)
 
 
@@ -31,15 +40,6 @@
 ### Features
 
 * add version number feature for backend footer ([95f18eb](https://github.com/baumrock/RockMigrations/commit/95f18eb738a52fd00cb4fa3e9867ced798c57c6e))
-
-
-
-# [3.16.0](https://github.com/baumrock/RockMigrations/compare/v3.15.0...v3.16.0) (2023-03-10)
-
-
-### Features
-
-* add xdebug launcher file and checkbox ([6cbc873](https://github.com/baumrock/RockMigrations/commit/6cbc87364ba9c3a86918b59c66ff48a704143f76))
 
 
 
