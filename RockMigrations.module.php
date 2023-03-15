@@ -2753,6 +2753,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $this->migrate($migrate);
       }
     }
+
+    $this->log("Triggering RockMigrations::migrationsDone");
+    $this->migrationsDone();
+  }
+
+  public function ___migrationsDone()
+  {
   }
 
   /**

@@ -107,6 +107,19 @@ $config->noMigrate = true;
 
 This prevents running migrations but files will still be watched for changes and you will still be able to trigger migrations from the CLI.
 
+### Hooking after migrationsDone
+
+If you want to apply migrations after all other migrations have run, you can hook after `migrationsDone`:
+
+```php
+$wire->addHookAfter("RockMigrations::migrationsDone", function(HookEvent $event) {
+  /** @var RockMigrations $rm */
+  $rm = $event->object;
+  $rm->removeFieldFromTemplate('title', 'field-profilephoto');
+  $rm->removeFieldFromTemplate('title', 'field-pressphoto');
+});
+```
+
 ## Files On Demand
 
 You can instruct RockMigrations to download files on demand from a remote server. This makes it possible to create content on the remote system (eg on the live server), pull data from the database to your local machine and as soon as you open a page RockMigrations will fetch the missing files from your remote server.
