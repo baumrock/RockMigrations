@@ -155,6 +155,32 @@ class MagicPages extends WireData implements Module
         $page->onProcessInput($event->return, $event->arguments(0));
       });
     }
+
+    /**
+     * Set page name from callback
+     * Usage:
+     * Add this to your MagicPage class:
+     * public function setPageName() {
+     *   return $this->title . " - " . date("Y");
+     * }
+     */
+    if (method_exists($magicPage, "setPageName")) {
+      $this->wire->addHookAfter("Pages::saved(id>0)", function (HookEvent $event) use ($magicPage) {
+        $page = $event->arguments(0);
+        if ($page->className !== $magicPage->className) return;
+        $page->setName($page->setPageName());
+        $page->save(['noHooks' => true]);
+      });
+      $this->wire->addHookAfter("ProcessPageEdit::buildForm", function (HookEvent $event) use ($magicPage) {
+        $page = $event->process->getPage();
+        if ($page->className !== $magicPage->className) return;
+        $form = $event->return;
+        if ($f = $form->get('_pw_page_name')) {
+          $f->prependMarkup = "<style>#wrap_{$f->id} input[type=text] { display: none; }</style>";
+          $f->notes = $this->_("Page name will be set automatically on save.");
+        }
+      });
+    }
   }
 
   /**
