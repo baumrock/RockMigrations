@@ -16,6 +16,17 @@
     "description": "Get RockFrontend Module"
   },
 
+  // Site Module
+  "site": {
+    "prefix": "site",
+    "body": [
+      "/** @var Site \\$site */",
+      "\\$site = \\$this->wire->modules->get('Site');",
+      "\\$site->"
+    ],
+    "description": "Get Site Module"
+  },
+
   // info
   "info": {
     "prefix": "info",
