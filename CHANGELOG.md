@@ -1,3 +1,12 @@
+# [3.22.0](https://github.com/baumrock/RockMigrations/compare/v3.21.0...v3.22.0) (2023-03-17)
+
+
+### Features
+
+* add rm-migrate-function snippet ([680ad69](https://github.com/baumrock/RockMigrations/commit/680ad69fdbe478348ef9409a0ee750c8d7afbaa2))
+
+
+
 # [3.21.0](https://github.com/baumrock/RockMigrations/compare/v3.20.0...v3.21.0) (2023-03-15)
 
 
@@ -31,15 +40,6 @@
 ### Bug Fixes
 
 * remove collapsed state ([43ef9e0](https://github.com/baumrock/RockMigrations/commit/43ef9e0560a41689c6f93f336c730bb427afd0b6))
-
-
-
-# [3.18.0](https://github.com/baumrock/RockMigrations/compare/v3.17.0...v3.18.0) (2023-03-11)
-
-
-### Features
-
-* improve ui for module config ([c7401dd](https://github.com/baumrock/RockMigrations/commit/c7401dd8b727e5b999b7cf6b2c55d9cf87040e8d))
 
 
 
