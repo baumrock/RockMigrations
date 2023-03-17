@@ -18,6 +18,26 @@
       "]);"
     ]
   },
+  "rm-migrate-function": {
+    "prefix": "rm-migrate-function",
+    "body": [
+      "public function migrate()",
+      "{",
+      "  \\$rm = \\$this->rockmigrations();",
+      "  \\$rm->migrate([",
+      "    'fields' => [$0],",
+      "    'templates' => [",
+      "      \\$this->getTplName() => [",
+      "        'fields' => [",
+      "          'title',",
+      "        ],",
+      "      ],",
+      "    ],",
+      "  ]);",
+      "}"
+    ],
+    "description": "migrate() function for use in a RockPageBuilder block"
+  },
 
   // helpers
   "rm-defaults": {
