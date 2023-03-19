@@ -58,7 +58,9 @@ jobs:
 
       - name: 🌵 Retrieve branch name
         id: branch
-        run: echo "::set-output name=ref::${GITHUB_REF##*/}"
+        run: |
+          branch_name=${GITHUB_REF##*/}
+          echo "ref=${branch_name}" >> $GITHUB_ENV
 
       - name: ⛽ Setup Variables
         run: |
