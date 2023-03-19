@@ -3,9 +3,13 @@ name: Deploy to Server
 on:
   workflow_call:
     inputs:
+      PATH:
+        type: string
+        required: false
       PATHS:
         type: string
-        required: true
+        required: false
+        default: "{}"
       SUBMODULES:
         type: boolean
         required: false
@@ -64,7 +68,14 @@ jobs:
           DEPLOY_NAME=release-$GITHUB_RUN_ID-$SHORT_SHA
           echo "DEPLOY_NAME=$DEPLOY_NAME" >> $GITHUB_ENV
 
-          ROOT_PATH=${{fromJson(inputs.PATHS)[steps.branch.outputs.ref]}}
+          if [[ -n "${{inputs.PATH}}" ]]; then
+            # If PATH is defined, use the value of PATH directly
+            ROOT_PATH="${{inputs.PATH}}"
+          else
+            # Otherwise, parse JSON from PATHS
+            ROOT_PATH=${{fromJson(inputs.PATHS)[steps.branch.outputs.ref]}}
+          fi
+
           echo "Using path $ROOT_PATH for branch ${{steps.branch.outputs.ref}}"
 
           echo "DEPLOY_FOLDER=$ROOT_PATH/tmp-$DEPLOY_NAME" >> $GITHUB_ENV
@@ -83,4 +94,3 @@ jobs:
       - name: 🌟 Trigger RockMigrations Deployment
         run: |
           ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "${{ inputs.PHP }} ${{ env.DEPLOY_FOLDER }}/site/deploy.php ${{steps.branch.outputs.ref}}"
-
