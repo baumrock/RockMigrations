@@ -4,6 +4,7 @@ namespace RockMigrations;
 
 use ProcessWire\HookEvent;
 use ProcessWire\Module;
+use ProcessWire\Page;
 use ProcessWire\PageArray;
 use ProcessWire\Paths;
 use ProcessWire\RockMigrations;
@@ -64,12 +65,60 @@ class MagicPages extends WireData implements Module
   }
 
   /**
+   * Attach magic field methods
+   * Makes it possible to access field "foo_bar_baz" as $page->baz()
+   * This is very useful when creating fields with long prefixed names to
+   * avoid name collisions. Its primary use was for RockPageBuilder but it
+   * was moved to MagicPages later as it turned out to be very useful.
+   */
+  public function addMagicFieldMethods(Page $page)
+  {
+    $tpl = $page->template;
+    $fields = $tpl->fields;
+    foreach ($fields as $field) {
+      $fieldname = $field->name;
+      $parts = explode("_", $fieldname);
+      $methodname = array_pop($parts);
+
+      // add the dynamic method via hook to the page
+      $this->wire->addHookMethod(
+        "Page(template=$tpl)::$methodname",
+        function ($event) use ($fieldname) {
+          // get field value of original field
+          $page = $event->object;
+          $raw = $event->arguments(0);
+          if ($raw === 2) {
+            $event->return = $page->getUnformatted($fieldname);
+            return;
+          }
+          if ($raw) {
+            $event->return = $page->getFormatted($fieldname);
+            return;
+          }
+          $val = $page->edit($fieldname);
+          if (is_string($val)) {
+            /** @var RockFrontend $rf */
+            $rf = $this->wire->modules->get('RockFrontend');
+            if ($rf) $val = $rf->html($val);
+          }
+          $event->return = $val;
+        },
+        // we attach the hook as early as possible
+        // that means if other hooks kick in later they have priority
+        // this is to make sure we don't overwrite $page->editable() etc.
+        ['priority' => 0]
+      );
+    }
+  }
+
+  /**
    * Add magic methods to this page object
    * @param Page $magicPage
    * @return void
    */
   public function addMagicMethods($magicPage)
   {
+    $this->addMagicFieldMethods($magicPage);
 
     if (method_exists($magicPage, "editForm")) {
       $this->wire->addHookAfter("ProcessPageEdit::buildForm", function ($event) use ($magicPage) {
