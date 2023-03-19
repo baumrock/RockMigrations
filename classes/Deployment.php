@@ -267,8 +267,7 @@ class Deployment extends WireData
       | |_) / _ \ / __| |/ / |\/| | |/ _` | '__/ _` | __| |/ _ \| '_ \/ __|
       |  _ < (_) | (__|   <| |  | | | (_| | | | (_| | |_| | (_) | | | \__ \
       |_| \_\___/ \___|_|\_\_|  |_|_|\__, |_|  \__,_|\__|_|\___/|_| |_|___/
-                                    |___/
-      by baumrock.com
+                                     |___/                 by baumrock.com
     ");
     $this->echo("Creating new release at {$this->paths->release}\n");
     $this->echo("Root folder name: " . $this->rootFolderName());
