@@ -2619,7 +2619,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         try {
           $templatename = $tmp::tpl;
           $tpl = $this->wire->templates->get($templatename);
-          if (!$tpl) $tpl = $this->createTemplate($templatename, $class);
+          if (!$tpl) {
+            $tpl = $this->createTemplate($templatename, $class);
+            $this->addFieldToTemplate("title", $tpl);
+          }
           if ($tags) $this->setTemplateData($templatename, ['tags' => $tags]);
           $tmp->template = $tpl;
         } catch (\Throwable $th) {
@@ -2850,6 +2853,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Remove Field from Template
    *
+   * Will silently return if field has already been removed
+   *
    * @param Field|string $field
    * @param Template|string $template
    * @param bool $force
@@ -2866,6 +2871,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     /** @var Fieldgroup $fg */
     if ($force) $field->flags = 0;
 
+    // if field is already removed we exit silently
     if (!$fg->get($field->name)) return;
 
     $fg->remove($field);
