@@ -288,6 +288,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Create inputfield from array syntax
+   *
+   * This is handy in combination of $form->insertBefore() or insertAfter()
+   * and similar methods, because PW unfortunately only supports array syntax
+   * for $form->add([...]) but not for prepend() append() etc.
+   *
+   * @return Inputfield
+   */
+  public function inputfield($data)
+  {
+    $fs = $this->wire(new InputfieldWrapper());
+    $fs->add($data);
+    return $fs->children()->last();
+  }
+
+  /**
    * TRUE = httpHost ends with .ddev.site
    * FALSE = httpHost does not end with .ddev.site
    */
