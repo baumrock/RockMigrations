@@ -1,3 +1,12 @@
+## [3.23.1](https://github.com/baumrock/RockMigrations/compare/v3.23.0...v3.23.1) (2023-03-20)
+
+
+### Bug Fixes
+
+* revert main branch deployment to old syntax ([0e24db0](https://github.com/baumrock/RockMigrations/commit/0e24db08a55f54e24515688111c7641906bb6e95))
+
+
+
 # [3.23.0](https://github.com/baumrock/RockMigrations/compare/v3.22.0...v3.23.0) (2023-03-19)
 
 
@@ -38,15 +47,6 @@
 ### Features
 
 * add hookable method migrationsDone ([907e0ba](https://github.com/baumrock/RockMigrations/commit/907e0ba6b7963c2f7327227ecba948d8dc668be2))
-
-
-
-# [3.19.0](https://github.com/baumrock/RockMigrations/compare/v3.18.1...v3.19.0) (2023-03-15)
-
-
-### Features
-
-* add setPageName magic method ([4c5f53c](https://github.com/baumrock/RockMigrations/commit/4c5f53c88d58c32720fa82823ecd83fa3cb1397b))
 
 
 
