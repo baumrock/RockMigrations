@@ -3,7 +3,7 @@ name: Deploy to Server
 on:
   workflow_call:
     inputs:
-      PATHS:
+      PATH:
         type: string
         required: true
       SUBMODULES:
@@ -52,10 +52,6 @@ jobs:
       - name: 📋 List files in the repository
         run: ls ${{ github.workspace }}
 
-      - name: 🌵 Retrieve branch name
-        id: branch
-        run: echo "::set-output name=ref::${GITHUB_REF##*/}"
-
       - name: ⛽ Setup Variables
         run: |
           SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`
@@ -64,10 +60,14 @@ jobs:
           DEPLOY_NAME=release-$GITHUB_RUN_ID-$SHORT_SHA
           echo "DEPLOY_NAME=$DEPLOY_NAME" >> $GITHUB_ENV
 
-          ROOT_PATH=${{fromJson(inputs.PATHS)[steps.branch.outputs.ref]}}
-          echo "Using path $ROOT_PATH for branch ${{steps.branch.outputs.ref}}"
+          PATH="${{inputs.PATH}}"
+          echo "PATH: $PATH"
 
-          echo "DEPLOY_FOLDER=$ROOT_PATH/tmp-$DEPLOY_NAME" >> $GITHUB_ENV
+          BRANCH=${GITHUB_REF##*/}
+          echo "BRANCH=$BRANCH" >> $GITHUB_ENV
+          echo "BRANCH: $BRANCH"
+
+          echo "DEPLOY_FOLDER=$PATH/tmp-$DEPLOY_NAME" >> $GITHUB_ENV
           echo "SRC=${{ github.workspace }}" >> $GITHUB_ENV
 
       - name: 🕵 Install SSH key and create deployment folder
@@ -82,4 +82,4 @@ jobs:
 
       - name: 🌟 Trigger RockMigrations Deployment
         run: |
-          ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "${{ inputs.PHP }} ${{ env.DEPLOY_FOLDER }}/site/deploy.php ${{steps.branch.outputs.ref}}"
+          ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "${{ inputs.PHP }} ${{ env.DEPLOY_FOLDER }}/site/deploy.php ${{ env.BRANCH }}"
