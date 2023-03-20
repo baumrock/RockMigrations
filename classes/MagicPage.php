@@ -16,6 +16,18 @@ trait MagicPage
   }
 
   /**
+   * Remove submit button from page edit screen
+   * Call this method from within editForm() magic method!
+   */
+  public function removeSaveButton($form)
+  {
+    $this->wire->addHookAfter("ProcessPageEdit::getSubmitActions", function ($event) {
+      $event->return = [];
+    });
+    $form->remove('submit_save');
+  }
+
+  /**
    * Get instance of RockFrontend
    */
   public function rockfrontend(): RockFrontend
