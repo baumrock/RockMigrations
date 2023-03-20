@@ -3,13 +3,9 @@ name: Deploy to Server
 on:
   workflow_call:
     inputs:
-      PATH:
-        type: string
-        required: false
       PATHS:
         type: string
-        required: false
-        default: "{}"
+        required: true
       SUBMODULES:
         type: boolean
         required: false
@@ -58,9 +54,7 @@ jobs:
 
       - name: 🌵 Retrieve branch name
         id: branch
-        run: |
-          branch_name=${GITHUB_REF##*/}
-          echo "ref=${branch_name}" >> $GITHUB_ENV
+        run: echo "::set-output name=ref::${GITHUB_REF##*/}"
 
       - name: ⛽ Setup Variables
         run: |
@@ -70,14 +64,7 @@ jobs:
           DEPLOY_NAME=release-$GITHUB_RUN_ID-$SHORT_SHA
           echo "DEPLOY_NAME=$DEPLOY_NAME" >> $GITHUB_ENV
 
-          if [[ -n "${{inputs.PATH}}" ]]; then
-            # If PATH is defined, use the value of PATH directly
-            ROOT_PATH="${{inputs.PATH}}"
-          else
-            # Otherwise, parse JSON from PATHS
-            ROOT_PATH=${{fromJson(inputs.PATHS)[steps.branch.outputs.ref]}}
-          fi
-
+          ROOT_PATH=${{fromJson(inputs.PATHS)[steps.branch.outputs.ref]}}
           echo "Using path $ROOT_PATH for branch ${{steps.branch.outputs.ref}}"
 
           echo "DEPLOY_FOLDER=$ROOT_PATH/tmp-$DEPLOY_NAME" >> $GITHUB_ENV
