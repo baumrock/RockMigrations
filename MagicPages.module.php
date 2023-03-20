@@ -73,7 +73,7 @@ class MagicPages extends WireData implements Module
    */
   public function addMagicFieldMethods(Page $page)
   {
-    $tpl = $page->template;
+    if (!$tpl = $page->template) return;
     $fields = $tpl->fields;
     foreach ($fields as $field) {
       $fieldname = $field->name;
