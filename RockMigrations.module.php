@@ -1141,7 +1141,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * @param bool $migrate
    * @return Template
    */
-  public function createTemplate($name, $data = true, $migrate = true)
+  public function createTemplate($name, $data = false, $migrate = true)
   {
     // quietly get the template
     // it is quiet to prevent "template xx not found" logs
@@ -2934,6 +2934,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $tpl = $this->getTemplate($tpl);
     $field = $this->getField($field);
+    if (!$field->id) {
+      return $this->log("removeTemplateContext: field not found");
+    }
     $tpl->fieldgroup->setFieldContextArray($field->id, []);
   }
 
