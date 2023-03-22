@@ -15,6 +15,10 @@ trait MagicPage
     return $this->rockmigrations()->createOnTop($this->template);
   }
 
+  /**
+   * Method that returns the pages template name
+   * This is to be consistant with RockPageBuilder+RockMigrations snippets
+   */
   public function getTplName(): string
   {
     return (string)$this->template;
