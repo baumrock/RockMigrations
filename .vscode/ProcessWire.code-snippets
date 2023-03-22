@@ -1,8 +1,26 @@
 {
-  // namespace
+  // Namespace
   "ns": {
     "prefix": "ns",
     "body": ["<?php namespace $1;", "$0"]
+  },
+
+  // Custom Page Class
+  "pageclass": {
+    "prefix": "pageclass",
+    "body": [
+      "<?php",
+      "namespace ProcessWire;",
+      "use RockMigrations\\MagicPage;",
+      "class $1Page extends Page",
+      "{",
+      "  use MagicPage;",
+      "",
+      "  const tpl='$2';",
+      "  const prefix='$2_';",
+      "  $0",
+      "}"
+    ]
   },
 
   // RockFrontend
