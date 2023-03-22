@@ -15,6 +15,11 @@ trait MagicPage
     return $this->rockmigrations()->createOnTop($this->template);
   }
 
+  public function getTplName(): string
+  {
+    return (string)$this->template;
+  }
+
   /**
    * Remove submit button from page edit screen
    * Call this method from within editForm() magic method!
