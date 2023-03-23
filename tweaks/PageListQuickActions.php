@@ -21,9 +21,6 @@ class PageListQuickActions extends Tweak
       "</head>",
       "<style>
       /* PageListQuickActions */
-      .PageListActions {
-        transition: opacity 0.3s ease;
-      }
       .PageListItem:hover > .PageListActions {
         display:inline !important;
         opacity:1 !important;
