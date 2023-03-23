@@ -201,7 +201,7 @@ class MagicPages extends WireData implements Module
         if ($event->process != "ProcessPageEdit") return;
         $page = $event->process->getPage();
         if ($page->className !== $magicPage->className) return;
-        $page->onProcessInput($event->return, $event->arguments(0));
+        $page->onProcessInput($event->arguments(0), $event->return);
       });
     }
 
