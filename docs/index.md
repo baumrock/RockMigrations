@@ -1,7 +1,3 @@
-<img src=logo.svg height=100>
-
-<br>
-
 See the video here:
 
 <a href="https://www.youtube.com/watch?v=eBOB8dZvRN4"><img src=thumb.png></a><br>
@@ -160,6 +156,8 @@ $rm->createField('foo', 'text');
 
 RockMigrations automatically watches `/site/migrate.php` and files like `YourModule.migrate.php`.
 
+---
+
 ## Working with YAML files
 
 RockMigrations ships with the Spyc library to read/write YAML files:
@@ -174,6 +172,8 @@ $rm->yaml('/path/to/file.yaml');
 // save data to file
 $rm->yaml('/path/to/file.yaml', ['foo'=>'bar']);
 ```
+
+---
 
 ## Working with fieldsets
 
