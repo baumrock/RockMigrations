@@ -726,6 +726,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     if (!$this->wire->modules->isInstalled('RockFrontend')) return;
     if (!$this->wire->config->livereload) return;
+    if ($this->wire->page->id == 21) return; // module download
 
     $url = $this->wire->config->urls('RockFrontend');
     $path = $this->wire->config->paths('RockFrontend');
