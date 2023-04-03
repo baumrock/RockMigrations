@@ -3,7 +3,3 @@
 - Index
 - Quickstart
 - Module Config
-
-##### Features
-
-[features]

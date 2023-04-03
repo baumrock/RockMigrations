@@ -160,7 +160,7 @@ $deploy->verbose();
 $deploy->run();
 ```
 
-# Add Translations to GIT
+## Add Translations to GIT
 
 In this example we will use the german language pack for our default language. We want to add all translations to GIT so that we can upload new translations on local DEV and then simply push to staging/production.
 
@@ -197,3 +197,9 @@ Now we just need to push this folder to the shared folder on deployment:
 // push german translations to staging/production
 $deploy->push('/site/assets/files/1025');
 ```
+
+## Integrations
+
+VSCode has a "github actions" extension that can help you create workflows or inspect workflow runs:
+
+<img src=vscode.png class=blur>
