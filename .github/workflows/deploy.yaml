@@ -61,14 +61,17 @@ jobs:
           echo "DEPLOY_NAME=$DEPLOY_NAME" >> $GITHUB_ENV
 
           PATH="${{inputs.PATH}}"
-          echo "PATH: $PATH"
-
           BRANCH=${GITHUB_REF##*/}
           echo "BRANCH=$BRANCH" >> $GITHUB_ENV
-          echo "BRANCH: $BRANCH"
 
           echo "DEPLOY_FOLDER=$PATH/tmp-$DEPLOY_NAME" >> $GITHUB_ENV
           echo "SRC=${{ github.workspace }}" >> $GITHUB_ENV
+
+          echo "BRANCH: $BRANCH"
+          echo "PATH: $PATH"
+          echo "SSH_USER: ${{ inputs.SSH_USER }}"
+          echo "SSH_HOST: ${{ inputs.SSH_HOST }}"
+          echo "SUBMODULES: ${{ inputs.SUBMODULES }}"
 
       - name: 🕵 Install SSH key and create deployment folder
         run: |
