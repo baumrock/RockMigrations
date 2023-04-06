@@ -2,8 +2,9 @@
 
 namespace RockMigrations;
 
-use ProcessWire\Config;
+use Exception;
 use ProcessWire\Paths;
+use ProcessWire\ProcessWire;
 use ProcessWire\WireData;
 
 chdir(__DIR__);
@@ -83,24 +84,36 @@ class Deployment extends WireData
     $root = $this->paths->root;
     $owner = fileowner($root);
     $group = filegroup($root);
-    $this->echo("Setting owner and group based on $root...");
-
+    $this->section("Setting owner and group based on root folder...");
+    $this->echo("Usage: Can be disabled via \$deploy->chown = false;");
     $this->exec("chown -R $owner:$group $root", true);
     $this->echo("Done");
   }
 
   /**
    * Delete files from release
+   *
+   * Usage:
+   * $deploy->delete("/site/assets/foo");
+   *
+   * Usage with array:
+   * $deploy->delete([
+   *   "/site/assets/foo",
+   *   "/site/assets/bar",
+   * ]);
+   *
    * @return void
    */
   public function delete($files = null, $reset = false)
   {
+    if (is_string($files)) $files = [$files];
     if (is_array($files)) {
       if ($reset) $this->delete = [];
       $this->delete = array_merge($files, $this->delete);
     } elseif ($files === null) {
       // execute deletion
-      $this->echo("Deleting files...");
+      $this->section("Deleting files...");
+      $this->echo("Usage: \$deploy->delete('/site/assets/foo');");
       foreach ($this->delete as $file) {
         $file = trim(Paths::normalizeSeparators($file), "/");
         $this->echo("  $file");
@@ -121,7 +134,7 @@ class Deployment extends WireData
   public function deleteOldReleases($keep = null, $rename = true)
   {
     if (!$keep) $keep = self::keep;
-    $this->echo("Cleaning up old releases...");
+    $this->section("Cycle release folders...");
     $folders = glob($this->paths->root . "/release-*");
     rsort($folders);
     $cnt = 0;
@@ -131,27 +144,26 @@ class Deployment extends WireData
       $cnt++;
       $base = basename($folder);
       if ($cnt > $keep + 1) {
-        $this->echo("delete $base", 2);
+        $this->echo("[delete] $base", 2);
         $this->exec("rm -rf $folder");
         continue;
       }
       if ($rename) {
         if ($cnt > 1) {
-          $arrow = str_pad(">", 10 - $cnt, " ", STR_PAD_LEFT);
-          $this->echo("rename $base $arrow $base-", 2);
+          $this->echo("[rename] $base-", 2);
           $date = date("Y-m-d H:i:s", filemtime($folder));
-          $revert .= "\n  $date >> ln -snf $base- current";
+          $revert .= "\n  [$date] ln -snf $base- current";
           $this->exec("mv $folder $folder-");
           $folder = "$folder-";
           $base = "$base-";
-        } else $this->echo("create $base", 2);
+        } else $this->echo("create $base");
       }
     }
     $folders = glob($this->paths->root . "/tmp-release-*");
     if (count($folders)) $this->echo("Deleting tmp folders...");
     foreach ($folders as $folder) {
       $base = basename($folder);
-      $this->echo("delete $base", 2);
+      $this->echo("[delete] $base", 2);
       $this->exec("rm -rf $folder");
     }
     $this->echo($revert);
@@ -166,28 +178,33 @@ class Deployment extends WireData
   /**
    * Create DB dump
    */
-  public function dumpDB()
+  public function dumpDB($pwroot = null)
   {
     if ($this->dry) return $this->echo("Dry run - skipping dumpDB()...");
-    $current = $this->paths->root . "/current";
-    $configFile = "$current/site/config.php";
-    if (!is_file($configFile)) {
-      return $this->echo("No current release - skipping dumpDB()...");
-    }
+    if (!$pwroot) $pwroot = $this->paths->root . "/current";
     try {
+      $this->section("Database Dump");
       $this->echo("Trying to create a DB dump of old release...");
 
-      // load config
-      $config = new Config();
-      include $configFile;
-      $dir = "$current/site/assets/backups";
+      if (!is_file($f = "$pwroot/wire/config.php")) throw new Exception("$f not found");
+      if (!is_file($f = "$pwroot/site/config.php")) throw new Exception("$f not found");
+      $config = ProcessWire::buildConfig($pwroot);
+
+      if (!$config->dbHost) throw new Exception("No dbHost");
+      if (!$config->dbUser) throw new Exception("No dbUser");
+      if (!$config->dbPass) throw new Exception("No dbPass");
+      if (!$config->dbPort) throw new Exception("No dbPort");
+
+      $dir = "$pwroot/site/assets/backups";
       $sql = "$dir/rm-deploy.sql";
       $this->exec("
         mkdir -p $dir
-        mysqldump -h'{$config->dbHost}' -P'{$config->dbPort}' -u'{$config->dbUser}' -p'{$config->dbPass}' {$config->dbName} > $sql
+        mysqldump --protocol tcp -h'{$config->dbHost}' -P'{$config->dbPort}' -u'{$config->dbUser}' -p'{$config->dbPass}' {$config->dbName} > $sql
         ");
-      $this->echo("old: " . realpath($sql), 2);
-      $this->echo("new: " . str_replace("/site/", "-/site/", realpath($sql)), 2);
+
+      $file = realpath($sql);
+      if (is_file($file)) $this->echo("Dumped to $file");
+      else $this->echo("WARNING: DB dump failed");
       $this->echo("Done");
     } catch (\Throwable $th) {
       $this->echo($th->getMessage());
@@ -203,7 +220,7 @@ class Deployment extends WireData
     if (is_string($msg)) {
       echo "{$indent}$msg\n";
     } elseif (is_array($msg)) {
-      if (count($msg)) echo print_r($msg, true) . "\n";
+      if (count($msg)) echo print_r($msg, true);
     }
   }
 
@@ -260,7 +277,7 @@ class Deployment extends WireData
       |_| \_\___/ \___|_|\_\_|  |_|_|\__, |_|  \__,_|\__|_|\___/|_| |_|___/
                                      |___/                 by baumrock.com
     ");
-    $this->echo("Creating new release at {$this->paths->release}\n");
+    $this->echo("Creating new release at {$this->paths->release}");
     $this->echo("Root folder name: " . $this->rootFolderName());
   }
 
@@ -272,7 +289,7 @@ class Deployment extends WireData
     $release = $this->paths->release;
     $file = "$release/site/modules/RockMigrations/migrate.php";
     if (!is_file($file)) return $this->echo("RockMigrations not found...");
-    $this->echo("Trigger RockMigrations...");
+    $this->section("Trigger RockMigrations...");
     $php = $this->php();
     try {
       $out = $this->exec("$php $file", true);
@@ -386,12 +403,20 @@ class Deployment extends WireData
     if (count($folders)) {
       $this->exit("Found some tmp-folders. It seems something went wrong...");
     } else {
-      $this->echo("
-        ########################
-        deployment successful :)
-        ########################
-      ");
+      $this->section("Deployment successful :)");
     }
+  }
+
+  /**
+   * Write a new section line to the log
+   */
+  public function section($str)
+  {
+    $len = is_string($str) ? strlen($str) : 20;
+    $this->echo("");
+    $this->echo(str_repeat("#", $len));
+    $this->echo($str);
+    $this->echo(str_repeat("#", $len));
   }
 
   /**
@@ -402,7 +427,7 @@ class Deployment extends WireData
   {
     $release = $this->paths->release;
     $shared = $this->paths->shared;
-    $this->echo("Securing file and folder permissions...");
+    $this->section("Securing file and folder permissions...");
     $this->exec("      find $release -type d -exec chmod 755 {} \;
       find $release -type f -exec chmod 644 {} \;
       chmod 440 $release/site/config.php
@@ -433,11 +458,17 @@ class Deployment extends WireData
       if ($reset) $this->share = [];
       $this->share = array_merge($files, $this->share);
     } elseif ($files === null) {
-      $this->echo("Setting up shared files...");
+      $this->section("Setting up shared files...");
+      $this->echo("Usage:");
+      $this->echo("Symlink to existing shared asset: \$deploy->share('/your/file.txt');");
+      $this->echo("Copy asset to shared folder and then symlink: \$deploy->push('/your/file.txt');");
 
       $release = $this->paths->release;
       $shared = $this->paths->shared;
+
+      $this->echo("Config of shared items:");
       $this->echo($this->share);
+      $this->echo("Processing items...");
       foreach ($this->share as $k => $v) {
         $file = $v;
 
@@ -454,6 +485,7 @@ class Deployment extends WireData
         $toAbs = Paths::normalizeSeparators("$shared/$file");
         $isfile = !!pathinfo($from, PATHINFO_EXTENSION);
         $toDir = dirname($toAbs);
+        $fromDir = dirname($from);
 
         // we create relative symlinks
         $level = substr_count($file, "/");
@@ -461,26 +493,43 @@ class Deployment extends WireData
         for ($i = 0; $i <= $level; $i++) $to = "../$to";
 
         if ($isfile) {
-          $this->echo("  file $from");
+          $this->echo("  [file]        $from");
+          if (!is_file($toAbs)) {
+            if (basename($toAbs) == 'config-local.php') {
+              $configDir = dirname($toAbs);
+              $this->exec("mkdir -p $configDir");
+              file_put_contents(
+                $toAbs,
+                "<?php\n// file created by RockMigrations"
+                  . "\n// put your site-specific config here\n"
+              );
+            }
+          }
           $this->exec("ln -sf $to $from");
         } else {
-          $this->echo("  directory $from");
+          $this->echo("  [directory]   $from");
 
           // push means we only push files to the shared folder
           // but we do not create a symlink. This can be used to push site
           // translations where the files folder itself is already symlinked
           if ($type == 'push') {
-            $this->exec("
-              rm -rf $toAbs
-              mkdir -p $toDir
-              mv $from $toDir
-            ", $this->isVerbose);
+            $this->exec(
+              "    rm -rf $toAbs\n" .
+                "    mkdir -p $toDir\n" .
+                "    mv $from $toDir",
+              $this->isVerbose
+            );
           } else {
-            $this->exec("
-              mkdir -p $toAbs
-              rm -rf $from
-              ln -snf $to $from
-            ", $this->isVerbose);
+            // regular shared directory
+            // first wipe that directory in the temporary release
+            // then create a symlink to the shared folder instead
+            $this->exec(
+              "    mkdir -p $toAbs\n" .
+                "    mkdir -p $fromDir\n" .
+                "    rm -rf $from\n" .
+                "    ln -snf $to $from",
+              $this->isVerbose
+            );
           }
         }
       }

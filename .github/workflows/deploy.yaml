@@ -45,7 +45,6 @@ jobs:
         if: ${{ inputs.SUBMODULES }}
         uses: actions/checkout@v3
         with:
-          # use github PAT https://bit.ly/3xvOvrF
           token: ${{ secrets.CI_TOKEN }}
           submodules: true
 
@@ -73,15 +72,16 @@ jobs:
           echo "SSH_HOST: ${{ inputs.SSH_HOST }}"
           echo "SUBMODULES: ${{ inputs.SUBMODULES }}"
 
-      - name: 🕵 Install SSH key and create deployment folder
+      - name: 🕵 Setup SSH
         run: |
           install -m 600 -D /dev/null ~/.ssh/id_rsa
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-          ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "mkdir -p ${{ env.DEPLOY_FOLDER }}"
 
       - name: 🚚 Deploy via RSYNC
-        run: rsync -avz --exclude '.git' ${{ env.SRC }}/ ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }}:${{ env.DEPLOY_FOLDER }}
+        run: |
+          ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "mkdir -p ${{ env.DEPLOY_FOLDER }}"
+          rsync -avz --exclude '.git' ${{ env.SRC }}/ ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }}:${{ env.DEPLOY_FOLDER }}
 
       - name: 🌟 Trigger RockMigrations Deployment
         run: |
