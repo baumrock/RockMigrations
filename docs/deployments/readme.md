@@ -1,10 +1,17 @@
 # Deployments
 
-You can use RockMigrations to easily create fully automated CI/CD pipelines for Github/Gitlab.
+You can use RockMigrations to create fully automated CI/CD pipelines for Github/Gitlab.
 
-The resulting folder structure will look like this:
+The resulting folder structure will look like this (where the triple letters stand for a release hash from github):
 
-<img src=https://i.imgur.com/OdyjJi4.png>
+```php
+current -> release-DDD   // symlink to latest release
+release-AAA---           // old releases
+release-BBB--
+release-CCC-
+release-DDD              // latest release
+shared                   // shared folder
+```
 
 - You can define the number of releases in the file `/site/deploy.php` (see code below).
 - The `current` symlink will link to the latest release by default
@@ -26,27 +33,39 @@ To use this workflow you need to set the referenced secrets in your git repo.
 
 Create a keypair for your deploy workflow. Note that we are using a custom name `id_rockmigrations` instead of the default `id_rsa` to ensure that we do not overwrite an existing key. If you are using RockMigrations on multiple projects you can simply overwrite the key as you will only need it once during setup:
 
-    ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rockmigrations -C "rockmigrations-[project]"
+```sh
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rockmigrations -C "rockmigrations-[project]"
+```
 
 Copy content of the private key to your git secret `SSH_KEY`:
 
-    cat ~/.ssh/id_rockmigrations
+```sh
+cat ~/.ssh/id_rockmigrations
+```
 
 Copy content of keyscan to your git secret `KNOWN_HOSTS`
 
-    ssh-keyscan your.server.com
+```sh
+ssh-keyscan your.server.com
+```
 
 Add the public key to your remote user:
 
-    ssh-copy-id -i ~/.ssh/id_rockmigrations user@your.server.com
+```sh
+ssh-copy-id -i ~/.ssh/id_rockmigrations user@your.server.com
+```
 
 Or copy the content of the public key into the authorized_keys file
 
-    cat ~/.ssh/id_rockmigrations.pub
+```sh
+cat ~/.ssh/id_rockmigrations.pub
+```
 
 Try to ssh into your server without using a password:
 
-    ssh -i ~/.ssh/id_rockmigrations user@your.server.com
+```sh
+ssh -i ~/.ssh/id_rockmigrations user@your.server.com
+```
 
 ## Create the workflow yaml
 
@@ -82,18 +101,23 @@ Commit the change and push to your repo. You should see the workflow showing up 
 
 Once you got your SSH connection up and running you can setup the deployment. Remove or comment the job "test" and uncomment or add the job "deploy" to your `deploy.yaml`:
 
+`label: /.github/workflows/deploy.yaml`
 ```yaml
+name: Deploy via RockMigrations
+
+on:
+  push:
+    branches:
+      - main
+
 jobs:
-  deploy:
+  deploy-top-production:
     uses: baumrock/RockMigrations/.github/workflows/deploy.yaml@main
     with:
       # specify paths for deployment as JSON
       # syntax: branch => path
       # use paths without trailing slash!
-      PATHS: '{
-        "main": "/path/to/your/production/webroot",
-        "dev": "/path/to/your/staging/webroot",
-      }'
+      PATH: "/path/to/your/production/webroot"
       SSH_HOST: your.server.com
       SSH_USER: youruser
     secrets:
@@ -103,25 +127,23 @@ jobs:
 
 If you are using submodules just set the `SUBMODULES` input variable and add a `CI_TOKEN` to your repo secrets:
 
+`label: /.github/workflows/deploy.yaml`
 ```yaml
-# .github/workflows/deploy.yaml
 name: Deploy via RockMigrations
+
 on:
   push:
     branches:
       - main
-      - dev
+
 jobs:
-  deploy:
+  deploy-top-production:
     uses: baumrock/RockMigrations/.github/workflows/deploy.yaml@main
     with:
       # specify paths for deployment as JSON
       # syntax: branch => path
       # use paths without trailing slash!
-      PATHS: '{
-        "main": "/path/to/your/production/webroot",
-        "dev": "/path/to/your/staging/webroot",
-      }'
+      PATH: "/path/to/your/production/webroot"
       SSH_HOST: your.server.com
       SSH_USER: youruser
       SUBMODULES: true
@@ -131,16 +153,21 @@ jobs:
       KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
 ```
 
-See https://bit.ly/3ru8a7e how to setup a Personal Access Token for Github. You need to _create_ this token only once for your Github Account, not for every project, but you need to add it to every project that should be able to access private submodules!
+See https://bit.ly/3ru8a7e how to setup a Personal Access Token for Github. You need to create this token only once for your Github Account, not for every project, but you need to add it to every project that should be able to access private submodules!
 
 Your workflow should copy files but fail at step `Trigger RockMigrations Deployment`. That is because you need to create a `site/deploy.php` file:
 
+`label: /site/deploy.php`
 ```php
-// code site/deploy.php
-<?php namespace RockMigrations;
+<?php
+
+namespace RockMigrations;
+
 require_once __DIR__."/modules/RockMigrations/classes/Deployment.php";
 $deploy = new Deployment($argv, "/path/to/your/deployments");
+
 // custom settings go here
+
 $deploy->run();
 ```
 
@@ -192,8 +219,8 @@ Then add those files to your repo and commit - this should look something like t
 
 Now we just need to push this folder to the shared folder on deployment:
 
+`label: /site/deploy.php`
 ```php
-// /site/deploy.php
 // push german translations to staging/production
 $deploy->push('/site/assets/files/1025');
 ```
