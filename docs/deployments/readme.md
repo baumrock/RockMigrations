@@ -41,7 +41,6 @@ This section will list the most important settings of your deployment:
 
 `label: Variables Log`
 ```sh
-Run SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`
 BRANCH: main
 PATH: /path/to/your/folder
 SSH_USER: youruser
