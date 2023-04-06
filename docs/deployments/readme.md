@@ -2,7 +2,19 @@
 
 You can use RockMigrations to create fully automated CI/CD pipelines for Github/Gitlab.
 
-The resulting folder structure will look like this (where the triple letters stand for a release hash from github):
+## Introduction
+
+The idea is to replace a workflow that depends on several manual steps with an automated workflow where all you have to do manually is `git push`:
+
+<img src=flow.drawio.svg class=blur alt="Deployment Concept">
+
+This does not only have the benefit of eliminating one manual step on every deployment, you will also get a lot of magic from RockMigrations by default. For example RockMigrations will keep several old releases where you can simply revert to if anything should go wrong. RockMigrations will also create a database backup before deployment.
+
+If you did all those steps manually on every deployment they'd add up. And we know what would happen in reality: We'd just not do it and one day we'd find ourselves in trouble without a quick way out!
+
+**Save yourself from the hassle and use RockMigrations Deployment instead!**
+
+The resulting folder structure of a deployment will look like this (where the triple letters stand for a release hash from github):
 
 ```php
 current -> release-DDD   // symlink to latest release
@@ -13,37 +25,87 @@ release-DDD              // latest release
 shared                   // shared folder
 ```
 
-- You can define the number of releases in the file `/site/deploy.php` (see code below).
-- The `current` symlink will link to the latest release by default
+- The `current` symlink will link to the latest release
+- Releases will be kept in the `release-*` folders
 - The `shared` folder will contain the persistent data shared across all releases (like `site/assets/files` and `site/config-local.php`).
 
-If a deployment goes wrong or you encounter bugs you can manually update the symlink to the latest working version and your site or app will instantly be up and running again. RockMigrations will also try to create a DB dump before deploying the new version. Instructions for both features are in the deployment log:
+## Workflow Log
 
-![image](https://user-images.githubusercontent.com/8488586/216834563-d1ff4cc1-726d-4c8e-ac34-b90839fbf5e6.png)
+RockMigrations will create a nice and helpful log on every run:
 
-# Setup
+<img src=log.png class=blur alt="Github Workflow Log">
 
-- Setup SSH keys and add secrets to your repository
-- Create workflow yaml file
-- Push to your repo
+### Setup Variables
 
-## Setup SSH keys and add secrets to your repo
+This section will list the most important settings of your deployment:
 
-To use this workflow you need to set the referenced secrets in your git repo.
+`label: Variables Log`
+```sh
+Run SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`
+BRANCH: main
+PATH: /path/to/your/folder
+SSH_USER: youruser
+SSH_HOST: yourhost.com
+SUBMODULES: true
+```
 
-Create a keypair for your deploy workflow. Note that we are using a custom name `id_rockmigrations` instead of the default `id_rsa` to ensure that we do not overwrite an existing key. If you are using RockMigrations on multiple projects you can simply overwrite the key as you will only need it once during setup:
+### Deploy via RSYNC
+
+This section will list all files that have been copied from the checked out release to your server.
+
+### Trigger RockMigrations Deployment
+
+This section lists the log that is produced by the RockMigrations Deployment from the `\RockMigrations\Deployment` class which is triggered by the invokation of `/site/deploy.php` after all files have been copied via rsync.
+
+The log is quite long and verbose so everything should be clear from reading that log.
+
+## Setup
+
+### Add the /site/deploy.php file
+
+The first thing we need to do is to create the PHP file that is triggered at the end of the rsync:
+
+`label: /site/deploy.php`
+```php
+<?php
+
+namespace RockMigrations;
+
+require_once __DIR__ . "/modules/RockMigrations/classes/Deployment.php";
+$deploy = new Deployment($argv);
+
+// custom settings go here
+// see docs about "Customising the Deployment"
+
+$deploy->run();
+```
+
+For the first deployment you can copy and paste this file as it is!
+
+### Setup SSH Keys
+
+Github needs to be able to copy files to your remote server. That's why we need to setup SSH keys that we store in the Github Repo's secrets.
+
+<div class="uk-alert uk-alert-warning">Note that we will create an SSH key with the custom name "id_rockmigrations" instead of the default "id_rsa" to ensure that we do not overwrite an existing key.</div>
+<div class="uk-alert uk-alert-danger">Don't use the "id_rsa" key for RockMigration Deployments!</div>
+
+To create the key use the following command and replace `[project]` with a unique and explanatory name:
 
 ```sh
 ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rockmigrations -C "rockmigrations-[project]"
 ```
 
-Copy content of the private key to your git secret `SSH_KEY`:
+If you are using RockMigrations on multiple projects you can simply overwrite the key on the next deployment setup as you will only need it once during setup. You can also remove that key from your system after you have sucessfully setup your deployment.
+
+### Add Secrets to your Repo
+
+Copy the content of the private key to your git secret `SSH_KEY`:
 
 ```sh
 cat ~/.ssh/id_rockmigrations
 ```
 
-Copy content of keyscan to your git secret `KNOWN_HOSTS`
+Copy the content of keyscan to your git secret `KNOWN_HOSTS`
 
 ```sh
 ssh-keyscan your.server.com
@@ -55,7 +117,7 @@ Add the public key to your remote user:
 ssh-copy-id -i ~/.ssh/id_rockmigrations user@your.server.com
 ```
 
-Or copy the content of the public key into the authorized_keys file
+Or copy and paste the content of the public key into the `~/.ssh/authorized_keys` file of your remote server. To get the content of the public key you can use this command:
 
 ```sh
 cat ~/.ssh/id_rockmigrations.pub
@@ -67,29 +129,26 @@ Try to ssh into your server without using a password:
 ssh -i ~/.ssh/id_rockmigrations user@your.server.com
 ```
 
-## Create the workflow yaml
+<div class="uk-alert uk-alert-warning">The final step must work in order to make the whole deployment work! If the server does not let you connect with the `id_rockmigrations` key then github will not be able to push files to your server!</div>
 
-Now create the following yaml file in your repo:
+### Optional: Create the test-ssh workflow
 
+If you are new to RockMigrations Deployment I recommend an additional step to check if the SSH connection between Github and your server works. This workflow will not copy any files and will therefore be a lot faster. This makes debugging easier.
+
+`label: .github/workflows/deploy.yaml`
 ```yaml
-# code .github/workflows/deploy.yaml
 name: Deploy via RockMigrations
 
-# Specify when this workflow will run.
-# Change the branch according to your setup!
-# The example will run on all pushes to main and dev branch.
+# run this test-workflow on every push to every branch
 on:
-  push:
-    branches:
-      - main
-      - dev
+  push
 
 jobs:
   test-ssh:
     uses: baumrock/RockMigrations/.github/workflows/test-ssh.yaml@main
     with:
-      SSH_HOST: your.server.com
       SSH_USER: youruser
+      SSH_HOST: your.server.com
     secrets:
       SSH_KEY: ${{ secrets.SSH_KEY }}
       KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
@@ -97,11 +156,15 @@ jobs:
 
 Commit the change and push to your repo. You should see the workflow showing up in Github's Actions tab:
 
-![img](https://i.imgur.com/JFvMqkE.png)
+<img src=actions.png class=blur alt="Github Actions Tab">
 
-Once you got your SSH connection up and running you can setup the deployment. Remove or comment the job "test" and uncomment or add the job "deploy" to your `deploy.yaml`:
+### Create the final workflow file
 
-`label: /.github/workflows/deploy.yaml`
+Once you got your SSH connection up and running you can setup the deployment.
+
+I always create a workflow file for every branch: `main.yaml` that fires on pushes to the `main` branch and `dev.yaml` that fires when I push to `dev`:
+
+`label: /.github/workflows/main.yaml`
 ```yaml
 name: Deploy via RockMigrations
 
@@ -114,18 +177,17 @@ jobs:
   deploy-top-production:
     uses: baumrock/RockMigrations/.github/workflows/deploy.yaml@main
     with:
-      # specify paths for deployment as JSON
-      # syntax: branch => path
-      # use paths without trailing slash!
-      PATH: "/path/to/your/production/webroot"
-      SSH_HOST: your.server.com
+      PATH: "/path/to/www.yoursite.com"
       SSH_USER: youruser
+      SSH_HOST: your.server.com
     secrets:
       SSH_KEY: ${{ secrets.SSH_KEY }}
       KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
 ```
 
-If you are using submodules just set the `SUBMODULES` input variable and add a `CI_TOKEN` to your repo secrets:
+### Optional: Using Submodules
+
+If you are using submodules just set the `SUBMODULES` input variable to `true` and add a `CI_TOKEN` to your repo secrets:
 
 `label: /.github/workflows/deploy.yaml`
 ```yaml
@@ -140,12 +202,9 @@ jobs:
   deploy-top-production:
     uses: baumrock/RockMigrations/.github/workflows/deploy.yaml@main
     with:
-      # specify paths for deployment as JSON
-      # syntax: branch => path
-      # use paths without trailing slash!
-      PATH: "/path/to/your/production/webroot"
-      SSH_HOST: your.server.com
+      PATH: "/path/to/www.yoursite.com"
       SSH_USER: youruser
+      SSH_HOST: your.server.com
       SUBMODULES: true
     secrets:
       CI_TOKEN: ${{ secrets.CI_TOKEN }}
@@ -153,43 +212,65 @@ jobs:
       KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
 ```
 
-See https://bit.ly/3ru8a7e how to setup a Personal Access Token for Github. You need to create this token only once for your Github Account, not for every project, but you need to add it to every project that should be able to access private submodules!
+See [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) how to setup a Personal Access Token for Github. You need to create this token only once for your Github Account, not for every project. But you need to add it to every project that should be able to access your private submodules!
 
-Your workflow should copy files but fail at step `Trigger RockMigrations Deployment`. That is because you need to create a `site/deploy.php` file:
+### First Deployment and Cleanup
 
-`label: /site/deploy.php`
-```php
-<?php
+If everything worked well you should see a success icon in your Github's `Actions` tab.
 
-namespace RockMigrations;
+You can now remove the SSH keypair `id_rockmigrations` and `id_rockmigrations.pub` from your local system if you want. The private key is stored in your Github's Repository Secrets and the public key is stored on the remote server that accepts connections from your Github action.
 
-require_once __DIR__."/modules/RockMigrations/classes/Deployment.php";
-$deploy = new Deployment($argv, "/path/to/your/deployments");
+### Setting up the shared folder
 
-// custom settings go here
+RockMigrations will create the shared folder for you on the first deployment, but it will be empty. To make it useful you need to add at least these two things:
 
-$deploy->run();
+- Add all necessary config settings in `/site/config-local.php`
+- Upload all files to `/site/assets/files`
+
+You only need to do this during setup. Once setup it will just work for all following deployments!
+
+## Customising the Deployment
+
+### share()
+
+The share method tells RockMigrations that the given file or folder should be symlinked from the shared folder. A good example is the `/site/assets/files` folder that is not part of the Github repository but needs to exist in every release.
+
+`share()` tells RockMigrations that it should create a symlink to that folder in the `shared` directory. You need to upload/create that folder or file yourself. Another example is the file `/site/config-local.php` which is also a shared file used by all releases but never touched on deploy.
+
+### delete()
+
+You can tell RockMigrations to delete files or folders after deployment. By default it will remove several folders:
+
+```sh
+/.ddev
+/.git
+/.github
+/site/assets/cache
+/site/assets/ProCache
+/site/assets/pwpc-*
+/site/assets/sessions
 ```
 
-Note that you must set a path as second argument when creating a new instance of `Deployment`. This path ensures that if you run your deployment script on another machine (for example on a local DDEV environment) it will run "dry" and will not execute any commands. This only works if your local path is different from your remote path of course!
-
-This is how it looks like if everything worked well:
-
-![img](https://i.imgur.com/hSML6Ym.png)
+As you can see every deployment will wipe the cache and ProCache folder which will make sure that you don't serve outdated versions of your site!
 
 ## Debugging
 
 Debugging can be hard when using CI/CD pipelines. If you get unexpected results during the PHP deployment you can make the script more verbose like this:
 
+`label: /site/deploy.php`
 ```php
 ...
 $deploy->verbose();
 $deploy->run();
 ```
 
-## Add Translations to GIT
+You can also make it run in dry mode where no files will be copied and only the list of to be executed commands will be shown:
 
-In this example we will use the german language pack for our default language. We want to add all translations to GIT so that we can upload new translations on local DEV and then simply push to staging/production.
+```php
+...
+$deploy->dry();
+$deploy->run();
+```
 
 ## Create Translations
 
