@@ -24,7 +24,7 @@ class Deployment extends WireData
   private $robots;
   public $share = [];
 
-  public function __construct($argv = null, $whitelistedPath = null)
+  public function __construct($argv = null)
   {
     $this->paths = new WireData();
 
@@ -37,15 +37,6 @@ class Deployment extends WireData
 
     // path to the root that contains all releases and current + shared folder
     $this->paths->root = dirname($this->paths->release);
-    if (strpos($this->paths->root, (string)$whitelistedPath) !== 0) {
-      // the current root path does not match the provided path argument
-      // this means we are not on the deployment server, so we make it dry
-      $this->echo("Not in whitelist path!");
-      $this->echo("Current path:     {$this->paths->root}");
-      $this->echo("Whitelisted path: $whitelistedPath");
-      $this->echo("Running dry...");
-      $this->dry();
-    }
 
     // path to shared folder
     $this->paths->shared = $this->paths->root . "/shared";
