@@ -2559,9 +2559,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
     foreach ($config->roles as $role => $data) {
       // set permissions for this role
-      if (array_key_exists("permissions", $data)) $this->setRolePermissions($role, $data['permissions']);
+      if (array_key_exists("permissions", $data)) {
+        $this->setRolePermissions($role, $data['permissions']);
+      }
+      if (array_key_exists("permissions-", $data)) {
+        $this->setRolePermissions($role, $data['permissions-'], true);
+      }
       if (array_key_exists("access", $data)) {
-        foreach ($data['access'] as $tpl => $access) $this->setTemplateAccess($tpl, $role, $access);
+        foreach ($data['access'] as $tpl => $access) {
+          $this->setTemplateAccess($tpl, $role, $access);
+        }
+      }
+      if (array_key_exists("access-", $data)) {
+        foreach ($data['access'] as $tpl => $access) {
+          $this->setTemplateAccess($tpl, $role, $access, true);
+        }
       }
     }
 
@@ -3419,6 +3431,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'childTemplates' => [(string)$child],
       'childNameFormat' => 'title',
     ]);
+  }
+
+  /**
+   * Set permissions for given role
+   * By default this will not remove old permissions just like all the other
+   * setXXX methods behave.
+   * @return void
+   */
+  public function setRolePermissions($role, $permissions, $remove = false)
+  {
+    $role = $this->getRole($role);
+    if ($remove) {
+      // remove all existing permissions from role
+      foreach ($role->permissions as $p) $this->removePermissionFromRole($p, $role);
+    }
+    foreach ($permissions as $perm) $this->addPermissionToRole($perm, $role);
   }
 
   /**
