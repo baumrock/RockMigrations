@@ -403,7 +403,7 @@ class Deployment extends WireData
     if (count($folders)) {
       $this->exit("Found some tmp-folders. It seems something went wrong...");
     } else {
-      $this->section("Deployment successful :)");
+      $this->section("Deployment done :)");
     }
   }
 
