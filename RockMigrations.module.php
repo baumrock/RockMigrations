@@ -30,7 +30,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   const outputLevelQuiet = 'quiet';
   const outputLevelVerbose = 'verbose';
 
+  // global processwire fields
   const field_pagename = "_pw_page_name";
+  const field_email = "email";
 
   /** @var WireData */
   public $conf;
