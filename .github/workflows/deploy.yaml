@@ -32,7 +32,7 @@ on:
         required: true
 
 jobs:
-  deploy:
+  rm-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -45,7 +45,6 @@ jobs:
         if: ${{ inputs.SUBMODULES }}
         uses: actions/checkout@v3
         with:
-          # use github PAT https://bit.ly/3xvOvrF
           token: ${{ secrets.CI_TOKEN }}
           submodules: true
 
@@ -61,24 +60,28 @@ jobs:
           echo "DEPLOY_NAME=$DEPLOY_NAME" >> $GITHUB_ENV
 
           PATH="${{inputs.PATH}}"
-          echo "PATH: $PATH"
-
           BRANCH=${GITHUB_REF##*/}
           echo "BRANCH=$BRANCH" >> $GITHUB_ENV
-          echo "BRANCH: $BRANCH"
 
           echo "DEPLOY_FOLDER=$PATH/tmp-$DEPLOY_NAME" >> $GITHUB_ENV
           echo "SRC=${{ github.workspace }}" >> $GITHUB_ENV
 
-      - name: 🕵 Install SSH key and create deployment folder
+          echo "BRANCH: $BRANCH"
+          echo "PATH: $PATH"
+          echo "SSH_USER: ${{ inputs.SSH_USER }}"
+          echo "SSH_HOST: ${{ inputs.SSH_HOST }}"
+          echo "SUBMODULES: ${{ inputs.SUBMODULES }}"
+
+      - name: 🕵 Setup SSH
         run: |
           install -m 600 -D /dev/null ~/.ssh/id_rsa
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-          ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "mkdir -p ${{ env.DEPLOY_FOLDER }}"
 
       - name: 🚚 Deploy via RSYNC
-        run: rsync -avz --exclude '.git' ${{ env.SRC }}/ ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }}:${{ env.DEPLOY_FOLDER }}
+        run: |
+          ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "mkdir -p ${{ env.DEPLOY_FOLDER }}"
+          rsync -avz --exclude '.git' ${{ env.SRC }}/ ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }}:${{ env.DEPLOY_FOLDER }}
 
       - name: 🌟 Trigger RockMigrations Deployment
         run: |
