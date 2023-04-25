@@ -163,9 +163,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // load RockMigrations.js on backend
     if ($this->wire->page->template == 'admin') {
-      $this->wire->config->scripts->add(
-        $this->wire->config->urls($this) . 'RockMigrations.js'
-      );
+      $url = $this->wire->config->urls($this);
+      $this->wire->config->scripts->add($url . 'RockMigrations.js');
+      $this->wire->config->styles->add($url . 'RockMigrations.admin.css');
 
       // fix ProcessWire language tabs issue
       if ($this->wire->languages) {

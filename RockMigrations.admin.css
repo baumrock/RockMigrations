@@ -1,0 +1,15 @@
+/**
+ * Styles for PW Backend
+ */
+
+.rm-badge {
+  box-sizing: border-box;
+  line-height: 1.5;
+  background-color: #f8f8f8;
+  margin-left: 5px;
+  padding: 2px 10px;
+  border-radius: 5px;
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
