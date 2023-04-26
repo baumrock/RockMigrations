@@ -3013,6 +3013,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Get version number from package.json in PW root folder
+   */
+  public function rootVersion()
+  {
+    $f = $this->wire->config->paths->root . "package.json";
+    if (!is_file($f)) return false;
+    $json = json_decode(file_get_contents($f));
+    if (!$json) return false;
+    return $json->version;
+  }
+
+  /**
    * Run migrations that have been attached via watch()
    * @return void
    */
@@ -4323,7 +4335,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $lastrun = date("Y-m-d H:i:s", $this->lastrun) . " ({$this->lastrun})";
     }
     return [
-      'Version' => $this->getModuleInfo()['version'],
       'lastrun' => $lastrun,
       'watchlist' => $this->watchlist,
     ];
