@@ -205,6 +205,19 @@ class MagicPages extends WireData implements Module
       });
     }
 
+    // field value changed
+    if (method_exists($magicPage, "onChanged")) {
+      $this->wire->addHookAfter("Page::changed", function ($event) use ($magicPage) {
+        $page = $event->object;
+        if ($page->className !== $magicPage->className) return;
+        $page->onChanged(
+          $event->arguments(0),
+          $event->arguments(1),
+          $event->arguments(2)
+        );
+      });
+    }
+
     /**
      * Set page name from callback
      * Usage:
