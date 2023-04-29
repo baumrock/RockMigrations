@@ -2953,6 +2953,29 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Remove submit actions from submit button dropdown
+   *
+   * Usage:
+   * $rm->removeSubmitActions('next');
+   * $rm->removeSubmitActions(['next', 'exit']);
+   */
+  public function removeSubmitActions($actions)
+  {
+    if (is_string($actions)) $actions = [$actions];
+    $this->wire->addHookAfter(
+      'ProcessPageEdit::getSubmitActions',
+      function (HookEvent $event) use ($actions) {
+        $return = $event->return;
+        foreach ($actions as $action) {
+          if (!array_key_exists($action, $return)) continue;
+          unset($return[$action]);
+        }
+        $event->return = $return;
+      }
+    );
+  }
+
+  /**
    * Remove access from template for given role
    * @return void
    */
