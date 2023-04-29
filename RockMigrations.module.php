@@ -2959,8 +2959,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * $rm->removeSubmitActions('next');
    * $rm->removeSubmitActions(['next', 'exit']);
    */
-  public function removeSubmitActions($actions)
+  public function removeSubmitActions($actions = null)
   {
+    // no actions --> remove all
+    if (!$actions) {
+      $this->wire->addHookAfter(
+        'ProcessPageEdit::getSubmitActions',
+        function (HookEvent $event) {
+          $event->return = [];
+        }
+      );
+      return;
+    }
     if (is_string($actions)) $actions = [$actions];
     $this->wire->addHookAfter(
       'ProcessPageEdit::getSubmitActions',
