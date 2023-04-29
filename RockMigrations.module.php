@@ -2657,6 +2657,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           if ($tags) $this->setTemplateData($templatename, ['tags' => $tags]);
           $tmp->template = $tpl;
         } catch (\Throwable $th) {
+          $this->log($th->getMessage());
         }
       }
     }

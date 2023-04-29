@@ -16,15 +16,6 @@ trait MagicPage
   }
 
   /**
-   * Method that returns the pages template name
-   * This is to be consistant with RockPageBuilder+RockMigrations snippets
-   */
-  public function getTplName(): string
-  {
-    return (string)$this->template;
-  }
-
-  /**
    * Renders a badge in the page list
    * Often needed for adding dates to page titles etc.
    * https://i.imgur.com/nB2IYNS.png
