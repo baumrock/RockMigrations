@@ -604,7 +604,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $style = "position:fixed;left:0;top:0;width:100%;background-color:$col;color:white;text-align:center;font-size:8px;";
     $event->return = str_replace(
       $search,
-      "<div style='$style'>$label</div>$search",
+      "<div class='rm-colorbar' style='$style'>$label</div>$search",
       $event->return
     );
   }
