@@ -41,6 +41,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public $fieldSuccessMessages;
 
   /**
+   * Flag that is set true when migrations are running
+   * @var bool
+   */
+  public $ismigrating = false;
+
+  /**
    * Timestamp of last run migration
    * @var int
    **/
@@ -1486,6 +1492,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($downloaded !== false) return $downloaded;
     $this->log("Tried to download module from $url but failed");
     return false;
+  }
+
+  /**
+   * Echo data (for CLI usage)
+   */
+  public function echo($data)
+  {
+    if (is_array($data)) echo $log = print_r($data, true);
+    elseif (is_string($data)) echo $log = "$data\n";
+    else {
+      ob_start();
+      var_dump($data);
+      echo $log = ob_get_clean();
+    }
+    $this->wire->log->save("LineUpr", $log, [
+      'showUser' => false,
+      'showUrl' => false,
+    ]);
   }
 
   /**
