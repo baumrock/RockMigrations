@@ -16,6 +16,35 @@ trait MagicPage
   }
 
   /**
+   * Renders a badge in the page list
+   * Often needed for adding dates to page titles etc.
+   * https://i.imgur.com/nB2IYNS.png
+   */
+  public function pageListBadge($str, $style = '')
+  {
+    $str = trim($str);
+    if (!$str) return;
+    return "<span style='
+      padding:2px 10px;
+      border-radius:5px;
+      background:#efefef;
+      font-size:0.8em;
+      $style'>$str</span>";
+  }
+
+  /**
+   * Remove submit button from page edit screen
+   * Call this method from within editForm() magic method!
+   */
+  public function removeSaveButton($form)
+  {
+    $this->wire->addHookAfter("ProcessPageEdit::getSubmitActions", function ($event) {
+      $event->return = [];
+    });
+    $form->remove('submit_save');
+  }
+
+  /**
    * Get instance of RockFrontend
    */
   public function rockfrontend(): RockFrontend

@@ -30,13 +30,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   const outputLevelQuiet = 'quiet';
   const outputLevelVerbose = 'verbose';
 
+  // global processwire fields
   const field_pagename = "_pw_page_name";
+  const field_email = "email";
 
   /** @var WireData */
   public $conf;
 
   /** @var WireData */
   public $fieldSuccessMessages;
+
+  /**
+   * Flag that is set true when migrations are running
+   * @var bool
+   */
+  public $ismigrating = false;
 
   /**
    * Timestamp of last run migration
@@ -161,9 +169,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // load RockMigrations.js on backend
     if ($this->wire->page->template == 'admin') {
-      $this->wire->config->scripts->add(
-        $this->wire->config->urls($this) . 'RockMigrations.js'
-      );
+      $url = $this->wire->config->urls($this);
+      $this->wire->config->scripts->add($url . 'RockMigrations.js');
+      $this->wire->config->styles->add($url . 'RockMigrations.admin.css');
 
       // fix ProcessWire language tabs issue
       if ($this->wire->languages) {
@@ -285,6 +293,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $f = $form->get($field);
       if ($f) $f->collapsed = Inputfield::collapsedHidden;
     }
+  }
+
+  /**
+   * Create inputfield from array syntax
+   *
+   * This is handy in combination of $form->insertBefore() or insertAfter()
+   * and similar methods, because PW unfortunately only supports array syntax
+   * for $form->add([...]) but not for prepend() append() etc.
+   *
+   * @return Inputfield
+   */
+  public function inputfield($data)
+  {
+    $fs = $this->wire(new InputfieldWrapper());
+    $fs->add($data);
+    return $fs->children()->last();
   }
 
   /**
@@ -586,7 +610,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $style = "position:fixed;left:0;top:0;width:100%;background-color:$col;color:white;text-align:center;font-size:8px;";
     $event->return = str_replace(
       $search,
-      "<div style='$style'>$label</div>$search",
+      "<div class='rm-colorbar' style='$style'>$label</div>$search",
       $event->return
     );
   }
@@ -710,6 +734,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     if (!$this->wire->modules->isInstalled('RockFrontend')) return;
     if (!$this->wire->config->livereload) return;
+    if ($this->wire->page->id == 21) return; // module download
 
     $url = $this->wire->config->urls('RockFrontend');
     $path = $this->wire->config->paths('RockFrontend');
@@ -1141,7 +1166,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * @param bool $migrate
    * @return Template
    */
-  public function createTemplate($name, $data = true, $migrate = true)
+  public function createTemplate($name, $data = false, $migrate = true)
   {
     // quietly get the template
     // it is quiet to prevent "template xx not found" logs
@@ -1467,6 +1492,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($downloaded !== false) return $downloaded;
     $this->log("Tried to download module from $url but failed");
     return false;
+  }
+
+  /**
+   * Echo data (for CLI usage)
+   */
+  public function echo($data)
+  {
+    if (is_array($data)) echo $log = print_r($data, true);
+    elseif (is_string($data)) echo $log = "$data\n";
+    else {
+      ob_start();
+      var_dump($data);
+      echo $log = ob_get_clean();
+    }
+    $this->wire->log->save("LineUpr", $log, [
+      'showUser' => false,
+      'showUrl' => false,
+    ]);
   }
 
   /**
@@ -2542,9 +2585,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
     foreach ($config->roles as $role => $data) {
       // set permissions for this role
-      if (array_key_exists("permissions", $data)) $this->setRolePermissions($role, $data['permissions']);
+      if (array_key_exists("permissions", $data)) {
+        $this->setRolePermissions($role, $data['permissions']);
+      }
+      if (array_key_exists("permissions-", $data)) {
+        $this->setRolePermissions($role, $data['permissions-'], true);
+      }
       if (array_key_exists("access", $data)) {
-        foreach ($data['access'] as $tpl => $access) $this->setTemplateAccess($tpl, $role, $access);
+        foreach ($data['access'] as $tpl => $access) {
+          $this->setTemplateAccess($tpl, $role, $access);
+        }
+      }
+      if (array_key_exists("access-", $data)) {
+        foreach ($data['access'] as $tpl => $access) {
+          $this->setTemplateAccess($tpl, $role, $access, true);
+        }
       }
     }
 
@@ -2619,10 +2674,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         try {
           $templatename = $tmp::tpl;
           $tpl = $this->wire->templates->get($templatename);
-          if (!$tpl) $tpl = $this->createTemplate($templatename, $class);
+          if (!$tpl) {
+            $tpl = $this->createTemplate($templatename, $class);
+            $this->addFieldToTemplate("title", $tpl);
+          }
           if ($tags) $this->setTemplateData($templatename, ['tags' => $tags]);
           $tmp->template = $tpl;
         } catch (\Throwable $th) {
+          $this->log($th->getMessage());
         }
       }
     }
@@ -2850,6 +2909,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Remove Field from Template
    *
+   * Will silently return if field has already been removed
+   *
    * @param Field|string $field
    * @param Template|string $template
    * @param bool $force
@@ -2866,6 +2927,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     /** @var Fieldgroup $fg */
     if ($force) $field->flags = 0;
 
+    // if field is already removed we exit silently
     if (!$fg->get($field->name)) return;
 
     $fg->remove($field);
@@ -2915,6 +2977,39 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Remove submit actions from submit button dropdown
+   *
+   * Usage:
+   * $rm->removeSubmitActions('next');
+   * $rm->removeSubmitActions(['next', 'exit']);
+   */
+  public function removeSubmitActions($actions = null)
+  {
+    // no actions --> remove all
+    if (!$actions) {
+      $this->wire->addHookAfter(
+        'ProcessPageEdit::getSubmitActions',
+        function (HookEvent $event) {
+          $event->return = [];
+        }
+      );
+      return;
+    }
+    if (is_string($actions)) $actions = [$actions];
+    $this->wire->addHookAfter(
+      'ProcessPageEdit::getSubmitActions',
+      function (HookEvent $event) use ($actions) {
+        $return = $event->return;
+        foreach ($actions as $action) {
+          if (!array_key_exists($action, $return)) continue;
+          unset($return[$action]);
+        }
+        $event->return = $return;
+      }
+    );
+  }
+
+  /**
    * Remove access from template for given role
    * @return void
    */
@@ -2934,6 +3029,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $tpl = $this->getTemplate($tpl);
     $field = $this->getField($field);
+    if (!$field->id) {
+      return $this->log("removeTemplateContext: field not found");
+    }
     $tpl->fieldgroup->setFieldContextArray($field->id, []);
   }
 
@@ -2970,6 +3068,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function resetCache(HookEvent $event)
   {
     $this->updateLastrun(0);
+  }
+
+  /**
+   * Get version number from package.json in PW root folder
+   */
+  public function rootVersion()
+  {
+    $f = $this->wire->config->paths->root . "package.json";
+    if (!is_file($f)) return false;
+    $json = json_decode(file_get_contents($f));
+    if (!$json) return false;
+    return $json->version;
   }
 
   /**
@@ -3393,6 +3503,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'childTemplates' => [(string)$child],
       'childNameFormat' => 'title',
     ]);
+  }
+
+  /**
+   * Set permissions for given role
+   * By default this will not remove old permissions just like all the other
+   * setXXX methods behave.
+   * @return void
+   */
+  public function setRolePermissions($role, $permissions, $remove = false)
+  {
+    $role = $this->getRole($role);
+    if ($remove) {
+      // remove all existing permissions from role
+      foreach ($role->permissions as $p) $this->removePermissionFromRole($p, $role);
+    }
+    foreach ($permissions as $perm) $this->addPermissionToRole($perm, $role);
   }
 
   /**
@@ -4267,7 +4393,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $lastrun = date("Y-m-d H:i:s", $this->lastrun) . " ({$this->lastrun})";
     }
     return [
-      'Version' => $this->getModuleInfo()['version'],
       'lastrun' => $lastrun,
       'watchlist' => $this->watchlist,
     ];

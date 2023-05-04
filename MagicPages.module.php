@@ -73,7 +73,7 @@ class MagicPages extends WireData implements Module
    */
   public function addMagicFieldMethods(Page $page)
   {
-    $tpl = $page->template;
+    if (!$tpl = $page->template) return;
     $fields = $tpl->fields;
     foreach ($fields as $field) {
       $fieldname = $field->name;
@@ -201,7 +201,20 @@ class MagicPages extends WireData implements Module
         if ($event->process != "ProcessPageEdit") return;
         $page = $event->process->getPage();
         if ($page->className !== $magicPage->className) return;
-        $page->onProcessInput($event->return, $event->arguments(0));
+        $page->onProcessInput($event->arguments(0), $event->return);
+      });
+    }
+
+    // field value changed
+    if (method_exists($magicPage, "onChanged")) {
+      $this->wire->addHookAfter("Page::changed", function ($event) use ($magicPage) {
+        $page = $event->object;
+        if ($page->className !== $magicPage->className) return;
+        $page->onChanged(
+          $event->arguments(0),
+          $event->arguments(1),
+          $event->arguments(2)
+        );
       });
     }
 
