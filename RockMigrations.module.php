@@ -4338,7 +4338,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'label' => 'Console',
       'icon' => 'code',
       'description' => "",
-      'value' => $this->wire->files->render($this->path . "/profileeditor.php", [
+      'value' => $this->wire->files->render($this->path . "profileeditor.php", [
         'code' => $this->getConsoleCode(),
       ]),
     ]);
