@@ -3168,16 +3168,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // this makes it possible to set the template via name
       if ($key === "template_id") {
         $tpl = $this->getTemplate($val);
-        if (!$tpl) continue;
+        if (!$tpl) throw new WireException("Invalid template_id");
         $data[$key] = $tpl->id;
+        continue; // early exit
       }
 
       // support defining parent_id as page path
       // eg 'parent_id' => '/comments'
       if ($key === "parent_id") {
         $parent = $this->getPage($val);
-        if (!$parent) continue;
+        if (!$parent) throw new WireException("Invalid parent_id");
         $data[$key] = $parent->id;
+        continue; // early exit
       }
 
       // support repeater fields short syntax
@@ -3203,6 +3205,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         // this prevents setting the "options" property directly to the field
         // if not done, the field shows raw option values when rendered
         unset($data['options']);
+        continue; // early exit
       }
       if ($key == "optionsLang") {
         $options = $data[$key];
@@ -3211,6 +3214,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         // this prevents setting the "options" property directly to the field
         // if not done, the field shows raw option values when rendered
         unset($data[$key]);
+        continue; // early exit
       }
     }
 
