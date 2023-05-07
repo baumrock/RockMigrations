@@ -1040,8 +1040,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $parent,
     string $name = null,
     string $title = null,
-    array $status = [],
-    array $data = [],
+    array $status = null,
+    array $data = null,
     bool $allLanguages = true
   ) {
     // create pagename from page title if it is not set
@@ -1064,8 +1064,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     ], true);
 
     if ($page and $page->id) {
-      $page->status($status);
-      $page->setAndSave($data);
+      $page->status($status ?: []);
+      $page->setAndSave($data ?: []);
       return $page;
     }
 
