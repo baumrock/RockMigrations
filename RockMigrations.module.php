@@ -3172,6 +3172,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $data[$key] = $tpl->id;
       }
 
+      // support defining parent_id as page path
+      // eg 'parent_id' => '/comments'
+      if ($key === "parent_id") {
+        $parent = $this->getPage($val);
+        if (!$parent) continue;
+        $data[$key] = $parent->id;
+      }
+
       // support repeater fields short syntax
       if ($field->type instanceof FieldtypeRepeater) {
         // check for old syntax and throw an error
