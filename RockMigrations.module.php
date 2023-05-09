@@ -317,7 +317,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function isDDEV(): bool
   {
-    return substr($this->wire->config->httpHost, -10) === ".ddev.site";
+    return !!getenv('DDEV_HOSTNAME');
   }
 
   /**
