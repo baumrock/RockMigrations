@@ -521,8 +521,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * @return InputfieldFieldset
    */
-  public function wrapFields(InputfieldWrapper $form, array $fields, array $fieldset, $placeAfter = null)
-  {
+  public function wrapFields(
+    InputfieldWrapper $form,
+    array $fields,
+    array $fieldset,
+    $placeAfter = null,
+    $placeBefore = null,
+  ) {
     // If we only want to show a single field we exit early
     // as we dont need the wrapper in that case. If you still want to show the
     // wrapper add &wrapper=1 to your url.
@@ -575,6 +580,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($placeAfter) {
       if (!$placeAfter instanceof Inputfield) $placeAfter = $form->get((string)$placeAfter);
       $form->insertAfter($fs, $placeAfter);
+    } elseif ($placeBefore) {
+      if (!$placeBefore instanceof Inputfield) $placeBefore = $form->get((string)$placeBefore);
+      $form->insertBefore($fs, $placeBefore);
     } elseif ($last) $form->insertAfter($fs, $last);
     else $form->add($fs);
 
