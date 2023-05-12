@@ -169,9 +169,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // load RockMigrations.js on backend
     if ($this->wire->page->template == 'admin') {
-      $url = $this->wire->config->urls($this);
-      $this->wire->config->scripts->add($url . 'RockMigrations.js');
-      $this->wire->config->styles->add($url . 'RockMigrations.admin.css');
+      $this->addScripts(__DIR__ . "/RockMigrations.js");
+      $this->addStyles(__DIR__ . "/RockMigrations.admin.css");
 
       // fix ProcessWire language tabs issue
       if ($this->wire->languages) {
@@ -743,11 +742,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$this->wire->modules->isInstalled('RockFrontend')) return;
     if (!$this->wire->config->livereload) return;
     if ($this->wire->page->id == 21) return; // module download
-
-    $url = $this->wire->config->urls('RockFrontend');
     $path = $this->wire->config->paths('RockFrontend');
-    $m = filemtime($path . "livereload.js");
-    $this->wire->config->scripts->add($url . "livereload.js?m=$m");
+    $this->addScripts($path . "livereload.js");
   }
 
   /**
