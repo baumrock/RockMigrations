@@ -54,6 +54,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   private $migrateAll = false;
 
+  private $migrated = [];
+
   private $noMigrate = false;
 
   public $noYaml = false;
@@ -2694,7 +2696,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $name = pathinfo($file, PATHINFO_FILENAME);
       $class = "$namespace\\$name";
       $tmp = $this->wire(new $class());
-      if (method_exists($tmp, "migrate")) $tmp->migrate();
+      if (method_exists($tmp, "migrate")) {
+        $tmp->migrate();
+        $this->migrated[] = $file;
+      }
     }
   }
 
@@ -2766,6 +2771,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->updateLastrun();
     foreach ($this->watchlist as $file) {
       if (!$file->migrate) continue;
+      if (in_array($file->path, $this->migrated)) {
+        $this->log("--- Skipping {$file->path} (already migrated)");
+        continue;
+      }
       if (!$this->doMigrate($file)) {
         $this->log("--- Skipping {$file->path} (no change)");
         continue;
