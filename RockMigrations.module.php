@@ -119,6 +119,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->addHookBefore("Modules::uninstall", $this, "unwatchBeforeUninstall");
     $this->addHookAfter("Modules::install", $this, "migrateAfterModuleInstall");
     $this->addHookAfter("Page(template=admin)::render", $this, "addColorBar");
+    $this->addHookBefore("InputfieldForm::render", $this, "addRmHints");
 
     // other actions on init()
     $this->loadFilesOnDemand();
@@ -762,6 +763,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $role->of(false);
     $role->addPermission($permission);
     return $role->save();
+  }
+
+  public function addRmHints(HookEvent $event)
+  {
+    if (!$this->wire->user->isSuperuser()) return;
+    $form = $event->object;
+    $showHints = false;
+    if ($form->id == 'ProcessTemplateEdit') $showHints = true;
+    elseif ($form->id == 'ProcessFieldEdit') $showHints = true;
+    if (!$showHints) return;
+    $form->addClass('rm-hints');
   }
 
   /**
@@ -1505,14 +1517,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function echo($data)
   {
-    if (is_array($data)) echo $log = print_r($data, true);
-    elseif (is_string($data)) echo $log = "$data\n";
-    else {
-      ob_start();
-      var_dump($data);
-      echo $log = ob_get_clean();
-    }
-    $this->wire->log->save("LineUpr", $log, [
+    $this->wire->log->save("LineUpr", $this->str($data), [
       'showUser' => false,
       'showUrl' => false,
     ]);
@@ -3809,6 +3814,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     /** @var WireArray $arr */
     foreach ($data as $item) $arr->add($item);
     return $arr->sort('name');
+  }
+
+  /**
+   * Convert data to string (for logging)
+   */
+  public function str($data): string
+  {
+    if (is_array($data)) return print_r($data, true);
+    elseif (is_string($data)) return "$data\n";
+    else {
+      ob_start();
+      var_dump($data);
+      return ob_get_clean();
+    }
+    return '';
   }
 
   /**
