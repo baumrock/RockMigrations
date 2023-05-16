@@ -2047,7 +2047,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function getTemplate($name, $quiet = false)
   {
     if ($name instanceof RockPageBuilderBlock) return $name->getTpl();
-    if ($name instanceof Page) $name = $name->template;
+    if ($name instanceof Page) {
+      if (!$name->template) {
+        try {
+          $name = $name::tpl;
+        } catch (\Throwable $th) {
+        }
+      } else $name = $name->template;
+    }
     $template = $this->templates->get((string)$name);
     if ($template and $template->id) return $template;
     if (!$quiet) $this->log("Template $name not found");
