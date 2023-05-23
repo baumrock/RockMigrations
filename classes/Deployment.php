@@ -505,10 +505,9 @@ class Deployment extends WireData
                 $toAbs,
                 "<?php\n// file created by RockMigrations"
                   . "\n// put your site-specific config here\n"
-                  . "\n// you can use these random salts:\n"
-                  . "\n// \$config->userAuthSalt = '$rand1';\n"
-                  . "\n// \$config->tableSalt = '$rand2';\n"
-                  . "\n// you can use these random salts:\n"
+                  . "\n// you can use these random salts:"
+                  . "\n// \$config->userAuthSalt = '$rand1';"
+                  . "\n// \$config->tableSalt = '$rand2';"
               );
             }
           }
