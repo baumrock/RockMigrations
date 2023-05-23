@@ -499,10 +499,8 @@ class Deployment extends WireData
             if (basename($toAbs) == 'config-local.php') {
               $configDir = dirname($toAbs);
               $this->exec("mkdir -p $configDir");
-              $rand = new WireRandom();
-              $opt = ['minLength' => 30, 'maxLength' => 60];
-              $rand1 = $rand->alphanumeric(0, $opt);
-              $rand2 = $rand->alphanumeric(0, $opt);
+              $rand1 = bin2hex(random_bytes(rand(15, 30)));
+              $rand2 = bin2hex(random_bytes(rand(15, 30)));
               file_put_contents(
                 $toAbs,
                 "<?php\n// file created by RockMigrations"
