@@ -54,6 +54,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   private $migrateAll = false;
 
+  private $migrated = [];
+
   private $noMigrate = false;
 
   public $noYaml = false;
@@ -117,6 +119,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->addHookBefore("Modules::uninstall", $this, "unwatchBeforeUninstall");
     $this->addHookAfter("Modules::install", $this, "migrateAfterModuleInstall");
     $this->addHookAfter("Page(template=admin)::render", $this, "addColorBar");
+    $this->addHookBefore("InputfieldForm::render", $this, "addRmHints");
 
     // other actions on init()
     $this->loadFilesOnDemand();
@@ -169,9 +172,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // load RockMigrations.js on backend
     if ($this->wire->page->template == 'admin') {
-      $url = $this->wire->config->urls($this);
-      $this->wire->config->scripts->add($url . 'RockMigrations.js');
-      $this->wire->config->styles->add($url . 'RockMigrations.admin.css');
+      $this->addScripts(__DIR__ . "/RockMigrations.js");
+      $this->addStyles(__DIR__ . "/RockMigrations.admin.css");
 
       // fix ProcessWire language tabs issue
       if ($this->wire->languages) {
@@ -317,7 +319,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function isDDEV(): bool
   {
-    return substr($this->wire->config->httpHost, -10) === ".ddev.site";
+    return !!getenv('DDEV_HOSTNAME');
   }
 
   /**
@@ -521,8 +523,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * @return InputfieldFieldset
    */
-  public function wrapFields(InputfieldWrapper $form, array $fields, array $fieldset, $placeAfter = null)
-  {
+  public function wrapFields(
+    InputfieldWrapper $form,
+    array $fields,
+    array $fieldset,
+    $placeAfter = null,
+    $placeBefore = null,
+  ) {
     // If we only want to show a single field we exit early
     // as we dont need the wrapper in that case. If you still want to show the
     // wrapper add &wrapper=1 to your url.
@@ -575,6 +582,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($placeAfter) {
       if (!$placeAfter instanceof Inputfield) $placeAfter = $form->get((string)$placeAfter);
       $form->insertAfter($fs, $placeAfter);
+    } elseif ($placeBefore) {
+      if (!$placeBefore instanceof Inputfield) $placeBefore = $form->get((string)$placeBefore);
+      $form->insertBefore($fs, $placeBefore);
     } elseif ($last) $form->insertAfter($fs, $last);
     else $form->add($fs);
 
@@ -735,11 +745,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$this->wire->modules->isInstalled('RockFrontend')) return;
     if (!$this->wire->config->livereload) return;
     if ($this->wire->page->id == 21) return; // module download
-
-    $url = $this->wire->config->urls('RockFrontend');
     $path = $this->wire->config->paths('RockFrontend');
-    $m = filemtime($path . "livereload.js");
-    $this->wire->config->scripts->add($url . "livereload.js?m=$m");
+    $this->addScripts($path . "livereload.js");
   }
 
   /**
@@ -756,6 +763,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $role->of(false);
     $role->addPermission($permission);
     return $role->save();
+  }
+
+  public function addRmHints(HookEvent $event)
+  {
+    if (!$this->wire->user->isSuperuser()) return;
+    $form = $event->object;
+    $showHints = false;
+    if ($form->id == 'ProcessTemplateEdit') $showHints = true;
+    elseif ($form->id == 'ProcessFieldEdit') $showHints = true;
+    if (!$showHints) return;
+    $form->addClass('rm-hints');
   }
 
   /**
@@ -1040,8 +1058,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $parent,
     string $name = null,
     string $title = null,
-    array $status = [],
-    array $data = [],
+    array $status = null,
+    array $data = null,
     bool $allLanguages = true
   ) {
     // create pagename from page title if it is not set
@@ -1064,8 +1082,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     ], true);
 
     if ($page and $page->id) {
-      $page->status($status);
-      $page->setAndSave($data);
+      $page->status($status ?: []);
+      $page->setAndSave($data ?: []);
       return $page;
     }
 
@@ -1499,14 +1517,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function echo($data)
   {
-    if (is_array($data)) echo $log = print_r($data, true);
-    elseif (is_string($data)) echo $log = "$data\n";
-    else {
-      ob_start();
-      var_dump($data);
-      echo $log = ob_get_clean();
-    }
-    $this->wire->log->save("LineUpr", $log, [
+    $this->wire->log->save("LineUpr", $this->str($data), [
       'showUser' => false,
       'showUrl' => false,
     ]);
@@ -2036,7 +2047,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function getTemplate($name, $quiet = false)
   {
     if ($name instanceof RockPageBuilderBlock) return $name->getTpl();
-    if ($name instanceof Page) $name = $name->template;
+    if ($name instanceof Page) {
+      if (!$name->template) {
+        try {
+          $name = $name::tpl;
+        } catch (\Throwable $th) {
+        }
+      } else $name = $name->template;
+    }
     $template = $this->templates->get((string)$name);
     if ($template and $template->id) return $template;
     if (!$quiet) $this->log("Template $name not found");
@@ -2690,7 +2708,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $name = pathinfo($file, PATHINFO_FILENAME);
       $class = "$namespace\\$name";
       $tmp = $this->wire(new $class());
-      if (method_exists($tmp, "migrate")) $tmp->migrate();
+      if (method_exists($tmp, "migrate")) {
+        $tmp->migrate();
+        $this->migrated[] = $file;
+      }
     }
   }
 
@@ -2762,6 +2783,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->updateLastrun();
     foreach ($this->watchlist as $file) {
       if (!$file->migrate) continue;
+      if (in_array($file->path, $this->migrated)) {
+        $this->log("--- Skipping {$file->path} (already migrated)");
+        continue;
+      }
       if (!$this->doMigrate($file)) {
         $this->log("--- Skipping {$file->path} (no change)");
         continue;
@@ -3168,8 +3193,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // this makes it possible to set the template via name
       if ($key === "template_id") {
         $tpl = $this->getTemplate($val);
-        if (!$tpl) continue;
+        if (!$tpl) throw new WireException("Invalid template_id");
         $data[$key] = $tpl->id;
+        continue; // early exit
+      }
+
+      // support defining parent_id as page path
+      // eg 'parent_id' => '/comments'
+      if ($key === "parent_id") {
+        $parent = $this->getPage($val);
+        if (!$parent) throw new WireException("Invalid parent_id");
+        $data[$key] = $parent->id;
+        continue; // early exit
       }
 
       // support repeater fields short syntax
@@ -3195,6 +3230,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         // this prevents setting the "options" property directly to the field
         // if not done, the field shows raw option values when rendered
         unset($data['options']);
+        continue; // early exit
       }
       if ($key == "optionsLang") {
         $options = $data[$key];
@@ -3203,6 +3239,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         // this prevents setting the "options" property directly to the field
         // if not done, the field shows raw option values when rendered
         unset($data[$key]);
+        continue; // early exit
       }
     }
 
@@ -3787,6 +3824,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Convert data to string (for logging)
+   */
+  public function str($data): string
+  {
+    if (is_array($data)) return print_r($data, true);
+    elseif (is_string($data)) return "$data\n";
+    else {
+      ob_start();
+      var_dump($data);
+      return ob_get_clean();
+    }
+    return '';
+  }
+
+  /**
    * Convert a comma separated string into an array of single values
    */
   public function strToArray($data): array
@@ -4338,7 +4390,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'label' => 'Console',
       'icon' => 'code',
       'description' => "",
-      'value' => $this->wire->files->render(__DIR__ . "/profileeditor.php", [
+      'value' => $this->wire->files->render($this->path . "profileeditor.php", [
         'code' => $this->getConsoleCode(),
       ]),
     ]);

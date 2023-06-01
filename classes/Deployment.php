@@ -6,6 +6,7 @@ use Exception;
 use ProcessWire\Paths;
 use ProcessWire\ProcessWire;
 use ProcessWire\WireData;
+use ProcessWire\WireRandom;
 
 chdir(__DIR__);
 chdir("../../../../");
@@ -498,10 +499,15 @@ class Deployment extends WireData
             if (basename($toAbs) == 'config-local.php') {
               $configDir = dirname($toAbs);
               $this->exec("mkdir -p $configDir");
+              $rand1 = bin2hex(random_bytes(rand(15, 30)));
+              $rand2 = bin2hex(random_bytes(rand(15, 30)));
               file_put_contents(
                 $toAbs,
                 "<?php\n// file created by RockMigrations"
                   . "\n// put your site-specific config here\n"
+                  . "\n// you can use these random salts:"
+                  . "\n// \$config->userAuthSalt = '$rand1';"
+                  . "\n// \$config->tableSalt = '$rand2';"
               );
             }
           }
