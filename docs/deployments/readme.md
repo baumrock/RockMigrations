@@ -266,7 +266,6 @@ namespace RockMigrations;
 
 require_once __DIR__ . "/modules/RockMigrations/classes/Deployment.php";
 $deploy = new Deployment($argv);
-$deploy->dry(true);
 
 $deploy->after("share", function ($deploy) {
   $release = $deploy->paths->release;
