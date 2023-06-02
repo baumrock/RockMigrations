@@ -3191,7 +3191,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     foreach ($data as $key => $val) {
 
       // this makes it possible to set the template via name
-      if ($key === "template_id") {
+      if ($key === "template_id" and is_string($val) and $val !== '') {
         $tpl = $this->getTemplate($val);
         if (!$tpl) throw new WireException("Invalid template_id");
         $data[$key] = $tpl->id;
@@ -3200,7 +3200,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
       // support defining parent_id as page path
       // eg 'parent_id' => '/comments'
-      if ($key === "parent_id") {
+      if ($key === "parent_id" and is_string($val) and $val !== '') {
         $parent = $this->getPage($val);
         if (!$parent) throw new WireException("Invalid parent_id");
         $data[$key] = $parent->id;
