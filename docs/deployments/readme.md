@@ -252,6 +252,31 @@ You can tell RockMigrations to delete files or folders after deployment. By defa
 
 As you can see every deployment will wipe the cache and ProCache folder which will make sure that you don't serve outdated versions of your site!
 
+### hooks
+
+You can hook into several places of your deployment. See Deployment.php method `run()` for all available stages!
+
+This example shows how you can use different `.htaccess` files for different environments:
+
+`label: /site/deploy.php`
+```php
+<?php
+
+namespace RockMigrations;
+
+require_once __DIR__ . "/modules/RockMigrations/classes/Deployment.php";
+$deploy = new Deployment($argv);
+$deploy->dry(true);
+
+$deploy->after("share", function ($deploy) {
+  $release = $deploy->paths->release;
+  $deploy->exec("rm $release/.htaccess");
+  $deploy->exec("mv $release/.htaccess-staging $release/.htaccess");
+});
+
+$deploy->run();
+```
+
 ## Debugging
 
 Debugging can be hard when using CI/CD pipelines. If you get unexpected results during the PHP deployment you can make the script more verbose like this:

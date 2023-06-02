@@ -6,7 +6,6 @@ use Exception;
 use ProcessWire\Paths;
 use ProcessWire\ProcessWire;
 use ProcessWire\WireData;
-use ProcessWire\WireRandom;
 
 chdir(__DIR__);
 chdir("../../../../");
@@ -16,6 +15,8 @@ class Deployment extends WireData
 
   const keep = 2;
 
+  private $after = [];
+  private $before = [];
   public $branch;
   public $chown = true; // chown by default
   public $delete = [];
@@ -66,10 +67,24 @@ class Deployment extends WireData
   public function addRobots()
   {
     if (!$this->robots()) return;
-    $this->echo("Hiding site from search engines via robots.txt");
+    $this->section("Hide site from search engines via robots.txt");
     $release = $this->paths->release;
     $src = __DIR__ . "/robots.txt";
     $this->exec("cp -f $src $release/robots.txt");
+  }
+
+  public function after($where, $callback)
+  {
+    $after = $this->after;
+    $after[$where] = $callback;
+    $this->after = $after;
+  }
+
+  public function before($where, $callback)
+  {
+    $before = $this->before;
+    $before[$where] = $callback;
+    $this->before = $before;
   }
 
   /**
@@ -246,13 +261,9 @@ class Deployment extends WireData
    */
   public function finish($keep = null)
   {
-    if ($this->dry) {
-      $this->echo("Dry run - skipping finish()...");
-      return;
-    }
     $oldPath = $this->paths->release;
     $newName = substr(basename($oldPath), 4);
-    $this->echo("Finishing deployment - updating symlink...");
+    $this->section("Finishing deployment - updating symlink...");
     $this->exec("mv $oldPath {$this->paths->root}/$newName");
     $this->exec("
       cd {$this->paths->root}
@@ -289,15 +300,15 @@ class Deployment extends WireData
   {
     $release = $this->paths->release;
     $file = "$release/site/modules/RockMigrations/migrate.php";
-    if (!is_file($file)) return $this->echo("RockMigrations not found...");
-    $this->section("Trigger RockMigrations...");
+    if (!is_file($file)) return $this->echo("RockMigrations not found ...");
+    $this->section("Trigger RockMigrations ...");
     $php = $this->php();
     try {
       $out = $this->exec("$php $file", true);
     } catch (\Throwable $th) {
       $this->exit($th->getMessage());
     }
-    if (!is_array($out)) return $this->exit("migrate.php failed");
+    if (!$this->dry and !is_array($out)) return $this->exit("migrate.php failed");
   }
 
   /**
@@ -391,14 +402,38 @@ class Deployment extends WireData
   public function run($keep = null)
   {
     $this->hello();
+
+    $this->trigger("share", "before");
     $this->share();
+    $this->trigger("share", "after");
+
+    $this->trigger("delete", "before");
     $this->delete();
+    $this->trigger("delete", "after");
+
+    $this->trigger("secure", "before");
     $this->secure();
+    $this->trigger("secure", "after");
+
+    $this->trigger("dumpDB", "before");
     $this->dumpDB();
+    $this->trigger("dumpDB", "after");
+
+    $this->trigger("migrate", "before");
     $this->migrate();
+    $this->trigger("migrate", "after");
+
+    $this->trigger("addRobots", "before");
     $this->addRobots();
-    $this->finish($keep);
+    $this->trigger("addRobots", "after");
+
+    $this->trigger("finish", "before");
+    $this->finish();
+    $this->trigger("finish", "after");
+
+    $this->trigger("chown", "before");
     $this->chown(); // must be after finish to affect current symlink!
+    $this->trigger("chown", "after");
 
     $folders = glob($this->paths->root . "/tmp-release-*");
     if (count($folders)) {
@@ -542,6 +577,16 @@ class Deployment extends WireData
 
       $this->echo("Done");
     }
+  }
+
+  /**
+   * Execute before/after callback
+   */
+  public function trigger($what, $when)
+  {
+    $array = $this->$when;
+    if (!array_key_exists($what, $array)) return;
+    $array[$what]($this); // execute callback
   }
 
   /**
