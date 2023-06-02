@@ -1,3 +1,12 @@
+## [3.26.1](https://github.com/baumrock/RockMigrations/compare/v3.26.0...v3.26.1) (2023-06-02)
+
+
+### Bug Fixes
+
+* prevent exception in setFieldData when value 0/empty ([9093b20](https://github.com/baumrock/RockMigrations/commit/9093b20c90dc12873f498ad086d6257e2d9e3358))
+
+
+
 # [3.26.0](https://github.com/baumrock/RockMigrations/compare/v3.25.0...v3.26.0) (2023-06-01)
 
 
@@ -82,15 +91,6 @@
 * add magic field methods ([60eb61e](https://github.com/baumrock/RockMigrations/commit/60eb61e69a7917a2653eab642c89fbf794cbbc42))
 * add PageListShowIds tweak ([22e8d4f](https://github.com/baumrock/RockMigrations/commit/22e8d4fa608d892d7cb964989d724ab8a1a7510e))
 * add support for defining a single path ([48febe6](https://github.com/baumrock/RockMigrations/commit/48febe663b80a715159717a5b815599ce54dd338))
-
-
-
-# [3.22.0](https://github.com/baumrock/RockMigrations/compare/v3.21.0...v3.22.0) (2023-03-17)
-
-
-### Features
-
-* add rm-migrate-function snippet ([680ad69](https://github.com/baumrock/RockMigrations/commit/680ad69fdbe478348ef9409a0ee750c8d7afbaa2))
 
 
 
