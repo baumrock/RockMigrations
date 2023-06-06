@@ -88,6 +88,18 @@ class Deployment extends WireData
   }
 
   /**
+   * Analyze output of a php exec() command
+   * Show warnings or exit on errors
+   */
+  public function checkForWarningsAndErrors($output)
+  {
+    if (!is_array($output)) return;
+    foreach ($output as $line) {
+      if (str_starts_with($line, "Error: ")) $this->exit($line);
+    }
+  }
+
+  /**
    * chown files based on root folder
    * @return void
    */
@@ -103,7 +115,7 @@ class Deployment extends WireData
     $this->section("Setting owner and group based on root folder...");
     $this->echo("Usage: Can be disabled via \$deploy->chown = false;");
     $this->exec("chown -R $owner:$group $root", true);
-    $this->echo("Done");
+    $this->ok();
   }
 
   /**
@@ -135,7 +147,7 @@ class Deployment extends WireData
         $this->echo("  $file");
         $this->exec("rm -rf $file");
       }
-      $this->echo("Done");
+      $this->ok();
     }
   }
 
@@ -150,7 +162,6 @@ class Deployment extends WireData
   public function deleteOldReleases($keep = null, $rename = true)
   {
     if (!$keep) $keep = self::keep;
-    $this->section("Cycle release folders...");
     $folders = glob($this->paths->root . "/release-*");
     rsort($folders);
     $cnt = 0;
@@ -183,7 +194,7 @@ class Deployment extends WireData
       $this->exec("rm -rf $folder");
     }
     $this->echo($revert);
-    $this->echo("Done");
+    $this->ok();
   }
 
   public function dry($flag = true)
@@ -221,7 +232,7 @@ class Deployment extends WireData
       $file = realpath($sql);
       if (is_file($file)) $this->echo("Dumped to $file");
       else $this->echo("WARNING: DB dump failed");
-      $this->echo("Done");
+      $this->ok();
     } catch (\Throwable $th) {
       $this->echo($th->getMessage());
     }
@@ -274,15 +285,26 @@ class Deployment extends WireData
 
   public function exit($msg)
   {
-    $this->echo($msg);
-    exit($msg);
+    $this->echo("❌ $msg");
+    // dont use a string here otherwise the github action will not fail!
+    exit(1);
+  }
+
+  public function healthcheck()
+  {
+    $this->section("Health-Check");
+
+    // are there any tmp folders left?
+    $folders = glob($this->paths->root . "/tmp-release-*");
+    if (count($folders)) $this->exit("Found some tmp-folders. It seems something went wrong...");
+    else $this->ok("No tmp-folders left");
   }
 
   public function hello()
   {
     // https://patorjk.com/software/taag/#p=display&f=Standard&t=RockMigrations
     $this->echo("
-      ____            _    __  __ _                 _   _
+      _____            _    __  __ _                 _   _
       |  _ \ ___   ___| | _|  \/  (_) __ _ _ __ __ _| |_(_) ___  _ __  ___
       | |_) / _ \ / __| |/ / |\/| | |/ _` | '__/ _` | __| |/ _ \| '_ \/ __|
       |  _ < (_) | (__|   <| |  | | | (_| | | | (_| | |_| | (_) | | | \__ \
@@ -305,10 +327,17 @@ class Deployment extends WireData
     $php = $this->php();
     try {
       $out = $this->exec("$php $file", true);
+      $this->checkForWarningsAndErrors($out);
     } catch (\Throwable $th) {
       $this->exit($th->getMessage());
     }
     if (!$this->dry and !is_array($out)) return $this->exit("migrate.php failed");
+    $this->ok();
+  }
+
+  public function ok($msg = "Done")
+  {
+    $this->echo("✅ $msg");
   }
 
   /**
@@ -431,16 +460,16 @@ class Deployment extends WireData
     $this->finish();
     $this->trigger("finish", "after");
 
+    // chown must be after finish to affect current symlink!
     $this->trigger("chown", "before");
-    $this->chown(); // must be after finish to affect current symlink!
+    $this->chown();
     $this->trigger("chown", "after");
 
-    $folders = glob($this->paths->root . "/tmp-release-*");
-    if (count($folders)) {
-      $this->exit("Found some tmp-folders. It seems something went wrong...");
-    } else {
-      $this->section("Deployment done :)");
-    }
+    $this->trigger("healthcheck", "before");
+    $this->healthcheck();
+    $this->trigger("healthcheck", "after");
+
+    $this->section("Deployment done :)");
   }
 
   /**
@@ -468,7 +497,7 @@ class Deployment extends WireData
       find $release -type f -exec chmod 644 {} \;
       chmod 440 $release/site/config.php
       chmod 440 $shared/site/config-local.php", true);
-    $this->echo("Done");
+    $this->ok();
   }
 
   /**
@@ -575,7 +604,7 @@ class Deployment extends WireData
         }
       }
 
-      $this->echo("Done");
+      $this->ok();
     }
   }
 
