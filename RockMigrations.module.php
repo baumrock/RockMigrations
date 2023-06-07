@@ -34,6 +34,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   const field_pagename = "_pw_page_name";
   const field_email = "email";
 
+  // time constants (seconds)
+  // see https://i.imgur.com/vfTasHa.png
+  const oneMinute = 60;
+  const oneHour = self::oneMinute * 60;
+  const oneDay = self::oneHour * 24;
+  const oneWeek = self::oneDay * 7;
+  const oneMonth = self::oneDay * 30;
+  const oneYear = self::oneDay * 365;
+
   /** @var WireData */
   public $conf;
 
