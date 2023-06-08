@@ -1242,7 +1242,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function createUser($username, $data = [])
   {
     $user = $this->getUser($username, true);
-    if (!$user) return false;
+    if ($user) return false;
     if (!$user->id) {
       $user = $this->wire->users->add($username);
 
