@@ -1236,33 +1236,44 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Create or return a PW user
+   * If a user exists it will update the user with specified data in 2nd argument.
+   * If no password is specified a random password will be used when creating the user.
    *
-   * This will use a random password for the user
+   * If you don't specify a password you can get the generated password like this:
+   * $user = $rm->createUser('foo');
+   * $newPassword = $user->_pass;
    *
    * Usage:
    * $rm->createUser('demo', [
    *   'roles' => ['webmaster'],
+   *   'pass' => 'supersecretpassword',
    * ]);
    *
    * @param string $username
    * @param array $data
-   * @return User|false
+   * @return User
    */
   public function createUser($username, $data = [])
   {
     $user = $this->getUser($username, true);
-    if (!$user) return false;
-    if (!$user->id) {
+    if (!$user or !$user->id) {
       $user = $this->wire->users->add($username);
+
+      // for backwards compatibility
+      if (array_key_exists("password", $data)) {
+        $data['pass'] = $data['password'];
+      }
 
       // setup password
       $rand = $this->wire(new WireRandom());
       /** @var WireRandom $rand */
-      $password = $rand->alphanumeric(null, [
+      $pass = $rand->alphanumeric(null, [
         'minLength' => 10,
         'maxLength' => 20,
       ]);
-      $data['password'] = $password;
+      // if a user-specified password exists it has priority
+      $data = array_merge(['pass' => $pass], $data);
+      $user->_pass = $pass;
     }
     $this->setUserData($user, $data);
     return $user;
@@ -3718,6 +3729,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$user) return; // logging above
     $user->of(false);
 
+    // for backwards compatibility
+    if (array_key_exists("password", $data)) {
+      $data['pass'] = $data['password'];
+    }
+
     // setup options
     $opt = $this->wire(new WireData());
     /** @var WireData $opt */
@@ -3726,7 +3742,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // when createUser() is used in a migration!
       'roles' => [],
       'admintheme' => 'AdminThemeUikit',
-      'password' => null,
+      'pass' => null,
     ]);
     $opt->setArray($data);
 
@@ -3735,7 +3751,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     foreach ($opt->roles as $role) $this->addRoleToUser($role, $user);
 
     // set password if it is set
-    if ($opt->password) $user->set('pass', $opt->password);
+    if ($opt->pass) $user->set('pass', $opt->pass);
 
     // save admin theme in 2 steps
     // otherwise the admin theme will not update (PW issue)
