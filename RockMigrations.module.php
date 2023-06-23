@@ -5,6 +5,7 @@ namespace ProcessWire;
 use DateTime;
 use DirectoryIterator;
 use ProcessWire\WireArray as ProcessWireWireArray;
+use ReflectionClass;
 use RockMatrix\Block as RockMatrixBlock;
 use RockMigrations\Deployment;
 use RockMigrations\MagicPages;
@@ -2709,7 +2710,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $class = "$namespace\\$name";
       $tmp = $this->wire(new $class());
       if (!$tmp->template) {
-        try {
+        // the page object does not have a template property
+        // so we try to get the template name from the tpl constant
+        $reflection = new ReflectionClass($tmp);
+        if ($reflection->hasConstant('tpl')) {
           $templatename = $tmp::tpl;
           $tpl = $this->wire->templates->get($templatename);
           if (!$tpl) {
@@ -2718,8 +2722,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           }
           if ($tags) $this->setTemplateData($templatename, ['tags' => $tags]);
           $tmp->template = $tpl;
-        } catch (\Throwable $th) {
-          $this->log($th->getMessage());
+        } else {
+          $this->log("Set $class::tpl so that RockMigrations can create the template.");
         }
       }
     }

@@ -5,6 +5,7 @@ namespace RockMigrations;
 use ProcessWire\RockFrontend;
 use ProcessWire\RockMigrations;
 use ProcessWire\Site;
+use ReflectionClass;
 
 trait MagicPage
 {
@@ -13,6 +14,20 @@ trait MagicPage
   public function createOnTop()
   {
     return $this->rockmigrations()->createOnTop($this->template);
+  }
+
+  /**
+   * Method that returns the pages template name
+   * This is to be consistant with RockPageBuilder+RockMigrations snippets
+   */
+  public function getTplName(): string
+  {
+    $reflection = new ReflectionClass($this);
+    if ($reflection->hasConstant('tpl')) {
+      return (string) $reflection->getConstant('tpl');
+    }
+    $tpl = (string)$this->template;
+    if ($tpl) return $tpl;
   }
 
   /**
