@@ -2851,7 +2851,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // we have a regular file
       // first we render the file
       // this will already execute commands inside the file if it is PHP
-      $this->log("Loading {$file->path}...");
+      $this->log("Loading {$file->path}");
       $migrate = $this->runFile($file->path);
       // if rendering the file returned a string we state that it is YAML code
       if (is_string($migrate)) $migrate = $this->yaml($migrate);
