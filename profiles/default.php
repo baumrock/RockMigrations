@@ -71,4 +71,9 @@ $rm->installModule(
   "https://github.com/uiii/AdminHelperLinks/archive/main.zip"
 );
 
+$rm->installModule(
+  "PageListAutoExpand",
+  "https://github.com/Toutouwai/PageListAutoExpand/archive/refs/heads/master.zip"
+);
+
 $rm->installSiteModule();

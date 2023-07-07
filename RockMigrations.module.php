@@ -5,6 +5,7 @@ namespace ProcessWire;
 use DateTime;
 use DirectoryIterator;
 use ProcessWire\WireArray as ProcessWireWireArray;
+use ReflectionClass;
 use RockMatrix\Block as RockMatrixBlock;
 use RockMigrations\Deployment;
 use RockMigrations\MagicPages;
@@ -33,6 +34,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   // global processwire fields
   const field_pagename = "_pw_page_name";
   const field_email = "email";
+
+  // time constants (seconds)
+  // see https://i.imgur.com/vfTasHa.png
+  const oneMinute = 60;
+  const oneHour = self::oneMinute * 60;
+  const oneDay = self::oneHour * 24;
+  const oneWeek = self::oneDay * 7;
+  const oneMonth = self::oneDay * 30;
+  const oneYear = self::oneDay * 365;
 
   /** @var WireData */
   public $conf;
@@ -1227,33 +1237,44 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Create or return a PW user
+   * If a user exists it will update the user with specified data in 2nd argument.
+   * If no password is specified a random password will be used when creating the user.
    *
-   * This will use a random password for the user
+   * If you don't specify a password you can get the generated password like this:
+   * $user = $rm->createUser('foo');
+   * $newPassword = $user->_pass;
    *
    * Usage:
    * $rm->createUser('demo', [
    *   'roles' => ['webmaster'],
+   *   'pass' => 'supersecretpassword',
    * ]);
    *
    * @param string $username
    * @param array $data
-   * @return User|false
+   * @return User
    */
   public function createUser($username, $data = [])
   {
     $user = $this->getUser($username, true);
-    if (!$user) return false;
-    if (!$user->id) {
+    if (!$user or !$user->id) {
       $user = $this->wire->users->add($username);
+
+      // for backwards compatibility
+      if (array_key_exists("password", $data)) {
+        $data['pass'] = $data['password'];
+      }
 
       // setup password
       $rand = $this->wire(new WireRandom());
       /** @var WireRandom $rand */
-      $password = $rand->alphanumeric(null, [
+      $pass = $rand->alphanumeric(null, [
         'minLength' => 10,
         'maxLength' => 20,
       ]);
-      $data['password'] = $password;
+      // if a user-specified password exists it has priority
+      $data = array_merge(['pass' => $pass], $data);
+      $user->_pass = $pass;
     }
     $this->setUserData($user, $data);
     return $user;
@@ -2689,7 +2710,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $class = "$namespace\\$name";
       $tmp = $this->wire(new $class());
       if (!$tmp->template) {
-        try {
+        // the page object does not have a template property
+        // so we try to get the template name from the tpl constant
+        $reflection = new ReflectionClass($tmp);
+        if ($reflection->hasConstant('tpl')) {
           $templatename = $tmp::tpl;
           $tpl = $this->wire->templates->get($templatename);
           if (!$tpl) {
@@ -2698,8 +2722,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           }
           if ($tags) $this->setTemplateData($templatename, ['tags' => $tags]);
           $tmp->template = $tpl;
-        } catch (\Throwable $th) {
-          $this->log($th->getMessage());
+        } else {
+          $this->log("Set $class::tpl so that RockMigrations can create the template.");
         }
       }
     }
@@ -2827,7 +2851,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // we have a regular file
       // first we render the file
       // this will already execute commands inside the file if it is PHP
-      $this->log("Loading {$file->path}...");
+      $this->log("Loading {$file->path}");
       $migrate = $this->runFile($file->path);
       // if rendering the file returned a string we state that it is YAML code
       if (is_string($migrate)) $migrate = $this->yaml($migrate);
@@ -3709,6 +3733,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$user) return; // logging above
     $user->of(false);
 
+    // for backwards compatibility
+    if (array_key_exists("password", $data)) {
+      $data['pass'] = $data['password'];
+    }
+
     // setup options
     $opt = $this->wire(new WireData());
     /** @var WireData $opt */
@@ -3717,7 +3746,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // when createUser() is used in a migration!
       'roles' => [],
       'admintheme' => 'AdminThemeUikit',
-      'password' => null,
+      'pass' => null,
     ]);
     $opt->setArray($data);
 
@@ -3726,7 +3755,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     foreach ($opt->roles as $role) $this->addRoleToUser($role, $user);
 
     // set password if it is set
-    if ($opt->password) $user->set('pass', $opt->password);
+    if ($opt->pass) $user->set('pass', $opt->pass);
 
     // save admin theme in 2 steps
     // otherwise the admin theme will not update (PW issue)
