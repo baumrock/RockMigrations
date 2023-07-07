@@ -1,3 +1,22 @@
+# [3.27.0](https://github.com/baumrock/RockMigrations/compare/v3.26.1...v3.27.0) (2023-07-07)
+
+
+### Bug Fixes
+
+* createUser returning false PR[#24](https://github.com/baumrock/RockMigrations/issues/24) ([fb18156](https://github.com/baumrock/RockMigrations/commit/fb18156f929d549c3c160595b75bcd4b00f72162))
+
+
+### Features
+
+* add deployment hooks ([fcefd1f](https://github.com/baumrock/RockMigrations/commit/fcefd1ffdca1b6b3d0e01cace195961d5f96450d))
+* add PageListAutoExpand to default profile ([68af9f9](https://github.com/baumrock/RockMigrations/commit/68af9f98e2fdfd0cdf4ad4baf585ede91b6c72b4))
+* add rockhsell demo command ([cce0d06](https://github.com/baumrock/RockMigrations/commit/cce0d062d422a7e2b58815c61c5433eee0f65c71))
+* add support for getTplName() syntax ([c01630f](https://github.com/baumrock/RockMigrations/commit/c01630f0f71627d72c3fa1fbc1bfafa213902134))
+* add time constants ([17ab452](https://github.com/baumrock/RockMigrations/commit/17ab452a9d39cb0883b2ac447e77bd5aea11b3e2))
+* make github action fail on error in migration ([7499223](https://github.com/baumrock/RockMigrations/commit/7499223c9491c4155b3287efd69aff5554aec909))
+
+
+
 ## [3.26.1](https://github.com/baumrock/RockMigrations/compare/v3.26.0...v3.26.1) (2023-06-02)
 
 
@@ -75,22 +94,6 @@
 ### Bug Fixes
 
 * revert main branch deployment to old syntax ([0e24db0](https://github.com/baumrock/RockMigrations/commit/0e24db08a55f54e24515688111c7641906bb6e95))
-
-
-
-# [3.23.0](https://github.com/baumrock/RockMigrations/compare/v3.22.0...v3.23.0) (2023-03-19)
-
-
-### Bug Fixes
-
-* set-output warning ([1ae3a5d](https://github.com/baumrock/RockMigrations/commit/1ae3a5de4e7ef7ee557ce3b84af555b94fa0846e))
-
-
-### Features
-
-* add magic field methods ([60eb61e](https://github.com/baumrock/RockMigrations/commit/60eb61e69a7917a2653eab642c89fbf794cbbc42))
-* add PageListShowIds tweak ([22e8d4f](https://github.com/baumrock/RockMigrations/commit/22e8d4fa608d892d7cb964989d724ab8a1a7510e))
-* add support for defining a single path ([48febe6](https://github.com/baumrock/RockMigrations/commit/48febe663b80a715159717a5b815599ce54dd338))
 
 
 
