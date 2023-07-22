@@ -2807,10 +2807,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->updateLastrun();
     foreach ($this->watchlist as $file) {
       if (!$file->migrate) continue;
-      if (in_array($file->path, $this->migrated)) {
-        $this->log("--- Skipping {$file->path} (already migrated)");
-        continue;
-      }
+      // Update 22.07.23
+      // Not sure if it is really a good idea to prevent migrations
+      // from running twice. At least in the CLI it may not be what we want.
+      // if (in_array($file->path, $this->migrated)) {
+      //   $this->log("--- Skipping {$file->path} (already migrated)");
+      //   continue;
+      // }
       if (!$this->doMigrate($file)) {
         $this->log("--- Skipping {$file->path} (no change)");
         continue;
