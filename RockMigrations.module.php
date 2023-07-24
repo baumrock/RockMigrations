@@ -1214,7 +1214,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       if ($migrate) {
         // trigger migrate() of that new template
         $p = $this->wire->pages->newPage(['template' => $t]);
-        if (method_exists($p, "migrate")) $p->migrate();
+        $this->triggerMigrate($p);
       }
     }
 
@@ -1233,6 +1233,45 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
 
     return $t;
+  }
+
+  /**
+   * This makes sure that for every classfile the corresponding template exists
+   */
+  private function createTemplateFromClassfile(string $file, string $namespace)
+  {
+    $name = substr(basename($file), 0, -4);
+    $classname = "\\$namespace\\$name";
+    $tmp = new $classname();
+
+    try {
+      // if the template already exists we exit early
+      $tpl = $this->getTemplate($tmp::tpl, true);
+      if ($tpl) return $tpl;
+
+      // template does not exist - create it!
+      $this->log("Setting up template " . $tmp::tpl);
+      $tpl = $this->createTemplate($tmp::tpl, [
+        'pageClass' => $classname,
+        'tags' => $namespace,
+        'fields' => ['title'],
+      ]);
+
+      // finally we trigger the migrate method of our new pageclass/template
+      // this makes sure that all template settings defined in its migrate()
+      // method are applied straight from the beginning
+      // note that createTemplate() does also trigger the migrate(), but this
+      // does only work for pageClasses in /site/classes! Custom classes in
+      // custom modules are not loaded with the correct pageClass and therefore
+      // don't have the migrate() method available, so we trigger it on our
+      // temporary object directly. Worst case is that migrate() is called
+      // twice which would do no harm.
+      $this->triggerMigrate($tmp);
+
+      return $tpl;
+    } catch (\Throwable $th) {
+      throw new WireException("Error setting up template - you must add the tpl constant to $classname");
+    }
   }
 
   /**
@@ -2690,12 +2729,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * DEPRECATED AS OF 24.7.2023
+   * Please use $rm->pageClassLoader() instead!
+   *
    * Migrate all pageclasses in given path
    * Note that every pageclass needs to have the template name defined in
    * the "tpl" constant, eg YourPageClass::tpl = 'your-template-name'
    */
   public function migratePageClasses($path, $namespace = 'ProcessWire', $tags = ''): void
   {
+    $this->log("---");
+    $this->log(" !  DEPRECATED: migratePageClasses - use \$rm->pageClassLoader() instead!");
+    $this->log("---");
+
     $options = [
       'extensions' => ['php'],
       'recursive' => 1,
@@ -2807,6 +2853,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->updateLastrun();
     foreach ($this->watchlist as $file) {
       if (!$file->migrate) continue;
+
       // Update 22.07.23
       // Not sure if it is really a good idea to prevent migrations
       // from running twice. At least in the CLI it may not be what we want.
@@ -2814,6 +2861,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       //   $this->log("--- Skipping {$file->path} (already migrated)");
       //   continue;
       // }
+
       if (!$this->doMigrate($file)) {
         $this->log("--- Skipping {$file->path} (no change)");
         continue;
@@ -2827,12 +2875,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
       // if it is a module we call $module->migrate()
       if ($module = $file->module) {
-        if (method_exists($module, "migrate") or method_exists($module, "___migrate")) {
-          $this->log("Triggering $module::migrate()");
-          $module->migrate();
-        } else {
-          $this->log("--- Skipping $module::migrate() - method does not exist");
-        }
+        $this->triggerMigrate($module);
         continue;
       }
 
@@ -2916,6 +2959,23 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function noMigrate()
   {
     $this->noMigrate = true;
+  }
+
+  /**
+   * Load all classes shipped with a module and create all templates for them
+   */
+  public function pageClassLoader(string $path, string $namespace): void
+  {
+    $path = rtrim(Paths::normalizeSeparators($path), "/") . "/";
+
+    // make PW autoload all files in given path
+    $this->wire->classLoader->addNamespace($namespace, $path);
+
+    // create templates for all files
+    $files = glob($path . "*.php");
+    foreach ($files as $file) {
+      $this->createTemplateFromClassfile($file, $namespace);
+    }
   }
 
   /**
@@ -3975,6 +4035,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       return $file;
     }
     return '';
+  }
+
+  /**
+   * trigger migrate() method if it exists
+   */
+  private function triggerMigrate($object): void
+  {
+    if (method_exists($object, "migrate")) $object->migrate();
+    if (method_exists($object, "___migrate")) $object->migrate();
   }
 
   /**
