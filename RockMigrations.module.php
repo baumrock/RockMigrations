@@ -754,7 +754,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     if (!$this->wire->modules->isInstalled('RockFrontend')) return;
     if (!$this->wire->config->livereload) return;
-    if ($this->wire->page->id == 21) return; // module download
+
+    // on module config screens we disable livereload if it is not explicitly
+    // forced to be enabled. this is to prevent problems when downloading modules
+    if ($this->wire->page->id == 21 and !$this->livereloadModules) return;
+
     $path = $this->wire->config->paths('RockFrontend');
     $this->addScripts($path . "livereload.js");
   }
@@ -4537,6 +4541,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'label' => 'Add version number from package.json in root folder to the PW admin footer',
       'checked' => $this->addVersion ? 'checked' : '',
     ]);
+    $inputfields->add([
+      'type' => 'checkbox',
+      'name' => 'livereloadModules',
+      'label' => 'Add livereload to modules pages',
+      'notes' => 'Use this only for module development as it may lead to quirks when downloading modules etc!',
+      'checked' => $this->livereloadModules ? 'checked' : '',
+    ]);
 
     $this->wrapFields($inputfields, [
       'disabled' => ['columnWidth' => 100],
@@ -4544,7 +4555,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'addHost' => ['columnWidth' => 50],
       'addVersion' => ['columnWidth' => 50],
       'colorBar' => ['columnWidth' => 50],
-      'syncSnippets' => ['columnWidth' => 100],
+      'syncSnippets' => ['columnWidth' => 50],
+      'livereloadModules' => ['columnWidth' => 50],
     ], [
       'label' => 'RockMigrations Options',
     ]);
