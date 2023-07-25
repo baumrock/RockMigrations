@@ -2117,7 +2117,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
     $template = $this->templates->get((string)$name);
     if ($template and $template->id) return $template;
-    if (!$quiet) $this->log("Template $name not found");
+    if (!$quiet) {
+      $this->log("Template $name not found");
+      // $this->log(Debug::backtrace());
+    }
     return false;
   }
 
@@ -2504,6 +2507,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $line = $trace['line'];
     $filename = pathinfo($file, PATHINFO_FILENAME);
     $traceStr = "$filename:$line";
+
+    // convert message to a string
+    // this makes it possible to log a Debug::backtrace for example
+    // which can be handy for debugging
+    $msg = $this->str($msg);
+
     if ($this->isVerbose()) {
       try {
         $url = TracyDebugger::createEditorLink($file, $line, $traceStr);
@@ -2511,7 +2520,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       } catch (\Throwable $th) {
         $opt = [];
       }
-      if ($this->wire->config->external) echo "$msg\n";
+      if ($this->wire->config->external) echo $msg;
       $this->wire->log->save("RockMigrations", $msg, $opt);
     } elseif ($this->isDebug()) {
       if ($throwException) throw new WireException("$msg in $traceStr");
@@ -2979,6 +2988,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Helper method to add badges to the page list
+   */
+  public function pageListBadge($str, $options = []): string
+  {
+    $opt = new WireData();
+    $opt->setArray([
+      'muted' => true,
+      'class' => '',
+      'style' => '',
+    ]);
+    $opt->setArray($options);
+
+    $muted = $opt->muted ? 'uk-text-muted' : '';
+
+    return "<span
+      class='uk-text-small uk-margin-small-right uk-background-muted $muted {$opt->class}'
+      style='padding: 2px 10px; border-radius: 5px; display:inline-block;font-variant-numeric: tabular-nums; font-size:11px; {$opt->style}'
+      >$str</span>";
+  }
+
+  /**
    * Execute profile
    */
   private function profileExecute()
@@ -3157,6 +3187,62 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $old = $page->name;
     $page->setAndSave('name', $newName);
     $this->log("Renamed page from $old to $newName");
+  }
+
+  /**
+   * Render values as uikit table
+   */
+  public function renderTable($values, $options = [])
+  {
+    // prepare options
+    $opt = new WireData();
+    $opt->setArray([
+      'labels' => [],
+      'tooltips' => false,
+      'tableclass' => "uk-table-striped",
+    ]);
+    $opt->setArray($options);
+
+    if (is_string($values)) $values = json_decode($values);
+    if (is_array($opt->labels)) $labels = (new WireData())->setArray($opt->labels);
+    $out = "<table class='uk-table uk-table-small uk-margin-remove {$opt->tableclass}'>";
+    foreach ($values as $k => $v) {
+      if (is_bool($v)) $v = $this->renderTableCheckbox($v, $opt->tooltips);
+      try {
+        $v = (string)$v;
+        // don't link urls in <svg elements (eg checkbox svg icon)
+        if (!str_starts_with($v, "<svg")) {
+          $v = preg_replace(
+            '/https?:\/\/[\w\-\.!~#?&=+\*\'"(),\/]+/',
+            '<a href="$0" target=_blank>$0</a>',
+            $v
+          );
+        }
+      } catch (\Throwable $th) {
+        $v = $this->renderTable($v, $opt->getArray());
+      }
+      $label = $labels->get($k) ?: $k;
+      $t = $opt->tooltips ? "title='$k' uk-tooltip" : "";
+      $out .= "<tr>
+          <td class='uk-width-expand'>
+            <span class='uk-text-small uk-text-muted' $t>$label</span><br>
+            $v
+          </td>
+        </tr>";
+    }
+    $out .= "</table>";
+    return $out;
+  }
+
+  private function renderTableCheckbox($val, $tooltip = false)
+  {
+    if ($val) {
+      $t = $tooltip ? 'title=yes uk-tooltip' : '';
+      return '<svg ' . $t . ' xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m9 12l2 2l4-4"/><path d="M12 3c7.2 0 9 1.8 9 9s-1.8 9-9 9s-9-1.8-9-9s1.8-9 9-9z"/></g></svg>';
+    } else {
+      $t = $tooltip ? 'title=no uk-tooltip' : '';
+      return '<svg ' . $t . ' xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3c7.2 0 9 1.8 9 9s-1.8 9-9 9s-9-1.8-9-9s1.8-9 9-9z"/></svg>';
+    }
   }
 
   /**
