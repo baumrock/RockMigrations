@@ -1,5 +1,5 @@
 // fix language tabs sometimes not having the correct language
-$(window).load(function () {
+$(window).on("load", () => {
   if (typeof ProcessWire == "undefined") return;
   if (typeof ProcessWire.config == "undefined") return;
   if (typeof ProcessWire.config.rmUserLang == "undefined") return;
