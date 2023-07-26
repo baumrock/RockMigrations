@@ -15,6 +15,7 @@ use RockMigrations\WireArray as WireArrayRM;
 use RockPageBuilder\Block as RockPageBuilderBlock;
 use Symfony\Component\Yaml\Yaml;
 use TracyDebugger;
+use Traversable;
 
 /**
  * @author Bernhard Baumrock, 19.01.2022
@@ -1661,6 +1662,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $reflector = new \ReflectionClass($file);
       $file = $reflector->getFileName();
     }
+    $file = Paths::normalizeSeparators($file);
     if ($relative) $file = str_replace(
       $this->wire->config->paths->root,
       $this->wire->config->urls->root,
@@ -3208,6 +3210,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $opt->setArray($options);
 
     if (is_string($values)) $values = json_decode($values);
+    if (!is_array($values) and !is_object($values)) $values = [];
     if (is_array($opt->labels)) $labels = (new WireData())->setArray($opt->labels);
     $out = "<table class='uk-table uk-table-small uk-margin-remove {$opt->tableclass}'>";
     foreach ($values as $k => $v) {
@@ -4482,11 +4485,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function getModuleConfigInputfields($inputfields)
   {
-    $video = new InputfieldMarkup();
-    $video->label = 'processwire.rocks';
-    $video->value = '<iframe width="420" height="236" src="https://www.youtube.com/embed/eBOB8dZvRN4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
-    $video->value .= '<iframe width="420" height="236" src="https://www.youtube.com/embed/o6O859d3cFA" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
-    $inputfields->add($video);
+    $name = strtolower($this);
+    $inputfields->add([
+      'type' => 'markup',
+      'label' => 'Documentation & Updates',
+      'icon' => 'life-ring',
+      'value' => "<p>Hey there, coding rockstars! 👋</p>
+        <ul>
+          <li><a href=https://www.baumrock.com/modules/$name/docs>Read the docs</a> and level up your coding game! 🚀💻😎</li>
+          <li><a href=https://github.com/baumrock/$name>Show some love by starring the project</a> and keep us motivated to build more awesome stuff for you! 🌟💻😊</li>
+          <li><a href=https://www.baumrock.com/rock-monthly>Sign up now for our monthly newsletter</a> and receive the latest updates and exclusive offers right to your inbox! 🚀💻📫</li>
+        </ul>",
+    ]);
 
     $inputfields->add([
       'type' => 'markup',
