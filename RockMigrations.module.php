@@ -2998,6 +2998,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function pageListBadge($str, $options = []): string
   {
+    $str = (string)$str;
+    if (!$str) return '';
+
     $opt = new WireData();
     $opt->setArray([
       'muted' => true,
