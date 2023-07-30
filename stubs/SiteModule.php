@@ -25,7 +25,10 @@ class Site extends WireData implements Module
     $this->wire('site', $this);
     /** @var RockMigrations $rm */
     $rm = $this->wire->modules->get('RockMigrations');
-    $rm->watch($this);
+
+    // migrate site module before other modules so that if we create global
+    // fields we make sure we can use them in other modules
+    $rm->watch($this, 99);
   }
 
   public function migrate()

@@ -4,18 +4,14 @@ namespace ProcessWire;
 
 use DateTime;
 use DirectoryIterator;
-use ProcessWire\WireArray as ProcessWireWireArray;
 use ReflectionClass;
 use RockMatrix\Block as RockMatrixBlock;
 use RockMigrations\Deployment;
 use RockMigrations\MagicPages;
 use RockMigrations\WatchFile;
-use RockMigrations\WireArray;
-use RockMigrations\WireArray as WireArrayRM;
 use RockPageBuilder\Block as RockPageBuilderBlock;
 use Symfony\Component\Yaml\Yaml;
 use TracyDebugger;
-use Traversable;
 
 /**
  * @author Bernhard Baumrock, 19.01.2022
@@ -76,7 +72,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /** @var string */
   public $path;
 
-  /** @var WireArrayRM */
+  /** @var WireArray */
   private $watchlist;
 
   public function __construct()
@@ -85,7 +81,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->path = $this->wire->config->paths($this);
     $this->wire->classLoader->addNamespace("RockMigrations", __DIR__ . "/classes");
 
-    $this->watchlist = $this->wire(new WireArrayRM());
+    $this->watchlist = $this->wire(new WireArray());
     $this->lastrun = (int)$this->wire->cache->get(self::cachename);
   }
 
@@ -117,10 +113,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // for example this will create the sessions folder if it does not exist
     $this->createNeededFolders();
 
-    // always watch + migrate /site/migrate.[yaml|php]
-    // the third parameter makes it use the migrateNew() method
-    // this will be the first file that is watched!
-    $this->watch($config->paths->site . "migrate", true);
+    // add /site/migrate.[yaml|php] to watchlist
+    // we use a high priority to make sure this is the first file migrated
+    $this->watch($config->paths->site . "migrate", 9999);
     $this->watchModules();
 
     // hooks
@@ -142,7 +137,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $path = __DIR__ . "/tweaks";
     $options = ['extensions' => ['php']];
-    $tweaks = $this->wire(new ProcessWireWireArray());
+    $tweaks = $this->wire(new WireArray());
     foreach ($this->wire->files->find($path, $options) as $file) {
       $tweak = $this->loadTweak($file);
       $tweaks->add($tweak);
@@ -1250,28 +1245,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $tmp = new $classname();
 
     try {
+      if ($this->isCLI()) $this->log("Setup Template " . $tmp::tpl);
+
       // if the template already exists we exit early
       $tpl = $this->getTemplate($tmp::tpl, true);
       if ($tpl) return $tpl;
 
       // template does not exist - create it!
-      $this->log("Setting up template " . $tmp::tpl);
       $tpl = $this->createTemplate($tmp::tpl, [
         'pageClass' => $classname,
         'tags' => $namespace,
         'fields' => ['title'],
       ]);
-
-      // finally we trigger the migrate method of our new pageclass/template
-      // this makes sure that all template settings defined in its migrate()
-      // method are applied straight from the beginning
-      // note that createTemplate() does also trigger the migrate(), but this
-      // does only work for pageClasses in /site/classes! Custom classes in
-      // custom modules are not loaded with the correct pageClass and therefore
-      // don't have the migrate() method available, so we trigger it on our
-      // temporary object directly. Worst case is that migrate() is called
-      // twice which would do no harm.
-      $this->triggerMigrate($tmp);
 
       return $tpl;
     } catch (\Throwable $th) {
@@ -2730,6 +2715,31 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Migrate a module and all its page classes
+   */
+  private function migrateModule(Module $module): void
+  {
+    $this->log("----- Migrate Module $module -----");
+    if ($module->pageClassPath) {
+      // if the module has a classloader attached we make sure that we migrate
+      // pageclasses before migrating the final module.
+      // that way we can define what happens in the module file - for example
+      // we could create several templates upfront and then in the module file
+      // we create pages that use those templates, which is only possible if
+      // those templates have been created before.
+      $this->log("Setup all PageClasses of this Module");
+
+      foreach ($this->pageClassFiles($module) as $file) {
+        $this->createTemplateFromClassfile($file, $module->className());
+      }
+      foreach ($this->pageClassFiles($module) as $file) {
+        $this->migratePageClass($file, $module);
+      }
+    }
+    $this->triggerMigrate($module);
+  }
+
+  /**
    * Call $module::migrate() on modules::refresh
    * @return void
    */
@@ -2744,6 +2754,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Migrate a single pageclass of a module
+   */
+  private function migratePageClass(string $file, Module $module): void
+  {
+    $name = substr(basename($file), 0, -4);
+    $namespace = $module->className();
+    $classname = "\\$namespace\\$name";
+
+    $this->log("Migrate PageClass $classname");
+    try {
+      $tmp = new $classname();
+      $this->triggerMigrate($tmp, true);
+    } catch (\Throwable $th) {
+      $this->log($th->getMessage());
+    }
+  }
+
+  /**
    * DEPRECATED AS OF 24.7.2023
    * Please use $rm->pageClassLoader() instead!
    *
@@ -2753,9 +2781,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function migratePageClasses($path, $namespace = 'ProcessWire', $tags = ''): void
   {
-    $this->log("---");
-    $this->log(" !  DEPRECATED: migratePageClasses - use \$rm->pageClassLoader() instead!");
-    $this->log("---");
+    $trace = Debug::backtrace();
+    $this->warn(
+      "DEPRECATED: migratePageClasses - use \$rm->pageClassLoader() instead!\n"
+        . $trace[0]['file']
+    );
 
     $options = [
       'extensions' => ['php'],
@@ -2801,11 +2831,69 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Migrate a single watchfile
+   */
+  private function migrateWatchfile(WatchFile $file): void
+  {
+    if ($this->wire->config->debug and $this->isCLI()) {
+      $this->log("Watchfile: " . $file->path);
+    }
+
+    if (!$file->migrate) return;
+    if (!$this->doMigrate($file)) {
+      $this->log("--- Skipping {$file->path} (no change)");
+      return;
+    }
+
+    // if it is a callback we execute it
+    if ($callback = $file->callback) {
+      $callback->__invoke($this);
+      return;
+    }
+
+    // if it is a module we call $module->migrate()
+    if ($module = $file->module) {
+      $this->migrateModule($module);
+      return;
+    }
+
+    // if it is a pageclass we create a temporary page and migrate it
+    if ($file->pageClass) {
+      if ($this->doMigrate($file->path)) {
+        $tmp = $this->wire->pages->newPage($file->template);
+        if (
+          method_exists($tmp, 'migrate') or
+          (is_object($module) and method_exists($module, "___migrate"))
+        ) {
+          $this->log("Trigger {$file->pageClass}::migrate()");
+          $tmp->migrate();
+        }
+      } else $this->log("--- Skip {$file->pageClass} (no change)");
+      return;
+    }
+
+    // we have a regular file
+    // first we render the file
+    // this will already execute commands inside the file if it is PHP
+    $this->log("Load {$file->path}");
+    $migrate = $this->runFile($file->path);
+    // if rendering the file returned a string we state that it is YAML code
+    if (is_string($migrate)) $migrate = $this->yaml($migrate);
+    if (is_array($migrate)) {
+      $this->log("Returned an array - trigger migrate() of "
+        . print_r($migrate, true));
+      $this->migrate($migrate);
+    }
+  }
+
+  /**
    * Run migrations of all watchfiles
    * @return void
    */
-  public function migrateWatchfiles($force = false)
+  private function migrateWatchfiles($force = false)
   {
+    $debug = $this->wire->config->debug;
+
     if (!$this->isCLI() and $this->wire->config->noMigrate) {
       $this->log("Migrations disabled via \$config->noMigrate");
       return;
@@ -2858,7 +2946,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$cli) {
       $this->log('-------------------------------------');
       foreach ($changed as $file) $this->log("Detected change in $file");
-      $this->log('Running migrations from watchfiles...');
+      $this->log('Running migrations from watchfiles ...');
     }
 
     // always refresh modules before running migrations
@@ -2866,64 +2954,25 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$this->triggeredByRefresh) $this->refresh();
 
     $this->updateLastrun();
-    foreach ($this->watchlist as $file) {
-      if (!$file->migrate) continue;
 
-      // Update 22.07.23
-      // Not sure if it is really a good idea to prevent migrations
-      // from running twice. At least in the CLI it may not be what we want.
-      // if (in_array($file->path, $this->migrated)) {
-      //   $this->log("--- Skipping {$file->path} (already migrated)");
-      //   continue;
-      // }
+    $list = $this->sortWatchlist();
+    if ($this->isCLI() and $debug) {
+      $this->log("##### SORTED WATCHLIST #####");
+      $this->log($list);
+    }
 
-      if (!$this->doMigrate($file)) {
-        $this->log("--- Skipping {$file->path} (no change)");
-        continue;
-      }
+    foreach ($list as $prio => $items) {
+      if ($this->isCLI()) $this->log("");
+      $this->log("### Migrate items with priority $prio ###");
 
-      // if it is a callback we execute it
-      if ($callback = $file->callback) {
-        $callback->__invoke($this);
-        continue;
-      }
-
-      // if it is a module we call $module->migrate()
-      if ($module = $file->module) {
-        $this->triggerMigrate($module);
-        continue;
-      }
-
-      // if it is a pageclass we create a temporary page and migrate it
-      if ($file->pageClass) {
-        if ($this->doMigrate($file->path)) {
-          $tmp = $this->wire->pages->newPage($file->template);
-          if (
-            method_exists($tmp, 'migrate') or
-            (is_object($module) and method_exists($module, "___migrate"))
-          ) {
-            $this->log("Triggering {$file->pageClass}::migrate()");
-            $tmp->migrate();
-          }
-        } else $this->log("--- Skipping {$file->pageClass} (no change)");
-        continue;
-      }
-
-      // we have a regular file
-      // first we render the file
-      // this will already execute commands inside the file if it is PHP
-      $this->log("Loading {$file->path}");
-      $migrate = $this->runFile($file->path);
-      // if rendering the file returned a string we state that it is YAML code
-      if (is_string($migrate)) $migrate = $this->yaml($migrate);
-      if (is_array($migrate)) {
-        $this->log("Returned an array - trigger migrate() of "
-          . print_r($migrate, true));
-        $this->migrate($migrate);
+      foreach ($items as $path) {
+        $file = $this->watchlist->get("path=$path");
+        $this->migrateWatchfile($file);
       }
     }
 
-    $this->log("Triggering RockMigrations::migrationsDone");
+    if ($this->isCLI()) $this->log("---");
+    $this->log("Trigger RockMigrations::migrationsDone");
     $this->migrationsDone();
   }
 
@@ -2977,17 +3026,39 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Load all classes shipped with a module and create all templates for them
+   * Get all pageclass files of given module
    */
-  public function pageClassLoader(string $path, string $namespace): void
+  private function pageClassFiles(Module $module): array
   {
-    $path = rtrim(Paths::normalizeSeparators($path), "/") . "/";
+    if (!$module->pageClassPath) return [];
+    return glob($module->pageClassPath . "*.php");
+  }
+
+  /**
+   * Load all classes shipped with a module and create all templates for them
+   *
+   * Usage:
+   * Call $rm->pageClassLoader($this) in your module's init() method and place
+   * all page classes inside the /classes folder and use the same namespace
+   * as the module's classname.
+   *
+   * Example "MyModule"
+   * /site/modules/MyModule/MyModule.module.php
+   * /site/modules/MyModule/classes/Foo.php --> namespace MyModule
+   * /site/modules/MyModule/classes/Bar.php --> namespace MyModule
+   */
+  public function pageClassLoader(Module $module, $folder = "classes"): void
+  {
+    $file = $this->wire->modules->getModuleFile($module);
+    $path = $this->path(dirname($file) . "/" . $folder, true);
+    $namespace = $module->className();
+    $module->pageClassPath = $path;
 
     // make PW autoload all files in given path
     $this->wire->classLoader->addNamespace($namespace, $path);
 
     // create templates for all files
-    $files = glob($path . "*.php");
+    $files = $this->pageClassFiles($module);
     foreach ($files as $file) {
       $this->createTemplateFromClassfile($file, $namespace);
     }
@@ -3052,7 +3123,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function refresh()
   {
     $this->wire->session->noMigrate = true;
-    $this->log('Refreshing modules...');
+    $this->log('Refresh modules');
     $this->wire->modules->refresh();
     $this->wire->session->noMigrate = false;
   }
@@ -4012,6 +4083,28 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Sort watchlist by priority and by file path
+   * This is very important to ensure that migrations always run in the
+   * same order.
+   */
+  private function sortWatchlist(): array
+  {
+    $list = [];
+    foreach ($this->watchlist as $file) {
+      if (!$file->migrate) continue;
+      $key = "#" . $file->migrate;
+      if (!array_key_exists($key, $list)) $list[$key] = [];
+      $list[$key][] = $file->path;
+    }
+    ksort($list);
+    foreach ($list as $k => $sublist) {
+      sort($sublist);
+      $list[$k] = $sublist;
+    }
+    return array_reverse($list);
+  }
+
+  /**
    * Convert data to string (for logging)
    */
   public function str($data): string
@@ -4161,10 +4254,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * trigger migrate() method if it exists
+   * Trigger migrate() method if it exists
    */
-  private function triggerMigrate($object): void
+  private function triggerMigrate($object, $silent = false): void
   {
+    if (!$silent) $this->log("Migrate $object");
     if (method_exists($object, "migrate")) $object->migrate();
     if (method_exists($object, "___migrate")) $object->migrate();
   }
@@ -4249,6 +4343,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $export = preg_replace(array_keys($patterns), array_values($patterns), $export);
     if ((bool)$return) return $export;
     else echo $export;
+  }
+
+  /**
+   * Add lines of warning to log
+   */
+  public function warn(string $str): void
+  {
+    $lines = explode("\n", $str);
+    $len = 0;
+    foreach ($lines as $line) {
+      if (strlen($line) > $len) $len = strlen($line);
+    }
+    $hr = str_pad("", $len + 3, "-");
+    $this->log($hr);
+    foreach ($lines as $line) $this->log(" ! $line");
+    $this->log($hr);
   }
 
   /**
@@ -4379,9 +4489,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     ]);
     // bd($data, $data->path);
 
-    // add item to watchlist and sort watchlist by migrate priority
-    // see https://github.com/processwire/processwire-issues/issues/1528
-    $this->watchlist->add($data)->sortFloat('migrate');
+    // add item to watchlist
+    // sorting of list will happen before migration of all items
+    $this->watchlist->add($data);
   }
 
   public function watchEnabled()
@@ -4687,6 +4797,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return [
       'lastrun' => $lastrun,
       'watchlist' => $this->watchlist,
+      'sortWatchlist' => $this->sortWatchlist(),
     ];
   }
 }
