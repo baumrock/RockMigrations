@@ -4134,6 +4134,33 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Return the given path and make sure it has
+   * - normalised separators
+   * - no multiple slashes
+   * - optionally a trailing slash
+   *
+   * /foo///bar///baz --> /foo/bar/baz
+   *
+   * This is great for quickly joining paths where you might not know if they
+   * have trailing slashes or not:
+   *
+   * $rm->path(
+   *   $config->paths->root.
+   *   "\foo\bar\".
+   *   "/baz.php"
+   * );
+   * --> /var/www/html/foo/bar/baz.php
+   */
+  public function path(string $path, $slash = null): string
+  {
+    $path = Paths::normalizeSeparators($path);
+    if ($slash === true) $path .= "/";
+    elseif ($slash === false) $path = rtrim($path, "/");
+    while (strpos($path, "//")) $path = str_replace("//", "/", $path);
+    return $path;
+  }
+
+  /**
    * trigger migrate() method if it exists
    */
   private function triggerMigrate($object): void
