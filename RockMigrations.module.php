@@ -1928,6 +1928,28 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Get file from folders
+   *
+   * Usage:
+   * $rm->getFile('foo.latte', [
+   *   '/folder1',
+   *   '/folder2',
+   * ]);
+   *
+   * Returns the first file found, eg
+   * /path/to/pw/folder1/foo.latte
+   */
+  public function getFile(string $file, array $folders): string|false
+  {
+    $root = $this->wire->config->paths->root;
+    foreach ($folders as $dir) {
+      $path = $this->path("$root/$dir/$file");
+      if (is_file($path)) return $path;
+    }
+    return false;
+  }
+
+  /**
    * Get language
    * Returns FALSE if language is not found
    * @return Language|false
