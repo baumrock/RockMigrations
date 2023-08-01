@@ -1699,10 +1699,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Get first second of year/month/day
    */
-  public function firstSecond($year, $month = null, $day = null): int
+  public function firstSecond($year = null, $month = null, $day = null): int
   {
     $date = new DateTime();
-    $date->setDate($year, $month ?: 1, $day ?: 1);
+    $date->setDate($year ?: date('Y'), $month ?: 1, $day ?: 1);
     $date->setTime(0, 0, 0);
     return $date->getTimestamp();
   }
@@ -2425,8 +2425,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Get last second of year/month/day
    */
-  public function lastSecond($year, $month = null, $day = null): int
+  public function lastSecond($year = null, $month = null, $day = null): int
   {
+    $year = $year ?: date("Y");
     $date = new DateTime();
     $date->setDate($year, $month ?: 1, $day ?: 1);
     $date->setTime(0, 0, 0);
@@ -3312,7 +3313,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     foreach ($values as $k => $v) {
       if (is_bool($v)) $v = $this->renderTableCheckbox($v, $opt->tooltips);
       try {
-        $v = (string)$v;
+        // try to render a table for arrays or objects
+        if (!is_string($v) and !is_numeric($v)) $v = $this->renderTable($v);
+
         // don't link urls in <svg elements (eg checkbox svg icon)
         if (!str_starts_with($v, "<svg")) {
           $v = preg_replace(
@@ -3334,6 +3337,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         </tr>";
     }
     $out .= "</table>";
+    if ($this->wire->modules->isInstalled('RockFrontend')) {
+      return $this->wire->modules->get('RockFrontend')->html($out);
+    }
     return $out;
   }
 
