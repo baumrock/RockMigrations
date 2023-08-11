@@ -2152,6 +2152,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Get template of root page
+   * Usually the page with ID 1 has the "home" template, but we can't be sure
+   * about that so it's better to use this helper method instead to make sure
+   * our code will always work.
+   */
+  public function homeTemplate(): Template
+  {
+    return $this->wire->pages->get(1)->template;
+  }
+
+  /**
    * DEPRECATED
    *
    * As of v1.0.5 the recommended way of using magic page classes is using
