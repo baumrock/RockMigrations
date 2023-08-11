@@ -1,16 +1,17 @@
-// fix language tabs sometimes not having the correct language
-$(window).load(function () {
-  if (typeof ProcessWire == "undefined") return;
-  if (typeof ProcessWire.config == "undefined") return;
-  if (typeof ProcessWire.config.rmUserLang == "undefined") return;
-  let lang = ProcessWire.config.rmUserLang;
-  setTimeout(() => {
-    let tabs = $(".langTab" + lang);
-    if (!tabs.length) return;
-    tabs.click();
-    console.log("LanguageTabs set via RockMigrations");
-  }, 200);
-});
+// // fix language tabs sometimes not having the correct language
+// // todo make that a selectable tweak
+// $(window).on("load", () => {
+//   if (typeof ProcessWire == "undefined") return;
+//   if (typeof ProcessWire.config == "undefined") return;
+//   if (typeof ProcessWire.config.rmUserLang == "undefined") return;
+//   let lang = ProcessWire.config.rmUserLang;
+//   setTimeout(() => {
+//     let tabs = $(".langTab" + lang);
+//     if (!tabs.length) return;
+//     tabs.trigger("click");
+//     console.log("LanguageTabs set via RockMigrations");
+//   }, 200);
+// });
 
 // add tooltips in the backend
 $(document).ready(() => {

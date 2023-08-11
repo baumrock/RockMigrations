@@ -96,6 +96,10 @@ class Deployment extends WireData
     if (!is_array($output)) return;
     foreach ($output as $line) {
       if (str_starts_with($line, "Error: ")) $this->exit($line);
+      if (str_starts_with(
+        $line,
+        "404 page not found (no site configuration or install.php available)"
+      )) $this->exit($line);
     }
   }
 
