@@ -1769,11 +1769,25 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function getCode($item, $raw = false)
   {
     if ($item instanceof Field) {
-      ob_start();
       $data = $item->getExportData();
+
       unset($data['id']);
       unset($data['name']);
       unset($data['rockmigrations']);
+
+      // convert template ids to template names
+      $key = 'template_ids';
+      if (
+        $item instanceof PageField
+        and array_key_exists($key, $data)
+        and is_array($data[$key])
+      ) {
+        $names = [];
+        foreach ($data[$key] as $k => $id) {
+          $names[] = $this->getTemplate($id)->name;
+        }
+        $data[$key] = $names;
+      }
 
       // we have a different syntax for options of an options field
       if ($item->type instanceof FieldtypeRepeater) {
@@ -3478,6 +3492,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         if (!$tpl) throw new WireException("Invalid template_id");
         $data[$key] = $tpl->id;
         continue; // early exit
+      }
+
+      // support setting the "additional templates" via names instead of ids
+      // see https://shorturl.at/pyDRS
+      if ($key === "template_ids") {
+        foreach ($val as $sub => $tpl_name) {
+          if (is_string($tpl_name) and $tpl_name !== '') {
+            $tpl = $this->getTemplate($tpl_name);
+            if (!$tpl) throw new WireException("Invalid item value in template_ids");
+            $val[$sub] = $tpl->id;
+          }
+          $data[$key] = $val;
+          continue; // early exit
+        }
       }
 
       // support defining parent_id as page path
