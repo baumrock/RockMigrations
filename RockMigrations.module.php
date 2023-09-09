@@ -353,15 +353,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Compile LESS file and save CSS version
    *
-   * foo.less --> foo.less.css
+   * foo.less --> foo.css
    *
    * Requires the Less module and will silently return if anything goes wrong.
    * The method is intended to easily develop module styles in LESS and ship
    * the CSS version.
    */
-  public function saveCSS($less, $onlySuperuser = true, $css = null): string
-  {
-    $css = $css ?: "$less.css";
+  public function saveCSS(
+    $less,
+    $onlySuperuser = true,
+    $css = null,
+    $minify = false,
+  ): string {
+    $css = $css ?: substr($less, 0, -5) . ".css";
     if (!is_file($less)) return $css;
 
     $mLESS = filemtime($less);
@@ -376,8 +380,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $parser->saveCss($css);
         $mCSS = time();
         $this->log("Created new CSS file: $css");
+      } else {
+        $this->warning("LESS file changed but LESS module not installed! $less");
       }
     }
+
+    if ($minify) {
+      return $this->minify($css);
+    }
+
     return $css;
   }
 
@@ -388,25 +399,26 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * $rm->minify("/path/to/style.css"); // creates /path/to/style.min.css
    * $rm->minify("/path/to/style.css", "/newpath/style.min.css");
    */
-  public function minify($file, $minFile = null)
+  public function minify($file, $minFile = null): string
   {
     $ext = pathinfo($file, PATHINFO_EXTENSION);
     require_once __DIR__ . "/vendor/autoload.php";
     if ($ext == 'css') {
       if (!$minFile) $minFile = substr($file, 0, -4) . ".min.css";
-      if ($this->isNewer($minFile, $file)) return;
+      if ($this->isNewer($minFile, $file)) return $minFile;
       $minify = new \MatthiasMullie\Minify\CSS($file);
       $minify->minify($minFile);
       $this->log("Minified $minFile");
     } elseif ($ext == 'js') {
       if (!$minFile) $minFile = substr($file, 0, -3) . ".min.js";
-      if ($this->isNewer($minFile, $file)) return;
+      if ($this->isNewer($minFile, $file)) return $minFile;
       $minify = new \MatthiasMullie\Minify\JS($file);
       $minify->minify($minFile);
       $this->log("Minified $minFile");
     } else {
       throw new WireException("Invalid Extension $ext");
     }
+    return $minFile;
   }
 
   /**
