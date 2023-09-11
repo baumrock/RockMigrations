@@ -6,6 +6,7 @@ use Exception;
 use ProcessWire\Paths;
 use ProcessWire\ProcessWire;
 use ProcessWire\WireData;
+use ProcessWire\WireDatabasePDO;
 
 chdir(__DIR__);
 chdir("../../../../");
@@ -64,6 +65,57 @@ class Deployment extends WireData
     ];
   }
 
+  /**
+   * Run default actions
+   */
+  public function run($keep = null)
+  {
+    $this->hello();
+
+    $this->trigger("share", "before");
+    $this->share();
+    $this->trigger("share", "after");
+
+    $this->trigger("delete", "before");
+    $this->delete();
+    $this->trigger("delete", "after");
+
+    $this->trigger("secure", "before");
+    $this->secure();
+    $this->trigger("secure", "after");
+
+    $this->trigger("dumpDB", "before");
+    $this->dumpDB();
+    $this->trigger("dumpDB", "after");
+
+    $this->trigger("cleanupDB", "before");
+    $this->cleanupDB();
+    $this->trigger("cleanupDB", "after");
+
+    $this->trigger("migrate", "before");
+    $this->migrate();
+    $this->trigger("migrate", "after");
+
+    $this->trigger("addRobots", "before");
+    $this->addRobots();
+    $this->trigger("addRobots", "after");
+
+    $this->trigger("finish", "before");
+    $this->finish();
+    $this->trigger("finish", "after");
+
+    // chown must be after finish to affect current symlink!
+    $this->trigger("chown", "before");
+    $this->chown();
+    $this->trigger("chown", "after");
+
+    $this->trigger("healthcheck", "before");
+    $this->healthcheck();
+    $this->trigger("healthcheck", "after");
+
+    $this->section("Deployment done :)");
+  }
+
   public function addRobots()
   {
     if (!$this->robots()) return;
@@ -120,6 +172,35 @@ class Deployment extends WireData
     $this->echo("Usage: Can be disabled via \$deploy->chown = false;");
     $this->exec("chown -R $owner:$group $root", true);
     $this->ok();
+  }
+
+  /**
+   * Remove all FileCompiler entries in the caches table
+   * This is to remove filecompiler entries that hold old release paths.
+   */
+  public function cleanupDB()
+  {
+    if ($this->dry) return $this->echo("Dry run - skipping cleanupDB()...");
+    $pwroot = $this->paths->root . "/current";
+    try {
+      $this->section("Cleanup database cache");
+      if (!is_file($f = "$pwroot/wire/config.php")) throw new Exception("$f not found");
+      if (!is_file($f = "$pwroot/site/config.php")) throw new Exception("$f not found");
+      $config = ProcessWire::buildConfig($pwroot);
+
+      if (!$config->dbHost) throw new Exception("No dbHost");
+      if (!$config->dbUser) throw new Exception("No dbUser");
+      if (!$config->dbName) throw new Exception("No dbName");
+      if (!$config->dbPass) throw new Exception("No dbPass");
+      if (!$config->dbPort) throw new Exception("No dbPort");
+
+      $dsn = "mysql:dbname={$config->dbName};host={$config->dbHost};port={$config->dbPort}";
+      $db = new WireDatabasePDO($dsn, $config->dbUser, $config->dbPass);
+      $db->prepare("DELETE FROM `caches` WHERE `name` LIKE 'FileCompiler__%'")->execute();
+      $this->ok();
+    } catch (\Throwable $th) {
+      $this->echo($th->getMessage());
+    }
   }
 
   /**
@@ -427,53 +508,6 @@ class Deployment extends WireData
   public function rootFolderName(): string
   {
     return basename($this->paths->root);
-  }
-
-  /**
-   * Run default actions
-   */
-  public function run($keep = null)
-  {
-    $this->hello();
-
-    $this->trigger("share", "before");
-    $this->share();
-    $this->trigger("share", "after");
-
-    $this->trigger("delete", "before");
-    $this->delete();
-    $this->trigger("delete", "after");
-
-    $this->trigger("secure", "before");
-    $this->secure();
-    $this->trigger("secure", "after");
-
-    $this->trigger("dumpDB", "before");
-    $this->dumpDB();
-    $this->trigger("dumpDB", "after");
-
-    $this->trigger("migrate", "before");
-    $this->migrate();
-    $this->trigger("migrate", "after");
-
-    $this->trigger("addRobots", "before");
-    $this->addRobots();
-    $this->trigger("addRobots", "after");
-
-    $this->trigger("finish", "before");
-    $this->finish();
-    $this->trigger("finish", "after");
-
-    // chown must be after finish to affect current symlink!
-    $this->trigger("chown", "before");
-    $this->chown();
-    $this->trigger("chown", "after");
-
-    $this->trigger("healthcheck", "before");
-    $this->healthcheck();
-    $this->trigger("healthcheck", "after");
-
-    $this->section("Deployment done :)");
   }
 
   /**
