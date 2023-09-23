@@ -1575,17 +1575,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Echo data (for CLI usage)
-   */
-  public function echo($data)
-  {
-    $this->wire->log->save("LineUpr", $this->str($data), [
-      'showUser' => false,
-      'showUrl' => false,
-    ]);
-  }
-
-  /**
    * Enable all languages for given page
    *
    * @param mixed $page
