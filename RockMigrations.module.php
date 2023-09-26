@@ -378,7 +378,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         /** @var Less $parser */
         $parser->addFile($less);
         $parser->saveCss($css);
-        $mCSS = time();
         $this->log("Created new CSS file: $css");
       } else {
         $this->warning("LESS file changed but LESS module not installed! $less");
