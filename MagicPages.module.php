@@ -123,7 +123,7 @@ class MagicPages extends WireData implements Module
     if (method_exists($magicPage, "editForm")) {
       $this->wire->addHookAfter("ProcessPageEdit::buildForm", function ($event) use ($magicPage) {
         $page = $event->object->getPage();
-        if ($page->className !== $magicPage->className) return;
+        if ($page->className(true) !== $magicPage->className(true)) return;
         $form = $event->return;
         $page->editForm($form, $page);
       });
@@ -132,7 +132,7 @@ class MagicPages extends WireData implements Module
     if (method_exists($magicPage, "editFormContent")) {
       $this->wire->addHookAfter("ProcessPageEdit::buildFormContent", function ($event) use ($magicPage) {
         $page = $event->object->getPage();
-        if ($page->className !== $magicPage->className) return;
+        if ($page->className(true) !== $magicPage->className(true)) return;
         $form = $event->return;
         $page->editFormContent($form, $page);
       });
@@ -141,7 +141,7 @@ class MagicPages extends WireData implements Module
     if (method_exists($magicPage, "editFormSettings")) {
       $this->wire->addHookAfter("ProcessPageEdit::buildFormSettings", function ($event) use ($magicPage) {
         $page = $event->object->getPage();
-        if ($page->className !== $magicPage->className) return;
+        if ($page->className(true) !== $magicPage->className(true)) return;
         $form = $event->return;
         $page->editFormSettings($form, $page);
       });
@@ -152,7 +152,7 @@ class MagicPages extends WireData implements Module
     if (method_exists($magicPage, "onSaved")) {
       $this->wire->addHookAfter("Pages::saved", function ($event) use ($magicPage) {
         $page = $event->arguments(0);
-        if ($page->className !== $magicPage->className) return;
+        if ($page->className(true) !== $magicPage->className(true)) return;
         $page->onSaved();
       });
     }
@@ -162,7 +162,7 @@ class MagicPages extends WireData implements Module
     if (method_exists($magicPage, "onSaveReady")) {
       $this->wire->addHookAfter("Pages::saveReady", function ($event) use ($magicPage) {
         $page = $event->arguments(0);
-        if ($page->className !== $magicPage->className) return;
+        if ($page->className(true) !== $magicPage->className(true)) return;
         $page->onSaveReady();
       });
     }
@@ -172,7 +172,7 @@ class MagicPages extends WireData implements Module
       $this->wire->addHookAfter("Pages::saveReady", function ($event) use ($magicPage) {
         $page = $event->arguments(0);
         if ($page->id) return;
-        if ($page->className !== $magicPage->className) return;
+        if ($page->className(true) !== $magicPage->className(true)) return;
         $page->onCreate();
       });
     }
@@ -181,7 +181,7 @@ class MagicPages extends WireData implements Module
     if (method_exists($magicPage, "onAdded")) {
       $this->wire->addHookAfter("Pages::added", function ($event) use ($magicPage) {
         $page = $event->arguments(0);
-        if ($page->className !== $magicPage->className) return;
+        if ($page->className(true) !== $magicPage->className(true)) return;
         $page->onAdded();
       });
     }
@@ -190,7 +190,7 @@ class MagicPages extends WireData implements Module
     if (method_exists($magicPage, "onTrashed")) {
       $this->wire->addHookAfter("Pages::trashed", function ($event) use ($magicPage) {
         $page = $event->arguments(0);
-        if ($page->className !== $magicPage->className) return;
+        if ($page->className(true) !== $magicPage->className(true)) return;
         $page->onTrashed();
       });
     }
@@ -200,8 +200,21 @@ class MagicPages extends WireData implements Module
       $this->wire->addHookAfter("InputfieldForm::processInput", function ($event) use ($magicPage) {
         if ($event->process != "ProcessPageEdit") return;
         $page = $event->process->getPage();
-        if ($page->className !== $magicPage->className) return;
+        if ($page->className(true) !== $magicPage->className(true)) return;
         $page->onProcessInput($event->arguments(0), $event->return);
+      });
+    }
+
+    // field value changed
+    if (method_exists($magicPage, "onChanged")) {
+      $this->wire->addHookAfter("Page::changed", function ($event) use ($magicPage) {
+        $page = $event->object;
+        if ($page->className(true) !== $magicPage->className(true)) return;
+        $page->onChanged(
+          $event->arguments(0),
+          $event->arguments(1),
+          $event->arguments(2)
+        );
       });
     }
 
@@ -216,13 +229,13 @@ class MagicPages extends WireData implements Module
     if (method_exists($magicPage, "setPageName")) {
       $this->wire->addHookAfter("Pages::saved(id>0)", function (HookEvent $event) use ($magicPage) {
         $page = $event->arguments(0);
-        if ($page->className !== $magicPage->className) return;
+        if ($page->className(true) !== $magicPage->className(true)) return;
         $page->setName($page->setPageName());
         $page->save(['noHooks' => true]);
       });
       $this->wire->addHookAfter("ProcessPageEdit::buildForm", function (HookEvent $event) use ($magicPage) {
         $page = $event->process->getPage();
-        if ($page->className !== $magicPage->className) return;
+        if ($page->className(true) !== $magicPage->className(true)) return;
         $form = $event->return;
         if ($f = $form->get('_pw_page_name')) {
           $f->prependMarkup = "<style>#wrap_{$f->id} input[type=text] { display: none; }</style>";

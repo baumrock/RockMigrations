@@ -19,11 +19,11 @@ The module also contains several helpers that make it extremely easy to implemen
 
 Check out the [WIKI for a Quickstart and Docs](https://github.com/baumrock/RockMigrations/wiki)!
 
-## Limitations
+## Pro-Fields and 3rd-Party-Fields
 
-RockMigrations might not support all external fields, especially not ProFields like RepeaterMatrix. Adding support has no priority for me because I'm not using them. If you need support for any field that is currently not supported please provide a PR or if you are interested in sponsoring that feature please contact me via PM in the forum.
+While RockMigrations efficiently handles most database schema changes, it's worth mentioning that not all ProcessWire pro-fields or 3rd-party-fields might be covered. In case of unsupported fields, users have the choice to sponsor the addition of support or opt for manual migration using traditional methods, mimicking a scenario without RockMigrations. This approach guarantees versatility for different field types within the ProcessWire CMS ecosystem.
 
-But not to forget: You can still use the regular PW API to create fields and manipulate all kinds of things the way you would do it if RockMigrations did not exist. It might just not be as convenient as when using the RockMigrations API.
+Also don't forget that you can still use the PW API for everything you need or want even if you are using RockMigrations. That means you can use RockMigrations for everything that it supports (which is maybe 99% of what anybody needs) and just use the plain PW API for the remaining 1% or even make those changes manually if that is an option.
 
 ## Where do I find out all those field and template properties?
 

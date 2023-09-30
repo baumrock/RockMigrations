@@ -27,7 +27,7 @@
       "  \\$rm->migrate([",
       "    'fields' => [$0],",
       "    'templates' => [",
-      "      \\$this->getTplName() => [",
+      "      self::tpl => [",
       "        'fields' => [",
       "          'title',",
       "        ],",
