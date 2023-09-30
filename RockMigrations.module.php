@@ -1020,24 +1020,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *   'german'=>'bar',
    * ]);
    *
-   * @param Template|string $template
-   * @param Page|string|int $parent
-   * @param string $name
    * @param string $title
-   * @param array $status
-   * @param array $data
-   * @param bool $allLanguages
+   * @param Template|string $template
+   * @param Page|string $parent
+   * @param string $name optional defaults to null
+   * @param array $status optional defaults to []
+   * @param array $data optional defaults to []
    * @return Page
    */
-  public function createPage(
-    $template,
-    $parent,
-    string $name = null,
-    string $title = null,
-    array $status = [],
-    array $data = [],
-    bool $allLanguages = true
-  ) {
+  public function createPage(string $title, $template, $parent, $name = null, array $status = [], array $data = [])
+  {
     // create pagename from page title if it is not set
     if (!$name) $name = $this->sanitizer->pageNameTranslate($title);
     if (!$name) $name = $this->wire->pages->names()->uniquePageName();
