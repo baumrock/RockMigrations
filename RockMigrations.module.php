@@ -320,8 +320,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * TRUE = httpHost ends with .ddev.site
-   * FALSE = httpHost does not end with .ddev.site
+   * Check wether the environment is DDEV or not
    */
   public function isDDEV(): bool
   {
