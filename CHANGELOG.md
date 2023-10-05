@@ -1,3 +1,19 @@
+# [3.31.0](https://github.com/baumrock/RockMigrations/compare/v3.30.0...v3.31.0) (2023-10-05)
+
+
+### Bug Fixes
+
+* docblock ([af3572e](https://github.com/baumrock/RockMigrations/commit/af3572ef772076b82c5c6a79103e1d1792190f42))
+* remove project-specific $rm->echo() ([b242f56](https://github.com/baumrock/RockMigrations/commit/b242f563f6830e55ba295d56b68d94b8a723bb58))
+* remove unused line ([070c28c](https://github.com/baumrock/RockMigrations/commit/070c28cdf288d6fb025c0f73532e696cdaefa428))
+
+
+### Features
+
+* add tweak to set all languages of new pages active by default ([98f9855](https://github.com/baumrock/RockMigrations/commit/98f98552d62922a54f9d7180d61575cf8c147d4d))
+
+
+
 # [3.30.0](https://github.com/baumrock/RockMigrations/compare/v3.29.0...v3.30.0) (2023-09-11)
 
 
@@ -60,32 +76,6 @@
 ### Bug Fixes
 
 * prevent exception in setFieldData when value 0/empty ([9093b20](https://github.com/baumrock/RockMigrations/commit/9093b20c90dc12873f498ad086d6257e2d9e3358))
-
-
-
-# [3.26.0](https://github.com/baumrock/RockMigrations/compare/v3.25.0...v3.26.0) (2023-06-01)
-
-
-### Bug Fixes
-
-* double linebreaks ([bf07c6b](https://github.com/baumrock/RockMigrations/commit/bf07c6bdff51e9767b1663f931a207407db97bf9))
-* magicpages comparing classnames without namespaces ([28b5657](https://github.com/baumrock/RockMigrations/commit/28b5657b5a9dec7ef31c3397d11bd0a83619ec07))
-* prevent migrating pageclasses twice ([b3c9add](https://github.com/baumrock/RockMigrations/commit/b3c9addd2372f2773dd9f454dc7cc8e7eb0342fc))
-* remove double slash when using $this->path ([aa9502c](https://github.com/baumrock/RockMigrations/commit/aa9502c1b2473c89ebd0784aab6f9d66ba2424ec))
-* wirerandom issue on deployment ([29bd145](https://github.com/baumrock/RockMigrations/commit/29bd145c4964d3f5802ee2e8254fd48e97dc8044))
-
-
-### Features
-
-* add placeBefore to wrapFields() ([906753c](https://github.com/baumrock/RockMigrations/commit/906753c1aa636735150485fadd080e6df6a3f720))
-* add random salts to config-local suggestion ([1e7401c](https://github.com/baumrock/RockMigrations/commit/1e7401c1b483e4a1ff913ffcc7ceed90626d75b6))
-* add rm-hints to field and template gui ([27b5b25](https://github.com/baumrock/RockMigrations/commit/27b5b25ca87479cd9256e9517b5bad68bacc6a6c))
-* add support for parent_id as page path ([e45e430](https://github.com/baumrock/RockMigrations/commit/e45e4306f8a77a84c1c4723f48b63320535884a1))
-* imporve createPage for array syntax ([74bd338](https://github.com/baumrock/RockMigrations/commit/74bd3387ad967d002f88321c144cdc6d71ec3a5e))
-* improve getTemplate (use ::tpl fallback) ([b6f6d14](https://github.com/baumrock/RockMigrations/commit/b6f6d144ac8441460d7ca5e2dc9fe94d4ff0e662))
-* improve isDDEV() ([e4df541](https://github.com/baumrock/RockMigrations/commit/e4df5416b7d316fe0f243bd65cffaa7d9ef7a29a))
-* improve setFieldData() method ([2830eed](https://github.com/baumrock/RockMigrations/commit/2830eed9617775a0f7bc2fd4535b0fbd8a5a9cd9))
-* use $this->path instead of __DIR__ [#22](https://github.com/baumrock/RockMigrations/issues/22) ([f134e1b](https://github.com/baumrock/RockMigrations/commit/f134e1b63599befb37e543c06c2c1d58f2f50c47))
 
 
 
