@@ -1064,13 +1064,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *   'german'=>'bar',
    * ]);
    *
-   * @param Template|string $template
-   * @param Page|string|int $parent
-   * @param string $name
    * @param string $title
-   * @param array $status
-   * @param array $data
-   * @param bool $allLanguages
+   * @param Template|string $template
+   * @param Page|string $parent
+   * @param string $name optional defaults to null
+   * @param array $status optional defaults to []
+   * @param array $data optional defaults to []
    * @return Page
    */
   public function createPage(
@@ -4061,6 +4060,324 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->log("Set user data for user $user ({$user->name})");
     return $user;
   }
+
+  /** START Repeater Matrix */
+
+
+  /**
+   * Convenience method that creates a repeater matrix field with its matrix types
+   *
+   * @param string $name The name of the field.
+   * @param array $options The options for the field.
+   * @param bool $wipe Whether to wipe the matrix items before setting new items. defaults to false.
+   * @return RepeaterMatrixField|null The created repeater matrix field, or null if an error occurred.
+   *
+   * CAUTION: wipe = true will also delete all field data stored in the
+   * repeater matrix fields!!
+   *
+   * EXAMPLE:
+   * $rm->createRepeaterMatrixField('repeater_matrix_field_name', [
+   *    'label' => 'Field Label',
+   *    'tags' => 'your tags',
+   *    'repeaterAddLabel' => 'Add New Block',
+   *    'matrixItems' => [ // matrix types with their fields
+   *        'type1' => [
+   *            'label' => 'Type1',
+   *            'fields' => [
+   *                'title' => [
+   *                    'label' => 'Custom Title',
+   *                    'description' => 'Custom description',
+   *                    'required' => 1,
+   *                ],
+   *            ]
+   *        ],
+   *        'type2' => [
+   *            'label' => 'Type2',
+   *            'fields' => [
+   *                'text' => [],
+   *            ]
+   *        ],
+   *    ]
+   * ]);
+   */
+  public function createRepeaterMatrixField(string $name, array $options, bool $wipe = false)
+  {
+    $items = array_key_exists('matrixItems', $options) ? $options['matrixItems'] : null;
+    if ($items) unset($options['matrixItems']);
+    // create field
+    $field = $this->createField($name, 'FieldtypeRepeaterMatrix', $options);
+    // populate matrix items
+    if ($field && wireInstanceOf($field, 'RepeaterMatrixField')) {
+      $this->setMatrixItems($field, $items, $wipe);
+    }
+
+    return $field;
+  }
+
+  /**
+   * Add matrix item to given field
+   * @param RepeaterMatrixField|string $field
+   * @param string $name name of the matrix type
+   * @param array $data data for the matrix type
+   * @return RepeaterMatrixField|null
+   */
+  protected function addMatrixItem($field, $name, $data)
+  {
+    if (!$field = $this->getField($field, false)) return;
+    // do not add if there already is a matrix type with the same name
+    if ($field->getMatrixTypeByName($name) !== false) return;
+    $hasFielddata = isset($data['fields']) && count(array_filter(array_keys($data['fields']), 'is_string')) > 0;
+    $info = array();
+    // get number
+    $n = 1;
+    while (array_key_exists("matrix{$n}_name", $field->getArray())) $n++;
+    $info['type'] = $n;
+    $prefix = "matrix{$n}_";
+    $field->set($prefix . "name", $name);
+    $field->set($prefix . "sort", $n - 1); // 'sort' is 0 based
+    $info['fields'] = array();
+    foreach ($hasFielddata ? array_keys($data['fields']) : $data['fields'] as $fieldname) {
+      if ($f = $this->wire->fields->get($fieldname)) $info['fields'][$fieldname] = $f;
+    }
+    $info['fieldIDs'] = array_map(function (Field $f) {
+      return $f->id;
+    }, $info['fields']);
+    foreach ($this->getMatrixDataArray($data) as $key => $val) {
+      // eg set matrix1_label = ...
+      $field->set($prefix . $key, $val);
+      if ($key === "fields") {
+        $tpl = $field->type->getMatrixTemplate($field);
+        $this->addFieldsToTemplate($val, $tpl);
+        $this->setMatrixFieldDataInContext($data['fields'], $info, $tpl);
+      }
+    }
+
+    $field = $this->resetMatrixRepeaterFields($field);
+    $field->save();
+    return $field;
+  }
+
+  /**
+   * Remove matrix item from field
+   * 
+   * CAUTION: removing a type will also remove all associated data 
+   * on pages which use that type
+   * 
+   * @param RepeaterMatrixField|string $field
+   * @param string $name
+   * @return RepeaterMatrixField|null
+   */
+  public function removeMatrixItem($field, $name)
+  {
+    if (!$field = $this->getField($field, false)) return;
+    $info = $field->type->getMatrixTypesInfo($field, ['type' => $name]);
+    if (!$info) return;
+
+    // reset all properties of that field
+    foreach ($field->getArray() as $prop => $val) {
+      if (strpos($prop, $info['prefix']) !== 0) continue;
+      $field->set($prop, null);
+    }
+
+    $field = $this->resetMatrixRepeaterFields($field);
+    $field->save();
+    return $field;
+  }
+
+  /**
+   * Set items (matrix types) of a RepeaterMatrix field
+   *
+   * If wipe is set to TRUE it will wipe all existing matrix types before
+   * setting the new ones. Otherwise it will override settings of old types
+   * and add the type to the end of the matrix if it does not exist yet.
+   *
+   * CAUTION: wipe = true will also delete all field data stored in the
+   * repeater matrix fields!!
+   *
+   * Usage:
+   *  $rm->setMatrixItems('your_matrix_field', [
+   *      'foo' => [ // matrixtype name
+   *          'label' => 'foo label', // matrixtype label
+   *          'fields' => [ // matrixtype fields
+   *              'field1' => [
+   *                  'label' => 'foolabel', // matrixtype field options
+   *                  'columnWidth' => 50, // matrixtype field options
+   *              ],
+   *              'field2' => [
+   *                  'label' => 'foolabel', // matrixtype field options
+   *                  'columnWidth' => 50, // matrixtype field options
+   *              ],
+   *          ],
+   *      ],
+   *      'bar' => [ // matrixtype name
+   *          'label' => 'bar label', // matrixtype label
+   *          'fields' => [ // matrixtype fields
+   *              'field1' => [
+   *                  'label' => 'foolabel', // matrixtype field options
+   *                  'columnWidth' => 50, // matrixtype field options
+   *              ],
+   *              'field2' => [
+   *                  'label' => 'foolabel', // matrixtype field options
+   *                  'columnWidth' => 50, // matrixtype field options
+   *              ],
+   *          ],
+   *      ],
+   *  ], true);
+   *
+   * @param RepeaterMatrixField|string $field
+   * @param array $items matrix types to set
+   * @param bool $wipe
+   * @return RepeaterMatrixField|null
+   */
+  public function setMatrixItems($field, $items, $wipe = false)
+  {
+    if (!$this->modules->isInstalled('FieldtypeRepeaterMatrix')) return;
+    if (!$field = $this->getField($field, false)) return;
+    /** @var RepeaterMatrixField $field */
+    // get all matrix types of that field
+    $types = $field->getMatrixTypes();
+    // if wipe is turned on we remove all existing items
+    // this is great when you want to control the matrix solely by migrations
+    if ($wipe) {
+      foreach ($types as $type => $v) $this->removeMatrixItem($field, $type);
+    }
+
+    // loop all provided items
+    foreach ($items as $name => $data) {
+      $type = $field->getMatrixTypeByName($name);
+      if (!$type) $field = $this->addMatrixItem($field, $name, $data);
+      else $this->setMatrixItemData($field, $name, $data);
+    }
+
+    // sort $items in the order they were passed in
+    $this->sortMatrixItemsinMatrix($field, $items);
+
+    return $field;
+  }
+
+  /**
+   * sort matrix items in the order they were passed in
+   * @param RepeaterMatrixField $field
+   * @param array $items
+   * @return RepeaterMatrixField
+   */
+  protected function sortMatrixItemsinMatrix(RepeaterMatrixField $field, array $items)
+  {
+    // add property 'order' to each item based on the array index
+    $names = array_keys($items);
+    for ($i = 0; $i < count($names); $i++) {
+      $name = $names[$i];
+      $typeInfo = $field->getMatrixTypesInfo();
+      if (!array_key_exists($name, $typeInfo)) continue;
+      $info = $typeInfo[$name];
+      $field->set($info['prefix'] . 'sort', $i);
+    }
+    $field->save();
+  }
+
+  /**
+   * Set matrix item data
+   * @param RepeaterMatrixField|string $field
+   * @param string $name
+   * @param array $data
+   * @return RepeaterMatrixField|null
+   */
+  public function setMatrixItemData($field, $name, $data)
+  {
+    if (!$field = $this->getField($field, false)) return;
+    $info = $field->getMatrixTypesInfo(['type' => $name]);
+    if (!$info) return;
+    $hasFielddata = isset($data['fields']) && count(array_filter(array_keys($data['fields']), 'is_string')) > 0;
+    foreach ($this->getMatrixDataArray($data, $info) as $key => $val) {
+      // eg set matrix1_label = ...
+      $field->set($info['prefix'] . $key, $val);
+      if ($key === "fields") {
+        $tpl = $field->type->getMatrixTemplate($field);
+        $this->addFieldsToTemplate($val, $tpl);
+        if ($hasFielddata) $this->setMatrixFieldDataInContext($data['fields'], $info, $tpl);
+      }
+    }
+
+    $field = $this->resetMatrixRepeaterFields($field);
+    $field->save();
+    return $field;
+  }
+
+  /**
+   * Sets the matrix field data in the context of the template.
+   *
+   * @param array $fieldData The field data to be set in the context.
+   * @param array $info The information about the fields.
+   * @param string $template The template to be used.
+   * @return void
+   */
+  private function setMatrixFieldDataInContext($fieldData, $info, $template)
+  {
+    foreach ($fieldData as $fieldname => $data) {
+      /** @var Field $field */
+      if (!isset($info['fields'][$fieldname])) continue;
+      $field = $info['fields'][$fieldname]->getContext($template);
+      $contextData = $field->get('NS_matrix' . $info['type']);
+      foreach ($data as $_key => $_val) {
+        $contextData[$_key] = $_val;
+      }
+      $field->set('NS_matrix' . $info['type'], $contextData);
+      if ($fieldgroup = $field->_contextFieldgroup) $this->wire->fields->saveFieldgroupContext($field, $fieldgroup);
+    }
+  }
+
+  /**
+   * Sanitize repeater matrix array
+   * @param array $data
+   * @return array
+   */
+  private function getMatrixDataArray($data)
+  {
+    $newdata = [];
+    foreach ($data as $key => $val) {
+      // make sure fields is an array of ids
+      if ($key === 'fields') {
+        $ids = [];
+        foreach (array_keys($val) as $_field) {
+          if (!$field = $this->wire->fields->get($_field)) continue;
+          $ids[] = $field->id;
+        }
+        $val = $ids;
+      }
+      $newdata[$key] = $val;
+    }
+    return $newdata;
+  }
+
+  /**
+   * Reset repeaterFields property of matrix field
+   * @param RepeaterMatrixField $field
+   * @return RepeaterMatrixField
+   */
+  private function resetMatrixRepeaterFields(RepeaterMatrixField $field)
+  {
+    $ids = [$this->fields->get('repeater_matrix_type')->id];
+    //enumerate only existing fields
+    $keys = array_keys($field->getArray());
+    $items = preg_grep("/matrix(\d+)_fields/", $keys);
+    foreach ($items as $item) {
+      $ids = array_merge($ids, $field->get($item) ?: []);
+    }
+
+    $field->set('repeaterFields', $ids);
+
+    // remove unneeded fields
+    $tpl = $field->type->getMatrixTemplate($field);
+    foreach ($tpl->fields as $f) {
+      if ($f->name === 'repeater_matrix_type') continue;
+      if (in_array($f->id, $ids)) continue;
+      $this->removeFieldFromTemplate($f, $tpl);
+    }
+
+    return $field;
+  }
+  
+  /** END Repeater Matrix */
 
   /**
    * Show edit info on field and template edit screen
