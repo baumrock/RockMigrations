@@ -1064,12 +1064,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *   'german'=>'bar',
    * ]);
    *
-   * @param string $title
    * @param Template|string $template
-   * @param Page|string $parent
-   * @param string $name optional defaults to null
-   * @param array $status optional defaults to []
-   * @param array $data optional defaults to []
+   * @param Page|string|int $parent
+   * @param string $name
+   * @param string $title
+   * @param array $status
+   * @param array $data
+   * @param bool $allLanguages
    * @return Page
    */
   public function createPage(
@@ -4159,10 +4160,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Remove matrix item from field
-   * 
-   * CAUTION: removing a type will also remove all associated data 
+   *
+   * CAUTION: removing a type will also remove all associated data
    * on pages which use that type
-   * 
+   *
    * @param RepeaterMatrixField|string $field
    * @param string $name
    * @return RepeaterMatrixField|null
@@ -4376,7 +4377,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     return $field;
   }
-  
+
   /** END Repeater Matrix */
 
   /**
