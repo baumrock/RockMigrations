@@ -212,7 +212,7 @@ $wire->addHookAfter("ProcessPageEdit::buildForm", function($event) {
 
 ### Field migrations
 
-CKEditor field
+#### CKEditor field
 
 ```php
 $rm->migrate([
@@ -236,7 +236,7 @@ $rm->migrate([
 ]);
 ```
 
-Image field
+#### Image field
 
 ```php
 $rm->migrate([
@@ -256,7 +256,7 @@ $rm->migrate([
 ]);
 ```
 
-Files field
+#### Files field
 
 ```php
 $rm->migrate([
@@ -274,7 +274,7 @@ $rm->migrate([
 ]);
 ```
 
-Options field
+#### Options field
 
 ```php
 $rm->migrate([
@@ -293,7 +293,7 @@ $rm->migrate([
 ]);
 ```
 
-Options field with multilang labels:
+#### Options field with multilang labels:
 
 ```php
 $rm->createField('demo_field', 'options', [
@@ -321,7 +321,7 @@ $rm->createField('demo_field', 'options', [
 
 Note that RockMigrations uses a slightly different syntax than when populating the options via GUI. RockMigrations makes sure that all options use the values of the default language and only set the label (title) of the options.
 
-Page Reference field
+#### Page Reference field
 
 ```php
 $rm->migrate([
@@ -339,7 +339,7 @@ $rm->migrate([
 ]);
 ```
 
-Date field
+#### Date field
 
 ```php
 $rm->migrate([
@@ -354,4 +354,36 @@ $rm->migrate([
     ],
   ],
 ]);
+```
+
+#### RepeaterMatrix field
+
+```php
+$rm->createRepeaterMatrixField('repeater_matrix_field_name', [
+   'label' => 'Field Label',
+   'tags' => 'your tags',
+   'repeaterAddLabel' => 'Add New Block',
+   'matrixItems' => [ // matrix types with their fields
+       'type1' => [
+           'label' => 'Type1',
+           'fields' => [
+               'title' => [
+                   'label' => 'Custom Title',
+                   'description' => 'Custom description',
+                   'required' => 1,
+               ],
+           ]
+       ],
+       'type2' => [
+           'label' => 'Type2',
+           'fields' => [
+               'text' => [],
+           ]
+       ],
+   ]
+]);
+
+// remove a matrix type from a matrix field
+$rm->removeMatrixItem('repeater_matrix_field_name', 'name_of_type');
+// do not forget to also remove the type from the 'matrixItems' array above 
 ```
