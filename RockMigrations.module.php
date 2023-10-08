@@ -3506,7 +3506,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
       // support setting the "additional templates" via names instead of ids
       // see https://shorturl.at/pyDRS
-      if ($key === "template_ids") {
+      if ($key === "template_ids" && $val) {
         foreach ($val as $sub => $tpl_name) {
           if (is_string($tpl_name) and $tpl_name !== '') {
             $tpl = $this->getTemplate($tpl_name);
