@@ -1,3 +1,12 @@
+## [3.31.1](https://github.com/baumrock/RockMigrations/compare/v3.31.0...v3.31.1) (2023-10-09)
+
+
+### Bug Fixes
+
+* PHP Warning: Invalid argument supplied for foreach() in RockMigrations.module.php:3510 ([bb24d33](https://github.com/baumrock/RockMigrations/commit/bb24d330e77cb2baceec9479f029580fce8ce5a9))
+
+
+
 # [3.31.0](https://github.com/baumrock/RockMigrations/compare/v3.30.0...v3.31.0) (2023-10-05)
 
 
@@ -67,15 +76,6 @@
 * add support for getTplName() syntax ([c01630f](https://github.com/baumrock/RockMigrations/commit/c01630f0f71627d72c3fa1fbc1bfafa213902134))
 * add time constants ([17ab452](https://github.com/baumrock/RockMigrations/commit/17ab452a9d39cb0883b2ac447e77bd5aea11b3e2))
 * make github action fail on error in migration ([7499223](https://github.com/baumrock/RockMigrations/commit/7499223c9491c4155b3287efd69aff5554aec909))
-
-
-
-## [3.26.1](https://github.com/baumrock/RockMigrations/compare/v3.26.0...v3.26.1) (2023-06-02)
-
-
-### Bug Fixes
-
-* prevent exception in setFieldData when value 0/empty ([9093b20](https://github.com/baumrock/RockMigrations/commit/9093b20c90dc12873f498ad086d6257e2d9e3358))
 
 
 
