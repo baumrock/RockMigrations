@@ -2264,6 +2264,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       }
 
       if ($pathExists) {
+        // need to refresh the modules cache to make it work
+        $this->modules->refresh(); 
         // module files are in place -> install the module
         $module = $this->modules->install($name, ['force' => $opt->force]);
         if ($module) $this->log("Installed module $name");
