@@ -1087,10 +1087,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$name) $name = $this->wire->pages->names()->uniquePageName();
 
     $log = "Parent $parent not found";
+    $parentName = $parent;
     $parent = $this->getPage($parent);
     if ($parent === false) {
-      $url = "https://github.com/baumrock/RockMigrations/pull/20";
-      throw new WireException("It looks like you are using an outdated syntax for createPage(), see $url");
+      $this->error("The parent '$parentName' for page $title can not be found. Did you choose the correct parent?");
     }
     if (!$parent->id) return $this->log($log);
 
