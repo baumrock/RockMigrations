@@ -1121,13 +1121,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$name) $name = $this->sanitizer->pageNameTranslate($title);
     if (!$name) $name = $this->wire->pages->names()->uniquePageName();
 
-    $log = "Parent $parent not found";
     $parentName = $parent;
+    $log = "Parent $parent not found";
     $parent = $this->getPage($parent);
-    if ($parent === false) {
-      $this->error("The parent '$parentName' for page $title can not be found. Did you choose the correct parent?");
+    if (!$parent) {
+      $this->error("The parent '$parentName' for page '$title' can not be found. Did you choose the correct parent?");
+      return $this->log($log);
     }
-    if (!$parent->id) return $this->log($log);
 
     // get page if it exists
     $page = $this->getPage([
