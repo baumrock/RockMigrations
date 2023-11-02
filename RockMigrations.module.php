@@ -1055,7 +1055,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * $rm->createPage(
    *   template: 'foo',
    *   title: 'My foo page',
-   *   parent: 1
+   *   parent: 1,
+   *   status: ['hidden'],
    * );
    *
    * If you need to set a multilang title use
