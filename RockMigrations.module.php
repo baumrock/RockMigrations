@@ -443,54 +443,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->addHookAfter("Pages::saved($tpl,id>0)", function (HookEvent $event) use ($fields) {
       /** @var Page $page */
       $page = $event->arguments(0);
+
       if ($page->rmSetPageName) return;
       $page->rmSetPageName = true;
-      $langs = $this->wire->languages;
-      if ($langs) {
-        foreach ($langs as $lang) {
-          try {
-            // dont know why exactly that is necessary but had problems
-            // at kaumberg "localName not callable in this context"??
-            // though the method was definitely there...
-            $old = $page->localName($lang);
-          } catch (\Throwable $th) {
-            $old = $page->name;
-          }
 
-          // get new value
-          if (is_array($fields)) {
-            $new = '';
-            foreach ($fields as $field) {
-              if ($new) continue;
-              $new = $page->getLanguageValue($lang, (string)$field);
-            }
-          } else $new = $page->getLanguageValue($lang, (string)$fields);
-
-          $new = $event->sanitizer->markupToText($new);
-          $new = $event->sanitizer->pageNameTranslate($new);
-          $new = $event->wire->pages->names()->uniquePageName($new, $page);
-          if ($old != $new) {
-            if ($lang->isDefault()) $page->setName($new);
-            else $page->setName($new, $lang->name);
-            $this->message($this->_("Page name updated to '$new' ($lang->name)"));
-          }
-        }
-        $page->save(['noHooks' => true]);
-      } else {
-        $old = $page->name;
-
-        if (is_array($fields)) $new = $page->get(implode("|", $fields));
-        else $new = $page->get((string)$fields);
-
-        $new = $event->sanitizer->markupToText($new);
-        $new = $event->sanitizer->pageNameTranslate($new);
-        if ($new and $old != $new) {
-          $new = $event->wire->pages->names()->uniquePageName($new, $page);
-          $page->name = $new;
-        }
-        $page->save(['noHooks' => true]);
-        $this->message($this->_("Page name updated to $new"));
-      }
+      if (!$this->wire->languages) $this->setPageNameLanguage($page, $fields);
+      else $this->setPageNameLanguages($page, $fields);
     });
     $this->addHookAfter("ProcessPageEdit::buildForm", function (HookEvent $event) use ($template, $fields) {
       $field = is_array($fields) ? implode("|", $fields) : $fields;
@@ -517,6 +475,100 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function setPageNameFromTitle($template)
   {
     return $this->setPageNameFromField($template, 'title');
+  }
+
+  /**
+   * Set page name for a single language from fields
+   * Private helper method for setPageNameFromField()
+   */
+  private function setPageNameLanguage(Page $page, $fields): void
+  {
+    $old = $page->name;
+
+    // get new pagename
+    if (is_array($fields)) $new = $page->get(implode("|", $fields));
+    else $new = $page->get((string)$fields);
+
+    // sanitize pagename
+    $new = $this->wire->sanitizer->markupToText($new);
+    $new = $this->wire->sanitizer->pageNameTranslate($new);
+
+    // early exit if nothing changed
+    if ($old === $new) return;
+
+    // early exit if no new value
+    if (!$new) {
+      $this->warn("Unable to set new page name");
+      return;
+    }
+
+    // set new pagename
+    $new = $this->wire->pages->names()->uniquePageName($new, $page);
+    $page->setAndSave("name", $new);
+    $this->message("Page name updated from '$old' to '$new'");
+  }
+
+  /**
+   * Set page name for all languages from given fields
+   * Private helper method for setPageNameFromField()
+   */
+  private function setPageNameLanguages(Page $page, $fields): void
+  {
+    // set new page name for all languages
+    foreach ($this->wire->languages as $lang) {
+      // get old page name
+      $old = $page->localName($lang);
+
+      // get new page name
+      if (!is_array($fields)) {
+        // get value of a single field
+        $new = $page->getLanguageValue($lang, (string)$fields);
+      } else {
+        // get value from a list of fields
+        // use the field that first returns any value
+        $new = false;
+        foreach ($fields as $field) {
+          if ($new) continue;
+          $new = $page->getLanguageValue($lang, (string)$field);
+        }
+      }
+
+      // sanitize the new pagename
+      $new = $this->wire->sanitizer->markupToText($new);
+      $new = $this->wire->sanitizer->pageNameTranslate($new);
+
+      // save values of default language for later
+      if ($lang->isDefault()) {
+        $newDefault = $new;
+        $oldDefault = $old;
+      }
+
+      // early exit if nothing changed
+      if ($old === $new) continue;
+
+      // if we have no new value for the default language we exit early
+      // and leave the page name as it was
+      if ($lang->isDefault() and !$new) continue;
+
+      // special case: new value is empty in non-default language
+      // that means we reset the page name so it uses the default name
+      if (!$lang->isDefault() && !$new) {
+        $page->setAndSave("name$lang", "");
+        $this->message("Page name updated from '$old' to '$newDefault' ($lang->name)");
+        continue;
+      }
+
+      // default use case: set the new page name
+      $new = $this->wire->pages->names()->uniquePageName($new, $page);
+      if ($lang->isDefault()) $page->setAndSave("name", $new);
+      else $page->setAndSave("name$lang", $new);
+
+      // if old value was empty it means it had the old default value
+      if (!$old) $old = $oldDefault;
+
+      // show message that we updated the page name
+      $this->message("Page name updated from '$old' to '$new' ($lang->name)");
+    }
   }
 
   public function sortFormFields(InputfieldWrapper $form, $fields)
