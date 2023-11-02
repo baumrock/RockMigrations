@@ -1,3 +1,25 @@
+# [3.32.0](https://github.com/baumrock/RockMigrations/compare/v3.31.1...v3.32.0) (2023-11-02)
+
+
+### Bug Fixes
+
+* empty previewPassword causes no redirect ([c74596f](https://github.com/baumrock/RockMigrations/commit/c74596ff03c96c6b19fe4664ff828bf3c242e34b))
+* installModule() does not actually install the module when run the 1st time, but only downloads it [#29](https://github.com/baumrock/RockMigrations/issues/29) ([ce59d2d](https://github.com/baumrock/RockMigrations/commit/ce59d2d6414f3c410bf2275b2641caaf28bf8e1b))
+* move livereload settings back to RockFrontend ([37eb50c](https://github.com/baumrock/RockMigrations/commit/37eb50cc9125a0568d74f0d9323b45ac163482b4))
+* rewrite setPageNameFromField method ([dbd900e](https://github.com/baumrock/RockMigrations/commit/dbd900ec28b7feb6080e8f63711503ed0db0b58f))
+* settings from config file not properly applied ([2aa8ea5](https://github.com/baumrock/RockMigrations/commit/2aa8ea508449efeb14f55c1fa146ed44653935b8))
+* tweak info icon falsely on new line ([d738b6b](https://github.com/baumrock/RockMigrations/commit/d738b6b34fe87a6f228f7b017f3b8a871fb1a426))
+
+
+### Features
+
+* add CopyFieldNames tweak ([822b36b](https://github.com/baumrock/RockMigrations/commit/822b36bbd2bf7eca83a4293d4fcebf4f3e29a510))
+* add hideFromGuests() + preview password feature ([518788f](https://github.com/baumrock/RockMigrations/commit/518788f1bc33cf1ca2a661f52bcac4eac5300ec3))
+* improve PR from ivan to use internal refresh method ([0362f33](https://github.com/baumrock/RockMigrations/commit/0362f33fcf9bf72d19b9ef792c6a324119f2cdd4))
+* show current fileconfig on settings page ([4fbb444](https://github.com/baumrock/RockMigrations/commit/4fbb4448157f5cf4a77036f0de3174d2db4d8719))
+
+
+
 ## [3.31.1](https://github.com/baumrock/RockMigrations/compare/v3.31.0...v3.31.1) (2023-10-09)
 
 
@@ -57,25 +79,6 @@
 * add renderTable helper ([eb3ee9c](https://github.com/baumrock/RockMigrations/commit/eb3ee9cdc7f535dcf040f1ca8352eb91daf6ef46))
 * add support for template_ids ([14489ad](https://github.com/baumrock/RockMigrations/commit/14489add2c971c9e6b75bf23986d5338ab7e3343))
 * improve new pageClassLoader ([e99b80c](https://github.com/baumrock/RockMigrations/commit/e99b80c494e25331705767637d2ceaab152bab7e))
-
-
-
-# [3.27.0](https://github.com/baumrock/RockMigrations/compare/v3.26.1...v3.27.0) (2023-07-07)
-
-
-### Bug Fixes
-
-* createUser returning false PR[#24](https://github.com/baumrock/RockMigrations/issues/24) ([fb18156](https://github.com/baumrock/RockMigrations/commit/fb18156f929d549c3c160595b75bcd4b00f72162))
-
-
-### Features
-
-* add deployment hooks ([fcefd1f](https://github.com/baumrock/RockMigrations/commit/fcefd1ffdca1b6b3d0e01cace195961d5f96450d))
-* add PageListAutoExpand to default profile ([68af9f9](https://github.com/baumrock/RockMigrations/commit/68af9f98e2fdfd0cdf4ad4baf585ede91b6c72b4))
-* add rockhsell demo command ([cce0d06](https://github.com/baumrock/RockMigrations/commit/cce0d062d422a7e2b58815c61c5433eee0f65c71))
-* add support for getTplName() syntax ([c01630f](https://github.com/baumrock/RockMigrations/commit/c01630f0f71627d72c3fa1fbc1bfafa213902134))
-* add time constants ([17ab452](https://github.com/baumrock/RockMigrations/commit/17ab452a9d39cb0883b2ac447e77bd5aea11b3e2))
-* make github action fail on error in migration ([7499223](https://github.com/baumrock/RockMigrations/commit/7499223c9491c4155b3287efd69aff5554aec909))
 
 
 
