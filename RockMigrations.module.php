@@ -99,7 +99,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->conf = $this->wire(new WireData());
     $this->conf->setArray($this->getArray()); // get modules config
     if (is_array($config->rockmigrations)) {
-      $this->conf->setArray($config->rockmigrations); // get config from file
+      // set module settings from config file
+      $this->setArray($config->rockmigrations);
     }
 
     // load tweaks
