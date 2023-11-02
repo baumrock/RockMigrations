@@ -166,6 +166,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   public function ready()
   {
+    $this->hideFromGuests();
     $this->forceMigrate();
     $this->addLivereload();
 
@@ -2149,6 +2150,39 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // $this->log(Debug::backtrace());
     }
     return false;
+  }
+
+  /**
+   * Hide website from guest access
+   */
+  private function hideFromGuests(): void
+  {
+    // only do all below if the feature is activated
+    if (!$this->hideFromGuests) return;
+
+    // set preview password for the session if one is provided
+    if ($this->wire->input->get('preview', 'string') === $this->previewPassword) {
+      $this->wire->session->previewPassword = $this->previewPassword;
+    }
+
+    // only redirect guest users
+    // no guest? do nothing
+    if (!$this->wire->user->isGuest()) return;
+
+    // dont redirect cli usage
+    if ($this->wire->config->external) return;
+
+    // don't redirect if the session has the preview password
+    if ($this->wire->session->previewPassword === $this->previewPassword) return;
+
+    // don't redirect if we are on the login page
+    $loginID = $this->wire->config->loginPageID;
+    if ($this->wire->page->id === $loginID) return;
+
+    // redirect to login page
+    $this->wire->session->redirect(
+      $this->wire->pages->get($loginID)->url
+    );
   }
 
   /**
@@ -5078,6 +5112,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'name' => 'addVersion',
       'label' => 'Add version number from package.json in root folder to the PW admin footer',
       'checked' => $this->addVersion ? 'checked' : '',
+      'notes' => 'When using [fully automated releases and version numbers](https://processwire.com/talk/topic/28235-how-to-get-fully-automated-releases-tags-changelog-and-version-numbers-for-your-module-or-processwire-project/) for your project, github will create a package.json in the root directory of your project file for every release. If you check the box RockMigrations will show that info in the footer: [screenshot](https://i.imgur.com/0pkdKBd.png)'
     ]);
     $inputfields->add([
       'type' => 'checkbox',
@@ -5086,17 +5121,35 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'notes' => 'Use this only for module development as it may lead to quirks when downloading modules etc!',
       'checked' => $this->livereloadModules ? 'checked' : '',
     ]);
+    $inputfields->add([
+      'type' => 'checkbox',
+      'name' => 'hideFromGuests',
+      'label' => 'Hide website from guests',
+      'notes' => 'When checked all guest visits will be redirected to the login page, handy for hiding staging sites from unwanted access.',
+      'checked' => $this->hideFromGuests ? 'checked' : '',
+    ]);
+    $inputfields->add([
+      'type' => 'text',
+      'name' => 'previewPassword',
+      'label' => 'Preview Password',
+      'notes' => 'Guests can append ?preview=XXX to any URL and will gain access to the site for their session (where XXX is the password that you set here).',
+      'value' => $this->previewPassword,
+      'showIf' => 'hideFromGuests=1',
+    ]);
 
     $this->wrapFields($inputfields, [
       'disabled' => ['columnWidth' => 100],
       'addXdebugLauncher' => ['columnWidth' => 50],
       'addHost' => ['columnWidth' => 50],
       'addVersion' => ['columnWidth' => 50],
-      'colorBar' => ['columnWidth' => 50],
       'syncSnippets' => ['columnWidth' => 50],
       'livereloadModules' => ['columnWidth' => 50],
+      'colorBar' => ['columnWidth' => 50],
+      'hideFromGuests' => ['columnWidth' => 50],
+      'previewPassword' => ['columnWidth' => 50],
     ], [
       'label' => 'RockMigrations Options',
+      'icon' => 'cogs',
     ]);
 
     $f = $this->wire->modules->get('InputfieldCheckboxes');
@@ -5118,18 +5171,28 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
     $path = $this->wire->config->paths->assets . "RockMigrations/profiles";
     $f->notes = "You can place your own profiles in $path";
-    $f->collapsed = Inputfield::collapsedYes;
+    $f->collapsed = Inputfield::collapsedNo;
     $inputfields->add($f);
 
     $this->console(); // run console code
     $inputfields->add([
       'type' => 'markup',
+      'name' => 'console',
       'label' => 'Console',
       'icon' => 'code',
       'description' => "",
       'value' => $this->wire->files->render($this->path . "profileeditor.php", [
         'code' => $this->getConsoleCode(),
       ]),
+    ]);
+
+    $this->wrapFields($inputfields, [
+      'profile',
+      'console',
+    ], [
+      'label' => 'Profiles',
+      'collapsed' => Inputfield::collapsedYes,
+      'icon' => 'code',
     ]);
 
     return $inputfields;
