@@ -2,6 +2,7 @@
 
 namespace RockMigrations\Tweaks;
 
+use ProcessWire\RockMigrations;
 use ProcessWire\WireData;
 
 abstract class Tweak extends WireData
@@ -14,6 +15,11 @@ abstract class Tweak extends WireData
 
   public function ready()
   {
+  }
+
+  public function rockmigrations(): RockMigrations
+  {
+    return $this->wire->modules->get('RockMigrations');
   }
 
   public function __debugInfo()
