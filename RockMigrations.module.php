@@ -5078,6 +5078,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         . 'Note that settings in config.php have precedence over GUI settings!'
         . $fileConfig,
       'icon' => 'cogs',
+      'collapsed' => $fileConfig ? 0 : 1,
     ]);
 
     $inputfields->add([
