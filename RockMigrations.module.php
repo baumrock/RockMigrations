@@ -2173,7 +2173,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($this->wire->config->external) return;
 
     // don't redirect if the session has the preview password
-    if ($this->wire->session->previewPassword === $this->previewPassword) return;
+    $matches = $this->wire->session->previewPassword === $this->previewPassword;
+    if ($this->previewPassword && $matches) return;
 
     // don't redirect if we are on the login page
     $loginID = $this->wire->config->loginPageID;
