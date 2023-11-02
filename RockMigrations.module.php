@@ -169,7 +169,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $this->hideFromGuests();
     $this->forceMigrate();
-    $this->addLivereload();
 
     // other actions
     $this->migrateWatchfiles();
@@ -802,25 +801,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       if (!$this->wire->languages) $ls->init();
     }
     return $this->wire->languages;
-  }
-
-  /**
-   * Add RockFrontend livereloading to the backend
-   *
-   * This is only added on some pages to prevent reloads from causing issues
-   * @return void
-   */
-  protected function addLivereload()
-  {
-    if (!$this->wire->modules->isInstalled('RockFrontend')) return;
-    if (!$this->wire->config->livereload) return;
-
-    // on module config screens we disable livereload if it is not explicitly
-    // forced to be enabled. this is to prevent problems when downloading modules
-    if ($this->wire->page->id == 21 and !$this->livereloadModules) return;
-
-    $path = $this->wire->config->paths('RockFrontend');
-    $this->addScripts($path . "livereload.js");
   }
 
   /**
@@ -5178,13 +5158,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     ]);
     $inputfields->add([
       'type' => 'checkbox',
-      'name' => 'livereloadModules',
-      'label' => 'Add livereload to modules pages',
-      'notes' => 'Use this only for module development as it may lead to quirks when downloading modules etc!',
-      'checked' => $this->livereloadModules ? 'checked' : '',
-    ]);
-    $inputfields->add([
-      'type' => 'checkbox',
       'name' => 'hideFromGuests',
       'label' => 'Hide website from guests',
       'notes' => 'When checked all guest visits will be redirected to the login page, handy for hiding staging sites from unwanted access.',
@@ -5205,10 +5178,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'addHost' => ['columnWidth' => 50],
       'addVersion' => ['columnWidth' => 50],
       'syncSnippets' => ['columnWidth' => 50],
-      'livereloadModules' => ['columnWidth' => 50],
       'colorBar' => ['columnWidth' => 50],
       'hideFromGuests' => ['columnWidth' => 50],
-      'previewPassword' => ['columnWidth' => 50],
+      'previewPassword' => ['columnWidth' => 100],
     ], [
       'label' => 'RockMigrations Options',
       'icon' => 'cogs',
