@@ -2256,7 +2256,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$module) {
       // check if module files exist
       $path = $this->wire->config->path($name);
-      $pathExists = $path and $this->wire->files->exists($path);
+      $pathExists = ($path and $this->wire->files->exists($path));
       // download only if an url was provided and module files do not exist yet
       if ($opt->url and !$pathExists) {
         $pathExists = !!$this->downloadModule($opt->url);
