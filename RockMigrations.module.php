@@ -5062,6 +5062,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         </ul>",
     ]);
 
+    // prepare fileconfig string
+    $fileConfig = $this->wire->config->rockmigrations;
+    if (is_array($fileConfig)) {
+      $fileConfig = "<p>Current config from file:</p><pre>" . print_r($fileConfig, true) . "</pre>";
+    } else $fileConfig = "";
+
     $inputfields->add([
       'type' => 'markup',
       'label' => 'RockMigrations Config Options',
@@ -5069,7 +5075,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         <pre>$config->rockmigrations = [<br>'
         . '  "syncSnippets" => true,<br>'
         . '];</pre>'
-        . 'Note that settings in config.php have precedence over GUI settings!',
+        . 'Note that settings in config.php have precedence over GUI settings!'
+        . $fileConfig,
       'icon' => 'cogs',
     ]);
 
