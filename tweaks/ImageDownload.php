@@ -8,8 +8,8 @@ use function ProcessWire\wireIconMarkup;
 
 class ImageDownload extends Tweak
 {
-  public $description = "Adds a download icon to image fields.
-    <a href=https://processwire.com/talk/topic/28089-weekly-update-%E2%80%93%C2%A027-january-2023/ target=_blank><i class='fa fa-info-circle'></i></a>";
+  public $description = "Adds a download icon to image fields. "
+    . "<a href=https://processwire.com/talk/topic/28089-weekly-update-%E2%80%93%C2%A027-january-2023/ target=_blank><i class='fa fa-info-circle'></i></a>";
 
   public function ready()
   {

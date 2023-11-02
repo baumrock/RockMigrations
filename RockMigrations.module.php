@@ -99,7 +99,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->conf = $this->wire(new WireData());
     $this->conf->setArray($this->getArray()); // get modules config
     if (is_array($config->rockmigrations)) {
-      $this->conf->setArray($config->rockmigrations); // get config from file
+      // set module settings from config file
+      $this->setArray($config->rockmigrations);
     }
 
     // load tweaks
@@ -166,8 +167,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   public function ready()
   {
+    $this->hideFromGuests();
     $this->forceMigrate();
-    $this->addLivereload();
 
     // other actions
     $this->migrateWatchfiles();
@@ -441,54 +442,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->addHookAfter("Pages::saved($tpl,id>0)", function (HookEvent $event) use ($fields) {
       /** @var Page $page */
       $page = $event->arguments(0);
+
       if ($page->rmSetPageName) return;
       $page->rmSetPageName = true;
-      $langs = $this->wire->languages;
-      if ($langs) {
-        foreach ($langs as $lang) {
-          try {
-            // dont know why exactly that is necessary but had problems
-            // at kaumberg "localName not callable in this context"??
-            // though the method was definitely there...
-            $old = $page->localName($lang);
-          } catch (\Throwable $th) {
-            $old = $page->name;
-          }
 
-          // get new value
-          if (is_array($fields)) {
-            $new = '';
-            foreach ($fields as $field) {
-              if ($new) continue;
-              $new = $page->getLanguageValue($lang, (string)$field);
-            }
-          } else $new = $page->getLanguageValue($lang, (string)$fields);
-
-          $new = $event->sanitizer->markupToText($new);
-          $new = $event->sanitizer->pageNameTranslate($new);
-          $new = $event->wire->pages->names()->uniquePageName($new, $page);
-          if ($old != $new) {
-            if ($lang->isDefault()) $page->setName($new);
-            else $page->setName($new, $lang->name);
-            $this->message($this->_("Page name updated to '$new' ($lang->name)"));
-          }
-        }
-        $page->save(['noHooks' => true]);
-      } else {
-        $old = $page->name;
-
-        if (is_array($fields)) $new = $page->get(implode("|", $fields));
-        else $new = $page->get((string)$fields);
-
-        $new = $event->sanitizer->markupToText($new);
-        $new = $event->sanitizer->pageNameTranslate($new);
-        if ($new and $old != $new) {
-          $new = $event->wire->pages->names()->uniquePageName($new, $page);
-          $page->name = $new;
-        }
-        $page->save(['noHooks' => true]);
-        $this->message($this->_("Page name updated to $new"));
-      }
+      if (!$this->wire->languages) $this->setPageNameLanguage($page, $fields);
+      else $this->setPageNameLanguages($page, $fields);
     });
     $this->addHookAfter("ProcessPageEdit::buildForm", function (HookEvent $event) use ($template, $fields) {
       $field = is_array($fields) ? implode("|", $fields) : $fields;
@@ -515,6 +474,100 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function setPageNameFromTitle($template)
   {
     return $this->setPageNameFromField($template, 'title');
+  }
+
+  /**
+   * Set page name for a single language from fields
+   * Private helper method for setPageNameFromField()
+   */
+  private function setPageNameLanguage(Page $page, $fields): void
+  {
+    $old = $page->name;
+
+    // get new pagename
+    if (is_array($fields)) $new = $page->get(implode("|", $fields));
+    else $new = $page->get((string)$fields);
+
+    // sanitize pagename
+    $new = $this->wire->sanitizer->markupToText($new);
+    $new = $this->wire->sanitizer->pageNameTranslate($new);
+
+    // early exit if nothing changed
+    if ($old === $new) return;
+
+    // early exit if no new value
+    if (!$new) {
+      $this->warn("Unable to set new page name");
+      return;
+    }
+
+    // set new pagename
+    $new = $this->wire->pages->names()->uniquePageName($new, $page);
+    $page->setAndSave("name", $new);
+    $this->message("Page name updated from '$old' to '$new'");
+  }
+
+  /**
+   * Set page name for all languages from given fields
+   * Private helper method for setPageNameFromField()
+   */
+  private function setPageNameLanguages(Page $page, $fields): void
+  {
+    // set new page name for all languages
+    foreach ($this->wire->languages as $lang) {
+      // get old page name
+      $old = $page->localName($lang);
+
+      // get new page name
+      if (!is_array($fields)) {
+        // get value of a single field
+        $new = $page->getLanguageValue($lang, (string)$fields);
+      } else {
+        // get value from a list of fields
+        // use the field that first returns any value
+        $new = false;
+        foreach ($fields as $field) {
+          if ($new) continue;
+          $new = $page->getLanguageValue($lang, (string)$field);
+        }
+      }
+
+      // sanitize the new pagename
+      $new = $this->wire->sanitizer->markupToText($new);
+      $new = $this->wire->sanitizer->pageNameTranslate($new);
+
+      // save values of default language for later
+      if ($lang->isDefault()) {
+        $newDefault = $new;
+        $oldDefault = $old;
+      }
+
+      // early exit if nothing changed
+      if ($old === $new) continue;
+
+      // if we have no new value for the default language we exit early
+      // and leave the page name as it was
+      if ($lang->isDefault() and !$new) continue;
+
+      // special case: new value is empty in non-default language
+      // that means we reset the page name so it uses the default name
+      if (!$lang->isDefault() && !$new) {
+        $page->setAndSave("name$lang", "");
+        $this->message("Page name updated from '$old' to '$newDefault' ($lang->name)");
+        continue;
+      }
+
+      // default use case: set the new page name
+      $new = $this->wire->pages->names()->uniquePageName($new, $page);
+      if ($lang->isDefault()) $page->setAndSave("name", $new);
+      else $page->setAndSave("name$lang", $new);
+
+      // if old value was empty it means it had the old default value
+      if (!$old) $old = $oldDefault;
+
+      // show message that we updated the page name
+      $this->message("Page name updated from '$old' to '$new' ($lang->name)");
+    }
   }
 
   public function sortFormFields(InputfieldWrapper $form, $fields)
@@ -748,25 +801,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       if (!$this->wire->languages) $ls->init();
     }
     return $this->wire->languages;
-  }
-
-  /**
-   * Add RockFrontend livereloading to the backend
-   *
-   * This is only added on some pages to prevent reloads from causing issues
-   * @return void
-   */
-  protected function addLivereload()
-  {
-    if (!$this->wire->modules->isInstalled('RockFrontend')) return;
-    if (!$this->wire->config->livereload) return;
-
-    // on module config screens we disable livereload if it is not explicitly
-    // forced to be enabled. this is to prevent problems when downloading modules
-    if ($this->wire->page->id == 21 and !$this->livereloadModules) return;
-
-    $path = $this->wire->config->paths('RockFrontend');
-    $this->addScripts($path . "livereload.js");
   }
 
   /**
@@ -1055,7 +1089,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * $rm->createPage(
    *   template: 'foo',
    *   title: 'My foo page',
-   *   parent: 1
+   *   parent: 1,
+   *   status: ['hidden'],
    * );
    *
    * If you need to set a multilang title use
@@ -1086,13 +1121,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$name) $name = $this->sanitizer->pageNameTranslate($title);
     if (!$name) $name = $this->wire->pages->names()->uniquePageName();
 
-    $log = "Parent $parent not found";
     $parentName = $parent;
+    $log = "Parent $parent not found";
     $parent = $this->getPage($parent);
-    if ($parent === false) {
-      $this->error("The parent '$parentName' for page $title can not be found. Did you choose the correct parent?");
+    if (!$parent) {
+      $this->error("The parent '$parentName' for page '$title' can not be found. Did you choose the correct parent?");
+      return $this->log($log);
     }
-    if (!$parent->id) return $this->log($log);
 
     // get page if it exists
     $page = $this->getPage([
@@ -2151,6 +2186,40 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Hide website from guest access
+   */
+  private function hideFromGuests(): void
+  {
+    // only do all below if the feature is activated
+    if (!$this->hideFromGuests) return;
+
+    // set preview password for the session if one is provided
+    if ($this->wire->input->get('preview', 'string') === $this->previewPassword) {
+      $this->wire->session->previewPassword = $this->previewPassword;
+    }
+
+    // only redirect guest users
+    // no guest? do nothing
+    if (!$this->wire->user->isGuest()) return;
+
+    // dont redirect cli usage
+    if ($this->wire->config->external) return;
+
+    // don't redirect if the session has the preview password
+    $matches = $this->wire->session->previewPassword === $this->previewPassword;
+    if ($this->previewPassword && $matches) return;
+
+    // don't redirect if we are on the login page
+    $loginID = $this->wire->config->loginPageID;
+    if ($this->wire->page->id === $loginID) return;
+
+    // redirect to login page
+    $this->wire->session->redirect(
+      $this->wire->pages->get($loginID)->url
+    );
+  }
+
+  /**
    * Get template of root page
    * Usually the page with ID 1 has the "home" template, but we can't be sure
    * about that so it's better to use this helper method instead to make sure
@@ -2256,13 +2325,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$module) {
       // check if module files exist
       $path = $this->wire->config->path($name);
-      $pathExists = $path and $this->wire->files->exists($path);
+      $pathExists = ($path and $this->wire->files->exists($path));
       // download only if an url was provided and module files do not exist yet
       if ($opt->url and !$pathExists) {
         $pathExists = !!$this->downloadModule($opt->url);
       }
 
       if ($pathExists) {
+        // need to refresh the modules cache to make it work
+        $this->refresh();
         // module files are in place -> install the module
         $module = $this->modules->install($name, ['force' => $opt->force]);
         if ($module) $this->log("Installed module $name");
@@ -5023,6 +5094,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         </ul>",
     ]);
 
+    // prepare fileconfig string
+    $fileConfig = $this->wire->config->rockmigrations;
+    if (is_array($fileConfig)) {
+      $fileConfig = "<p>Current config from file:</p><pre>" . print_r($fileConfig, true) . "</pre>";
+    } else $fileConfig = "";
+
     $inputfields->add([
       'type' => 'markup',
       'label' => 'RockMigrations Config Options',
@@ -5030,8 +5107,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         <pre>$config->rockmigrations = [<br>'
         . '  "syncSnippets" => true,<br>'
         . '];</pre>'
-        . 'Note that settings in config.php have precedence over GUI settings!',
+        . 'Note that settings in config.php have precedence over GUI settings!'
+        . $fileConfig,
       'icon' => 'cogs',
+      'collapsed' => $fileConfig ? 0 : 1,
     ]);
 
     $inputfields->add([
@@ -5075,13 +5154,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'name' => 'addVersion',
       'label' => 'Add version number from package.json in root folder to the PW admin footer',
       'checked' => $this->addVersion ? 'checked' : '',
+      'notes' => 'When using [fully automated releases and version numbers](https://processwire.com/talk/topic/28235-how-to-get-fully-automated-releases-tags-changelog-and-version-numbers-for-your-module-or-processwire-project/) for your project, github will create a package.json in the root directory of your project file for every release. If you check the box RockMigrations will show that info in the footer: [screenshot](https://i.imgur.com/0pkdKBd.png)'
     ]);
     $inputfields->add([
       'type' => 'checkbox',
-      'name' => 'livereloadModules',
-      'label' => 'Add livereload to modules pages',
-      'notes' => 'Use this only for module development as it may lead to quirks when downloading modules etc!',
-      'checked' => $this->livereloadModules ? 'checked' : '',
+      'name' => 'hideFromGuests',
+      'label' => 'Hide website from guests',
+      'notes' => 'When checked all guest visits will be redirected to the login page, handy for hiding staging sites from unwanted access.',
+      'checked' => $this->hideFromGuests ? 'checked' : '',
+    ]);
+    $inputfields->add([
+      'type' => 'text',
+      'name' => 'previewPassword',
+      'label' => 'Preview Password',
+      'notes' => 'Guests can append ?preview=XXX to any URL and will gain access to the site for their session (where XXX is the password that you set here).',
+      'value' => $this->previewPassword,
+      'showIf' => 'hideFromGuests=1',
     ]);
 
     $this->wrapFields($inputfields, [
@@ -5089,11 +5177,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'addXdebugLauncher' => ['columnWidth' => 50],
       'addHost' => ['columnWidth' => 50],
       'addVersion' => ['columnWidth' => 50],
-      'colorBar' => ['columnWidth' => 50],
       'syncSnippets' => ['columnWidth' => 50],
-      'livereloadModules' => ['columnWidth' => 50],
+      'colorBar' => ['columnWidth' => 50],
+      'hideFromGuests' => ['columnWidth' => 50],
+      'previewPassword' => ['columnWidth' => 100],
     ], [
       'label' => 'RockMigrations Options',
+      'icon' => 'cogs',
     ]);
 
     $f = $this->wire->modules->get('InputfieldCheckboxes');
@@ -5115,18 +5205,28 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
     $path = $this->wire->config->paths->assets . "RockMigrations/profiles";
     $f->notes = "You can place your own profiles in $path";
-    $f->collapsed = Inputfield::collapsedYes;
+    $f->collapsed = Inputfield::collapsedNo;
     $inputfields->add($f);
 
     $this->console(); // run console code
     $inputfields->add([
       'type' => 'markup',
+      'name' => 'console',
       'label' => 'Console',
       'icon' => 'code',
       'description' => "",
       'value' => $this->wire->files->render($this->path . "profileeditor.php", [
         'code' => $this->getConsoleCode(),
       ]),
+    ]);
+
+    $this->wrapFields($inputfields, [
+      'profile',
+      'console',
+    ], [
+      'label' => 'Profiles',
+      'collapsed' => Inputfield::collapsedYes,
+      'icon' => 'code',
     ]);
 
     return $inputfields;
