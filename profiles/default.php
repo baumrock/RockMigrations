@@ -12,7 +12,7 @@ $rm->installModule(
   "https://github.com/adrianbj/TracyDebugger/archive/refs/heads/master.zip"
 );
 
-$rm->installModule("SessionHandlerDB");
+// $rm->installModule("SessionHandlerDB");
 
 $rm->installModule(
   "ProcessDatabaseBackups",
