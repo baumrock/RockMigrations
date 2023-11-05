@@ -1660,8 +1660,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (is_array($tracy) and array_key_exists('localRootPath', $tracy))
       $root = $tracy['localRootPath'];
     else $root = $this->wire->config->paths->root;
-    return "vscode://file/"
-      . str_replace($this->wire->config->paths->root, $root, $file);
+
+    $file = str_replace($this->wire->config->paths->root, $root, $file);
+    $file = Paths::normalizeSeparators($file);
+    return "vscode://file/" . ltrim($file, "/");
   }
 
   public function filemtime($file)
