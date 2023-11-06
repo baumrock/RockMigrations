@@ -1137,6 +1137,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     ], true);
 
     if ($page and $page->id) {
+      if ($title !== null) $page->setAndSave('title', $title);
       $page->status($status ?: []);
       $page->setAndSave($data ?: []);
       return $page;
@@ -1150,6 +1151,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $p->name = $name;
     $p->status($status);
     $p->setAndSave($data);
+    $p->save();
 
     // enable all languages for this page
     if ($allLanguages) $this->enableAllLanguagesForPage($p);
