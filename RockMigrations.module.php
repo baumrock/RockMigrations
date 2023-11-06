@@ -2559,6 +2559,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $pagefile = $event->object;
       if ($pagefile->page->isTrash()) return;
 
+      // we can't load secure files from remote because they are not accessible
+      if ($pagefile->page->secureFiles()) return;
+
       // this makes it possible to prevent downloading at runtime
       if (!$host = $this->wire->config->filesOnDemand) return;
 
