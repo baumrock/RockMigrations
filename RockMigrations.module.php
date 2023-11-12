@@ -364,15 +364,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $onlySuperuser = true,
     $css = null,
     $minify = false,
-  ): string {
+    $keepCSS = true,
+  ) {
+    // early exit?
+    if ($onlySuperuser && !$this->wire->user->isSuperuser()) return;
+
     $css = $css ?: substr($less, 0, -5) . ".css";
     if (!is_file($less)) return $css;
 
     $mLESS = filemtime($less);
     $mCSS = is_file($css) ? filemtime($css) : 0;
 
-    $sudoCheck = $onlySuperuser ? $this->wire->user->isSuperuser() : true;
-    if ($mLESS > $mCSS and $sudoCheck) {
+    if ($mLESS > $mCSS) {
       if ($parser = $this->wire->modules->get('Less')) {
         // recreate css file
         /** @var Less $parser */
@@ -385,7 +388,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
 
     if ($minify) {
-      return $this->minify($css);
+      $min = $this->minify($css);
+      if (!$keepCSS) $this->wire->files->unlink($css);
+      return $min;
     }
 
     return $css;
