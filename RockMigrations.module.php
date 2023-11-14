@@ -1144,7 +1144,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($page and $page->id) {
       if ($title !== null) $page->setAndSave('title', $title);
       $page->status($status ?: []);
-      $page->setAndSave($data ?: []);
+
+      // if some page field values are provided we save them now
+      if (is_array($data)) $page->setAndSave($data);
+
       return $page;
     }
 
