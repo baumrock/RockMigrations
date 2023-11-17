@@ -248,7 +248,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
       // if file is not found we silently skip it
       // it is silent because of MagicPages::addPageAssets
-      if (!is_file($path)) continue;
+      if (!is_file((string)$path)) continue;
       $url = str_replace(
         $this->wire->config->paths->root,
         $this->wire->config->urls->root,
