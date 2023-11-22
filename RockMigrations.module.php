@@ -3608,7 +3608,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // eg 'parent_id' => '/comments'
       if ($key === "parent_id" and is_string($val) and $val !== '') {
         $parent = $this->getPage($val);
-        if (!$parent) throw new WireException("Invalid parent_id");
+        if (!$parent) throw new WireException("Invalid parent_id $val");
         $data[$key] = $parent->id;
         continue; // early exit
       }
