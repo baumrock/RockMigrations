@@ -1,3 +1,24 @@
+# [3.33.0](https://github.com/baumrock/RockMigrations/compare/v3.32.0...v3.33.0) (2023-12-03)
+
+
+### Bug Fixes
+
+* createPage() triggering page save all the time ([456c0b1](https://github.com/baumrock/RockMigrations/commit/456c0b1449a8b15d3a4b715bbfe39a4bc734f1e0))
+* dont add page id + template in dropdown menu ([0730ee3](https://github.com/baumrock/RockMigrations/commit/0730ee300bcb87d383bdfae647442834def63c47))
+* is_file() causing error when $path is null ([7e64380](https://github.com/baumrock/RockMigrations/commit/7e643806c3bf8feb5b04b766c20e962521c4f74b))
+* ready() not triggered in magicpages ([f4f09bc](https://github.com/baumrock/RockMigrations/commit/f4f09bcba34f4cfa7078bc94cd5a99589f923f49))
+* title not updating when using createPage() ([147230c](https://github.com/baumrock/RockMigrations/commit/147230c614ddf1ac97c503e90338f7d652fdccee))
+* vscode links not working with latest vscode ([ec10745](https://github.com/baumrock/RockMigrations/commit/ec1074516641af2dd1f410be8c843d716ace1cf0))
+
+
+### Features
+
+* add DelayedImageVariations to default profile ([a063964](https://github.com/baumrock/RockMigrations/commit/a063964635d19c64a69318470b25b75fde50c51d))
+* add keepCSS param in saveCSS method ([be46e16](https://github.com/baumrock/RockMigrations/commit/be46e1665e1930733cc192e833f895b2a42b2241))
+* add sql query snippet ([547f0ef](https://github.com/baumrock/RockMigrations/commit/547f0ef894c10938c076e3973279428093fbb057))
+
+
+
 # [3.32.0](https://github.com/baumrock/RockMigrations/compare/v3.31.1...v3.32.0) (2023-11-02)
 
 
@@ -52,33 +73,6 @@
 
 * add minify param in saveCSS() ([60f9167](https://github.com/baumrock/RockMigrations/commit/60f9167537b77612d367d9486228ff1df992c095))
 * cleanup caches table on deploy ([85c2458](https://github.com/baumrock/RockMigrations/commit/85c24588a9d0a0552485a008fe624429427db988))
-
-
-
-# [3.29.0](https://github.com/baumrock/RockMigrations/compare/v3.27.0...v3.29.0) (2023-08-11)
-
-
-### Bug Fixes
-
-* catch 404 page not found error on deployment ([e67bebd](https://github.com/baumrock/RockMigrations/commit/e67bebd7382ae5b7a491b6f8c783c1d157524ff4))
-* jquery deprecation warning for window.load() ([c626d5b](https://github.com/baumrock/RockMigrations/commit/c626d5bfbc2a8b731524921479d08e653f550d7e))
-* pageListBadge showing when empty ([3644e6a](https://github.com/baumrock/RockMigrations/commit/3644e6a85263ba879c10fd2a208d47c589a9946d))
-* remove language tab fix ([4a1061b](https://github.com/baumrock/RockMigrations/commit/4a1061bcf1ba5ab64140e96ec204ceccacbe22b7))
-* renderTable not showing data and wrong asset path on windows ([24a9d9d](https://github.com/baumrock/RockMigrations/commit/24a9d9d5ab4f2e306f7e0b948692cf59da05e282))
-* renderTable not showing some values ([bce2df8](https://github.com/baumrock/RockMigrations/commit/bce2df88da20d894f9e4c719ff8e4355769128a0))
-
-
-### Features
-
-* add checkbox to force livereload on module config pages ([a52a550](https://github.com/baumrock/RockMigrations/commit/a52a5504d48474502927e162d7412a4c9ff54eec))
-* add getFile() method ([ea94430](https://github.com/baumrock/RockMigrations/commit/ea94430431f141556dd2191bce4c56eaaa76ced8))
-* add homeTemplate() method ([cbd0c07](https://github.com/baumrock/RockMigrations/commit/cbd0c07e04adb20ee262ab6fef2f315723eb10d1))
-* add new pageClassLoader :) ([480b06c](https://github.com/baumrock/RockMigrations/commit/480b06cf52241f8ab3eaaa360a18f520d2080189))
-* add path helper method ([29e8740](https://github.com/baumrock/RockMigrations/commit/29e8740d8d013e2721555a9f3c3cd51997230ce2))
-* add redirect logger Tweak ([6003cf5](https://github.com/baumrock/RockMigrations/commit/6003cf593b878b80937fa9708f0172a8f9fcfed9))
-* add renderTable helper ([eb3ee9c](https://github.com/baumrock/RockMigrations/commit/eb3ee9cdc7f535dcf040f1ca8352eb91daf6ef46))
-* add support for template_ids ([14489ad](https://github.com/baumrock/RockMigrations/commit/14489add2c971c9e6b75bf23986d5338ab7e3343))
-* improve new pageClassLoader ([e99b80c](https://github.com/baumrock/RockMigrations/commit/e99b80c494e25331705767637d2ceaab152bab7e))
 
 
 
