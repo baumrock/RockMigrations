@@ -319,6 +319,18 @@
     ]
   },
 
+  // custom sql query
+  "pw-sql-query": {
+    "prefix": "pw-sql-query",
+    "body": [
+      "// do proper sanitization!!!",
+      "\\$result = \\$this->database->query(\"${1:SELECT * FROM pages LIMIT 5}\");",
+      "\\$${2:foo} = \\$result->fetchAll(\\PDO::FETCH_OBJ);",
+      "d(\\$${2:foo});$0"
+    ],
+    "description": "SQL Database Query"
+  },
+
   // this is a placeholder so that all items above can have a trailing slash
   "": { "body": "" }
 }
