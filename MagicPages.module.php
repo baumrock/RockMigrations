@@ -5,16 +5,16 @@ namespace RockMigrations;
 use ProcessWire\HookEvent;
 use ProcessWire\Module;
 use ProcessWire\Page;
-use ProcessWire\PageArray;
 use ProcessWire\Paths;
 use ProcessWire\RockMigrations;
+use ProcessWire\WireArray;
 use ProcessWire\WireData;
 use ReflectionClass;
 
 class MagicPages extends WireData implements Module
 {
 
-  private $readyClasses;
+  public $readyClasses;
 
   private $filePaths = [];
 
@@ -36,11 +36,12 @@ class MagicPages extends WireData implements Module
 
   public function __construct()
   {
+    if ($this->wire->config->useMagicPages === 0) return;
+    if ($this->wire->config->useMagicPages === false) return;
     $this->wire->addHookAfter("ProcessWire::init", function () {
-      $this->readyClasses = $this->wire(new PageArray());
-      if ($this->wire->config->useMagicClasses === false) return;
-      if ($this->wire->config->useMagicClasses === 0) return;
-
+      // note: must be wirearray, not pagearray
+      // pagearray does not allow adding multiple pages with id=0
+      $this->readyClasses = $this->wire(new WireArray());
       foreach ($this->wire->templates as $tpl) {
         $p = $this->wire->pages->newPage(['template' => $tpl]);
         if (!property_exists($p, "isMagicPage")) continue;
