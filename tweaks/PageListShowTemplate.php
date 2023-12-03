@@ -33,6 +33,11 @@ class PageListShowTemplate extends Tweak
 
   public function hookPageLabel(HookEvent $event)
   {
+    // don't add hook in the menu navigation
+    $options = $event->arguments(1);
+    if ($options && is_array($options) && array_key_exists('noTags', $options) && $options['noTags']) return;
+
+    // regular page list
     $page = $event->arguments('page');
     $event->return .= "<span class='PageListTemplate'>[{$page->template}]</span>";
   }

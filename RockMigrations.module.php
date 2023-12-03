@@ -248,7 +248,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
       // if file is not found we silently skip it
       // it is silent because of MagicPages::addPageAssets
-      if (!is_file($path)) continue;
+      if (!is_file((string)$path)) continue;
       $url = str_replace(
         $this->wire->config->paths->root,
         $this->wire->config->urls->root,
@@ -364,15 +364,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $onlySuperuser = true,
     $css = null,
     $minify = false,
-  ): string {
+    $keepCSS = true,
+  ) {
+    // early exit?
+    if ($onlySuperuser && !$this->wire->user->isSuperuser()) return;
+
     $css = $css ?: substr($less, 0, -5) . ".css";
     if (!is_file($less)) return $css;
 
     $mLESS = filemtime($less);
     $mCSS = is_file($css) ? filemtime($css) : 0;
 
-    $sudoCheck = $onlySuperuser ? $this->wire->user->isSuperuser() : true;
-    if ($mLESS > $mCSS and $sudoCheck) {
+    if ($mLESS > $mCSS) {
       if ($parser = $this->wire->modules->get('Less')) {
         // recreate css file
         /** @var Less $parser */
@@ -385,7 +388,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
 
     if ($minify) {
-      return $this->minify($css);
+      $min = $this->minify($css);
+      if (!$keepCSS) $this->wire->files->unlink($css);
+      return $min;
     }
 
     return $css;
@@ -1137,8 +1142,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     ], true);
 
     if ($page and $page->id) {
+      if ($title !== null) $page->setAndSave('title', $title);
       $page->status($status ?: []);
-      $page->setAndSave($data ?: []);
+
+      // if some page field values are provided we save them now
+      if (is_array($data)) $page->setAndSave($data);
+
       return $page;
     }
 
@@ -1150,6 +1159,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $p->name = $name;
     $p->status($status);
     $p->setAndSave($data);
+    $p->save();
 
     // enable all languages for this page
     if ($allLanguages) $this->enableAllLanguagesForPage($p);
@@ -1660,8 +1670,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (is_array($tracy) and array_key_exists('localRootPath', $tracy))
       $root = $tracy['localRootPath'];
     else $root = $this->wire->config->paths->root;
-    return "vscode://file/"
-      . str_replace($this->wire->config->paths->root, $root, $file);
+
+    $file = str_replace($this->wire->config->paths->root, $root, $file);
+    $file = Paths::normalizeSeparators($file);
+    return "vscode://file/" . ltrim($file, "/");
   }
 
   public function filemtime($file)
@@ -2554,6 +2566,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $file = $event->return;
       $pagefile = $event->object;
       if ($pagefile->page->isTrash()) return;
+
+      // we can't load secure files from remote because they are not accessible
+      if ($pagefile->page->secureFiles()) return;
 
       // this makes it possible to prevent downloading at runtime
       if (!$host = $this->wire->config->filesOnDemand) return;
@@ -3593,7 +3608,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // eg 'parent_id' => '/comments'
       if ($key === "parent_id" and is_string($val) and $val !== '') {
         $parent = $this->getPage($val);
-        if (!$parent) throw new WireException("Invalid parent_id");
+        if (!$parent) throw new WireException("Invalid parent_id $val");
         $data[$key] = $parent->id;
         continue; // early exit
       }
