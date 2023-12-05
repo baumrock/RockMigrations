@@ -22,7 +22,7 @@ $(document).ready(() => {
     else if (name == "asmSelect0") return;
     $(el).attr("title", name + " = " + el.value);
     UIkit.tooltip(el);
-    console.log("added tooltip", el, el.value);
+    // console.log("added tooltip", el, el.value);
   };
   $(
     ".rm-hints input[name], .rm-hints textarea[name], .rm-hints select[name]"
