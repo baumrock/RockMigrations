@@ -309,6 +309,7 @@
     "body": [
       "// rockshell config",
       "\\$config->rockshell = [",
+      "  // 'remotePHP' => 'keyhelp-php81',",
       "  'remotes' => [",
       "    'staging' => [",
       "      'ssh' => 'user@host.com',",
