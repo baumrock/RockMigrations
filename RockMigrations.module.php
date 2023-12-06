@@ -521,7 +521,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // set new page name for all languages
     foreach ($this->wire->languages as $lang) {
       // get old page name
-      $old = $page->localName($lang);
+      // use try/catch to prevent localName does not exist errors
+      try {
+        $old = $page->localName($lang);
+      } catch (\Throwable $th) {
+        $old = $page->name;
+      }
 
       // get new page name
       if (!is_array($fields)) {
