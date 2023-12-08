@@ -1,9 +1,0 @@
-{
-  "inline": true,
-  "menubar": false,
-  "plugins": "anchor link lists pwlink quickbars",
-
-  "toolbar": "bold italic pwlink bullist numlist",
-  "quickbars_selection_toolbar": "bold italic pwlink bullist numlist",
-  "quickbars_insert_toolbar": "bold italic pwlink bullist numlist"
-}

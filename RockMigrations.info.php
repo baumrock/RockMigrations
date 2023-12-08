@@ -13,7 +13,4 @@ $info = [
   'requires' => [
     'PHP>=8.0',
   ],
-  'installs' => [
-    'MagicPages',
-  ],
 ];
