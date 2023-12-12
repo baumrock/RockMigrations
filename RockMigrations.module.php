@@ -18,6 +18,7 @@ use TracyDebugger;
  * @license MIT
  * @link https://www.baumrock.com
  */
+require_once "functions.php";
 class RockMigrations extends WireData implements Module, ConfigurableModule
 {
 
