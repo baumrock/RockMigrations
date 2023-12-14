@@ -377,7 +377,10 @@ $rm->createRepeaterMatrixField('repeater_matrix_field_name', [
        'type2' => [
            'label' => 'Type2',
            'fields' => [
-               'text' => [],
+               'text' => [
+                  'label' => 'Custom Label',
+               ],
+               'checkbox',
            ]
        ],
    ]

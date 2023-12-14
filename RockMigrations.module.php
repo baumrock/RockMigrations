@@ -4219,7 +4219,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$field = $this->getField($field, false)) return;
     // do not add if there already is a matrix type with the same name
     if ($field->getMatrixTypeByName($name) !== false) return;
-    $hasFielddata = isset($data['fields']) && count(array_filter(array_keys($data['fields']), 'is_string')) > 0;
+    // standardize fields array
+    if(isset($data['fields'])) {
+      $data['fields'] = $this->standardizeFieldsArray($data['fields']);
+    }
     $info = array();
     // get number
     $n = 1;
@@ -4229,7 +4232,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $field->set($prefix . "name", $name);
     $field->set($prefix . "sort", $n - 1); // 'sort' is 0 based
     $info['fields'] = array();
-    foreach ($hasFielddata ? array_keys($data['fields']) : $data['fields'] as $fieldname) {
+    foreach (array_keys($data['fields']) as $fieldname) {
       if ($f = $this->wire->fields->get($fieldname)) $info['fields'][$fieldname] = $f;
     }
     $info['fieldIDs'] = array_map(function (Field $f) {
@@ -4305,10 +4308,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *      'bar' => [ // matrixtype name
    *          'label' => 'bar label', // matrixtype label
    *          'fields' => [ // matrixtype fields
-   *              'field1' => [
-   *                  'label' => 'foolabel', // matrixtype field options
-   *                  'columnWidth' => 50, // matrixtype field options
-   *              ],
+   *              'field1', can be field name only
+   *              // or assoc array with field data
    *              'field2' => [
    *                  'label' => 'foolabel', // matrixtype field options
    *                  'columnWidth' => 50, // matrixtype field options
@@ -4380,14 +4381,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$field = $this->getField($field, false)) return;
     $info = $field->getMatrixTypesInfo(['type' => $name]);
     if (!$info) return;
-    $hasFielddata = isset($data['fields']) && count(array_filter(array_keys($data['fields']), 'is_string')) > 0;
+    // standardize fields array
+    if(isset($data['fields'])) {
+      $data['fields'] = $this->standardizeFieldsArray($data['fields']);
+    }
     foreach ($this->getMatrixDataArray($data, $info) as $key => $val) {
       // eg set matrix1_label = ...
       $field->set($info['prefix'] . $key, $val);
       if ($key === "fields") {
         $tpl = $field->type->getMatrixTemplate($field);
         $this->addFieldsToTemplate($val, $tpl);
-        if ($hasFielddata) $this->setMatrixFieldDataInContext($data['fields'], $info, $tpl);
+        $this->setMatrixFieldDataInContext($data['fields'], $info, $tpl);
       }
     }
 
@@ -4421,6 +4425,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Sanitize repeater matrix array
+   * make sure that $data['fields'] is an array of field ids
    * @param array $data
    * @return array
    */
@@ -4431,6 +4436,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // make sure fields is an array of ids
       if ($key === 'fields') {
         $ids = [];
+        $val = $this->standardizeFieldsArray($val);
+        // get ids of all fields by field name
         foreach (array_keys($val) as $_field) {
           if (!$field = $this->wire->fields->get($_field)) continue;
           $ids[] = $field->id;
@@ -4468,6 +4475,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
 
     return $field;
+  }
+
+  /**
+   * Standardize the fields array to always be associative string fieldname => array fielddata.
+   *
+   * @param array $fields The fields array to be standardized. Can either be indexed or associative or a mix.
+   * @return array The standardized fields array.
+   */
+  private function standardizeFieldsArray($fields) {
+    foreach ($fields as $key => $item) {
+      if (is_int($key)) {
+          $fields[$item] = [];
+          unset($fields[$key]);
+      }
+    }
+    return $fields;
   }
 
   /** END Repeater Matrix */
