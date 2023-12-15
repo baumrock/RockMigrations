@@ -4479,18 +4479,23 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Standardize the fields array to always be associative string fieldname => array fielddata.
+   * retain original order of fields
    *
    * @param array $fields The fields array to be standardized. Can either be indexed or associative or a mix.
    * @return array The standardized fields array.
    */
   private function standardizeFieldsArray($fields) {
+    $standardizedFields = [];
     foreach ($fields as $key => $item) {
-      if (is_int($key)) {
-          $fields[$item] = [];
-          unset($fields[$key]);
-      }
+        if (is_int($key)) {
+            // For indexed elements, add a new associative element with the same key.
+            $standardizedFields[$item] = [];
+        } else {
+            // For associative elements, keep them as is.
+            $standardizedFields[$key] = $item;
+        }
     }
-    return $fields;
+    return $standardizedFields;
   }
 
   /** END Repeater Matrix */
