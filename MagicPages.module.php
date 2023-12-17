@@ -262,7 +262,9 @@ class MagicPages extends WireData implements Module
           return;
         }
         // regular pagelist --> modify label
-        $event->return = $page->pageListLabel($noTags);
+        $icon = "";
+        if ($icon = $page->template->icon) $icon = "<i class='icon fa fa-fw fa-$icon'></i> ";
+        $event->return = $icon . $page->pageListLabel($noTags);
       });
     }
   }
