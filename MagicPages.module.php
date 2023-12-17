@@ -244,6 +244,27 @@ class MagicPages extends WireData implements Module
         }
       });
     }
+
+    /**
+     * hook pagelist label
+     * This implementation is different to the core getPageListLabel()!
+     * When using pageListLabel() you will only modify the label in the regular
+     * page tree, but labels in the menu or in page reference fields will stay untouched.
+     */
+    if (method_exists($magicPage, "pageListLabel")) {
+      $this->wire->addHookAfter('ProcessPageListRender::getPageLabel', function (HookEvent $event) use ($magicPage) {
+        $page = $event->arguments('page');
+        if ($page->className(true) !== $magicPage->className(true)) return;
+        $options = $event->arguments(1);
+        $noTags = $options && is_array($options) && array_key_exists('noTags', $options) && $options['noTags'];
+        if ($noTags) {
+          // noTags is active, that means we are in a menu or such
+          return;
+        }
+        // regular pagelist --> modify label
+        $event->return = $page->pageListLabel($noTags);
+      });
+    }
   }
 
   /**
