@@ -64,6 +64,11 @@
   },
 
   // field migrations
+  "rmf": {
+    "prefix": "rmf",
+    "body": ["const field_$1 = self::prefix . \"$1\";"],
+    "description": "Add a new field constant declaration"
+  },
   "rmf-text": {
     "prefix": "rmf-text",
     "body": [
