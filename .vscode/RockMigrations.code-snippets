@@ -38,6 +38,11 @@
     ],
     "description": "migrate() function for use in a RockPageBuilder block"
   },
+  "tpl": {
+    "prefix": "tpl",
+    "body": ["const tpl = \"$1\";", "const prefix = \"$1_\";"],
+    "description": "tpl and prefix constant"
+  },
 
   // helpers
   "rm-defaults": {
