@@ -4220,7 +4220,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // do not add if there already is a matrix type with the same name
     if ($field->getMatrixTypeByName($name) !== false) return;
     // standardize fields array
-    if(isset($data['fields'])) {
+    if (isset($data['fields'])) {
       $data['fields'] = $this->standardizeFieldsArray($data['fields']);
     }
     $info = array();
@@ -4382,7 +4382,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $info = $field->getMatrixTypesInfo(['type' => $name]);
     if (!$info) return;
     // standardize fields array
-    if(isset($data['fields'])) {
+    if (isset($data['fields'])) {
       $data['fields'] = $this->standardizeFieldsArray($data['fields']);
     }
     foreach ($this->getMatrixDataArray($data, $info) as $key => $val) {
@@ -4484,16 +4484,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * @param array $fields The fields array to be standardized. Can either be indexed or associative or a mix.
    * @return array The standardized fields array.
    */
-  private function standardizeFieldsArray($fields) {
+  private function standardizeFieldsArray($fields)
+  {
     $standardizedFields = [];
     foreach ($fields as $key => $item) {
-        if (is_int($key)) {
-            // For indexed elements, add a new associative element with the same key.
-            $standardizedFields[$item] = [];
-        } else {
-            // For associative elements, keep them as is.
-            $standardizedFields[$key] = $item;
-        }
+      if (is_int($key)) {
+        // For indexed elements, add a new associative element with the same key.
+        $standardizedFields[$item] = [];
+      } else {
+        // For associative elements, keep them as is.
+        $standardizedFields[$key] = $item;
+      }
     }
     return $standardizedFields;
   }
@@ -5238,11 +5239,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $f = $this->wire->modules->get('InputfieldCheckboxes');
     $f->name = 'enabledTweaks';
     $f->label = "ProcessWire Tweaks";
+    $f->icon = 'magic';
     $f->entityEncodeText = false;
     foreach ($this->tweaks as $tweak) {
       $f->addOption($tweak->name, implode(' - ', array_filter([$tweak->name, $tweak->description])));
     }
     $f->value = (array)$this->enabledTweaks;
+    $inputfields->add($f);
+
+    $this->installMacros();
+    $f = $this->wire->modules->get('InputfieldCheckboxes');
+    $f->name = 'installMacros';
+    $f->label = "Macros";
+    $f->entityEncodeText = false;
+    foreach ($this->macros() as $macro) {
+      $f->addOption(
+        $macro->name,
+        implode(' - ', array_filter([$macro->name, $macro->description]))
+      );
+    }
+    $f->value = (array)$this->enabledTweaks;
+    $f->icon = 'code';
     $inputfields->add($f);
 
     $this->profileExecute();
@@ -5281,15 +5298,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return $inputfields;
   }
 
-  private function getConsoleCode()
-  {
-    $code = $this->wire->pages->get(1)->meta('rockmigrations-consolecode');
-    if ($code) return $code;
-    return $this->wire->sanitizer->entities(
-      $this->wire->files->fileGetContents(__DIR__ . "/profiles/default.php")
-    );
-  }
-
   /**
    * Execute console code
    */
@@ -5308,6 +5316,45 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->refresh();
     $this->wire->files->include($file, ['code' => $code]);
     $this->wire->files->unlink($file);
+  }
+
+  private function getConsoleCode()
+  {
+    $code = $this->wire->pages->get(1)->meta('rockmigrations-consolecode');
+    if ($code) return $code;
+    return $this->wire->sanitizer->entities(
+      $this->wire->files->fileGetContents(__DIR__ . "/profiles/default.php")
+    );
+  }
+
+  private function installMacros(): void
+  {
+    $macros = $this->wire->input->post->installMacros;
+    if (!is_array($macros)) return;
+
+    foreach ($macros as $name) {
+      $macro = $this->macros()->get($name);
+      include $macro->file;
+    }
+  }
+
+  private function macros(): WireArray
+  {
+    $macros = new WireArray();
+    $dir = $this->wire->config->paths($this) . "macros";
+    foreach ($this->wire->files->find($dir) as $file) {
+      $macro = new WireData();
+      $macro->file = $file;
+      $macro->name = substr(basename($file), 0, -4);
+
+      // load description
+      $content = $this->wire->files->fileGetContents($file);
+      preg_match('/\/\*\*\n \* (.*)/m', $content, $matches);
+      if (count($matches) === 2) $macro->description = $matches[1];
+
+      $macros->add($macro);
+    }
+    return $macros;
   }
 
   public function ___install(): void
