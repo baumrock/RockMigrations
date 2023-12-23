@@ -874,7 +874,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $this->wire->page->id === 10 // page edit
       && $data = $this->wire->input->post('settings_redirects')
     ) {
-      $this->wire->cache->save('settings_redirects', $this->parseRedirects($data));
+      $data = $this->parseRedirects($data);
+      $this->wire->cache->save('settings-redirects', $data);
+      $this->message("Saved " . count($data) . " redirect rules to cache");
     }
 
     // get redirects from cache
