@@ -3,7 +3,7 @@
 namespace ProcessWire;
 
 /**
- * Add several fields to settings page (address, phone, social, ...)
+ * Add several fields to settings page (redirects, topbar, footer, ...)
  */
 
 $rm = rockmigrations();
@@ -18,6 +18,36 @@ if (!$rm->getTemplate('settings')) {
 // create fields
 $rm->migrate([
   'fields' => [
+    // redirect repeater
+    'settings_redirectfrom' => [
+      'type' => 'text',
+      'label' => 'From',
+      'columnWidth' => 50,
+      'notes' => 'example',
+    ],
+    'settings_redirectto' => [
+      'type' => 'text',
+      'label' => 'To',
+      'columnWidth' => 50,
+      'notes' => 'https://www.example.com',
+    ],
+    'settings_redirects' => [
+      'label' => 'Redirects',
+      'type' => 'FieldtypeRepeater',
+      'fields' => [
+        'settings_redirectfrom',
+        'settings_redirectto',
+      ],
+      'repeaterTitle' => '{settings_redirectfrom} >> {settings_redirectto}',
+      'familyFriendly' => 1,
+      'repeaterDepth' => 0,
+      'tags' => 'Settings',
+      'repeaterAddLabel' => 'Add New Item',
+      'columnWidth' => 100,
+      'icon' => 'forward',
+    ],
+
+    // other fields
     'settings_phone' => [
       'type' => 'text',
       'label' => 'Phone',
@@ -91,6 +121,7 @@ $rm->migrate([
     'settings' => [
       'fields' => [
         'title',
+        'settings_redirects',
 
         'settings_phone'        => ['columnWidth' => 50],
         'email' => [

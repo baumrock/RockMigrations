@@ -168,6 +168,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   public function ready()
   {
+    $this->addSettingsRedirects();
     $this->hideFromGuests();
     $this->forceMigrate();
 
@@ -858,6 +859,32 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $user->of(false);
     $user->addRole($role);
     $user->save();
+  }
+
+  /**
+   * Add hooks for short-url feature on settings page
+   */
+  private function addSettingsRedirects(): void
+  {
+    // no settings template --> exit
+    if (!$this->getTemplate('settings', 'true')) return;
+
+    // try to get the redirects repeater elements
+    try {
+      $redirects = settings()->redirects();
+    } catch (\Throwable $th) {
+      return;
+    }
+    if (!$redirects instanceof RepeaterPageArray) return;
+
+    // add hooks for every redirect item
+    foreach ($redirects as $redirect) {
+      $from = ltrim($redirect->getFormatted('settings_redirectfrom'), "/");
+      $to = $redirect->getFormatted('settings_redirectto');
+      $this->wire->addHook("/$from", function (HookEvent $event) use ($to) {
+        $event->wire->session->redirect($to);
+      });
+    }
   }
 
   /**
