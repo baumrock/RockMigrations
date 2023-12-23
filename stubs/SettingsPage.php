@@ -85,9 +85,7 @@ class SettingsPage extends Page
       'fields' => [],
       'templates' => [
         self::tpl => [
-          'fields' => [
-            // fields are added by macro and/or manually
-          ],
+          // fields are added by macro and/or manually
           'icon' => 'cogs',
           'noSettings' => true,
           'noChildren' => true,
