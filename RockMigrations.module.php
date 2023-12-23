@@ -3513,6 +3513,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $user = $this->wire->user;
     $this->sudo();
+    $this->wire->cache->delete('magic-templates');
     $this->migrateWatchfiles(true);
     $this->wire->users->setCurrentUser($user);
   }
