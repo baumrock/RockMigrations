@@ -879,6 +879,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // get redirects from cache
     $redirects = $this->wire->cache->get('settings-redirects');
+    if (!is_array($redirects)) return;
 
     // add redirect hook for every item
     foreach ($redirects as $from => $to) {
