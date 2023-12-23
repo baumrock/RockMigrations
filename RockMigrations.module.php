@@ -869,18 +869,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // no settings template --> exit
     if (!$this->getTemplate('settings', 'true')) return;
 
-    // try to get the redirects repeater elements
-    try {
-      $redirects = settings()->redirects();
-    } catch (\Throwable $th) {
-      return;
+    // reset cache if field was saved
+    if (
+      $this->wire->page->id === 10 // page edit
+      && $data = $this->wire->input->post('settings_redirects')
+    ) {
+      $this->wire->cache->save('settings_redirects', $this->parseRedirects($data));
     }
-    if (!$redirects instanceof RepeaterPageArray) return;
 
-    // add hooks for every redirect item
-    foreach ($redirects as $redirect) {
-      $from = ltrim($redirect->getFormatted('settings_redirectfrom'), "/");
-      $to = $redirect->getFormatted('settings_redirectto');
+    // get redirects from cache
+    $redirects = $this->wire->cache->get('settings-redirects');
+
+    // add redirect hook for every item
+    foreach ($redirects as $from => $to) {
       $this->wire->addHook("/$from", function (HookEvent $event) use ($to) {
         $event->wire->session->redirect($to);
       });
@@ -3252,6 +3253,29 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       class='uk-text-small uk-margin-small-right uk-background-muted $muted {$opt->class}'
       style='padding: 2px 10px; border-radius: 5px; display:inline-block;font-variant-numeric: tabular-nums; font-size:11px; {$opt->style}'
       >$str</span>";
+  }
+
+  /**
+   * Parse redirects textarea from settings page
+   */
+  private function parseRedirects($data): array
+  {
+    $redirects = explode("\n", $data);
+    $arr = [];
+    foreach ($redirects as $redirect) {
+      $redirect = trim($redirect);
+      if (!$redirect) continue;
+      $parts = explode(" --> ", $redirect);
+      if (count($parts) !== 2) {
+        $this->error("Redirect rule '$redirect' is invalid!");
+        continue;
+      }
+
+      $from = trim(ltrim($parts[0], "/"));
+      $to = trim($parts[1]);
+      $arr[$from] = $to;
+    }
+    return $arr;
   }
 
   /**

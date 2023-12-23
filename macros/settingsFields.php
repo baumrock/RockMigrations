@@ -18,36 +18,14 @@ if (!$rm->getTemplate('settings')) {
 // create fields
 $rm->migrate([
   'fields' => [
-    // redirect repeater
-    'settings_redirectfrom' => [
-      'type' => 'text',
-      'label' => 'From',
-      'columnWidth' => 50,
-      'notes' => 'example',
-    ],
-    'settings_redirectto' => [
-      'type' => 'text',
-      'label' => 'To',
-      'columnWidth' => 50,
-      'notes' => 'https://www.example.com',
-    ],
     'settings_redirects' => [
+      'type' => 'textarea',
       'label' => 'Redirects',
-      'type' => 'FieldtypeRepeater',
-      'fields' => [
-        'settings_redirectfrom',
-        'settings_redirectto',
-      ],
-      'repeaterTitle' => '{settings_redirectfrom} >> {settings_redirectto}',
-      'familyFriendly' => 1,
-      'repeaterDepth' => 0,
-      'tags' => 'Settings',
-      'repeaterAddLabel' => 'Add New Item',
-      'columnWidth' => 100,
+      'rows' => 5,
       'icon' => 'forward',
+      'notes' => "Enter one redirect per line.
+        example --> https://www.example.com",
     ],
-
-    // other fields
     'settings_phone' => [
       'type' => 'text',
       'label' => 'Phone',
