@@ -2625,7 +2625,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $http = $this->wire(new WireHttp());
         /** @var WireHttp $http */
         try {
-          $http->download($url, $file);
+          $http->download($url, $file, [
+            'timeout' => 2, // skip file after 2s
+          ]);
         } catch (\Throwable $th) {
           // do not throw exception, show error message instead
           $this->error($th->getMessage());
