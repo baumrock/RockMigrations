@@ -306,7 +306,7 @@
     "prefix": "rmf-repeater",
     "body": [
       "$1 => [",
-      "  'label' => 'Repeater Label',",
+      "  'label' => '$2',",
       "  'type' => 'FieldtypeRepeater',",
       "  'fields' => [",
       "    'title',",
