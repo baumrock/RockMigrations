@@ -357,7 +357,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * foo.less --> foo.css
    *
-   * Requires the Less module and will silently return if anything goes wrong.
+   * Requires the Less module
    * The method is intended to easily develop module styles in LESS and ship
    * the CSS version.
    */
@@ -372,10 +372,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($onlySuperuser && !$this->wire->user->isSuperuser()) return;
 
     $css = $css ?: substr($less, 0, -5) . ".css";
-    if (!is_file($less)) return $css;
+    $min = substr($css, 0, -4) . ".min.css";
+    if (!is_file($less)) throw new WireException("Less file $less not found");
 
     $mLESS = filemtime($less);
-    $mCSS = is_file($css) ? filemtime($css) : 0;
+    if ($minify && !$keepCSS) $mCSS = is_file($min) ? filemtime($min) : 0;
+    else $mCSS = is_file($css) ? filemtime($css) : 0;
 
     if ($mLESS > $mCSS) {
       if ($parser = $this->wire->modules->get('Less')) {
@@ -391,7 +393,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     if ($minify) {
       $min = $this->minify($css);
-      if (!$keepCSS) $this->wire->files->unlink($css);
+      if (!$keepCSS && is_file($css)) $this->wire->files->unlink($css);
       return $min;
     }
 
