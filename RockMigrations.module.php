@@ -1162,7 +1162,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     bool $allLanguages = true
   ) {
     // create pagename from page title if it is not set
-    if (!$name) $name = $this->sanitizer->pageNameTranslate($title);
+    if (!$name && $title) $name = $this->sanitizer->pageNameTranslate($title);
     if (!$name) $name = $this->wire->pages->names()->uniquePageName();
 
     $parentName = $parent;
@@ -2868,7 +2868,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       /** @var WireData $d */
       $d->setArray($data);
       $this->createPage(
-        title: $d->title ?: $name,
+        title: $d->title,
         name: $name,
         template: $d->template,
         parent: $d->parent,
