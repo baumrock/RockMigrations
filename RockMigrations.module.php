@@ -407,8 +407,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * $rm->minify("/path/to/style.css"); // creates /path/to/style.min.css
    * $rm->minify("/path/to/style.css", "/newpath/style.min.css");
    */
-  public function minify($file, $minFile = null): string
+  public function minify($file, $minFile = null): string|false
   {
+    // this method is intended to be used on development only!
+    if (!$this->wire->user->isSuperuser()) return false;
+    if (!$this->wire->config->debug) return false;
+
     $ext = pathinfo($file, PATHINFO_EXTENSION);
     require_once __DIR__ . "/vendor/autoload.php";
     if ($ext == 'css') {
