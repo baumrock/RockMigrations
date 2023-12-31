@@ -2,11 +2,7 @@
   // load rockmigrations module into $rm variable
   "rm": {
     "prefix": "rm",
-    "body": [
-      "/** @var RockMigrations \\$rm */",
-      "\\$rm = \\$this->wire->modules->get('RockMigrations');",
-      "\\$rm->"
-    ],
+    "body": ["\\$rm = rockmigrations();", "\\$rm->"],
     "description": "Get RockMigrations Module"
   },
   "rm-migrate": {
