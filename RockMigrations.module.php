@@ -3023,6 +3023,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       return;
     }
 
+    // trigger migrate() of another object?
+    if ($file->trigger) {
+      $this->log("Trigger remote {$file->trigger}::migrate()");
+      $file->trigger->migrate();
+      return;
+    }
+
     // if it is a callback we execute it
     if ($callback = $file->callback) {
       $callback->__invoke($this);
@@ -4955,7 +4962,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * Note that migrations will only run when you are logged in as superuser!
    *
    * @param mixed $what File, directory or Module to be watched
-   * @param bool|float $migrate Execute migration? Float = priority (high=earlier, 1=default)
+   * @param bool|float|object $migrate Execute migration? Float = priority (high=earlier, 1=default)
    * @param array $options Array of options
    * @return void
    */
@@ -4968,6 +4975,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $opt->setArray([
       'recursive' => false,
       'force' => false,
+
+      // object to migrate
+      // usage: $rm->watch("file.php", true, ['trigger'=>$something]);
+      // will trigger $something->migrate() when file.php changes
+      // see RockCommerce.module.php/Product for an example
+      'trigger' => false,
     ]);
     $opt->setArray($options);
 
@@ -5050,6 +5063,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'callback' => $callback,
       'pageClass' => $opt->pageClass,
       'migrate' => (float)$migrate,
+      'trigger' => $opt->trigger,
       'trace' => "$tracefile:$traceline",
       'changed' => false,
       'force' => $opt->force,
