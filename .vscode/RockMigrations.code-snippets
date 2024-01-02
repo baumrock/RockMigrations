@@ -120,7 +120,7 @@
       "  'label' => '$2',",
       "  'formatType' => 0, // integer 0/1",
       "  'labelType' => 0, // yes/no",
-      "  'inputfieldClass' => 0, // yes/no",
+      "  'inputfieldClass' => 0, // toggle buttons",
       "  'defaultOption' => 'yes',",
       "],"
     ]
