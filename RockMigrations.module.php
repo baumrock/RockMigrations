@@ -3268,7 +3268,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $muted = $opt->muted ? 'uk-text-muted' : '';
 
     return "<span
-      class='uk-text-small uk-margin-small-right uk-background-muted $muted {$opt->class}'
+      class='rm-badge uk-text-small uk-margin-small-right uk-background-muted $muted {$opt->class}'
       style='padding: 2px 10px; border-radius: 5px; display:inline-block;font-variant-numeric: tabular-nums; font-size:11px; {$opt->style}'
       >$str</span>";
   }
