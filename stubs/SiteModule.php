@@ -2,6 +2,13 @@
 
 namespace ProcessWire;
 
+// expose the site module as global site() function
+function site(): Site
+{
+  return wire()->modules->get('Site');
+}
+
+// module code
 class Site extends WireData implements Module
 {
 

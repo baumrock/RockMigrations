@@ -42,10 +42,27 @@ class MagicPages extends WireData implements Module
       // note: must be wirearray, not pagearray
       // pagearray does not allow adding multiple pages with id=0
       $this->readyClasses = $this->wire(new WireArray());
-      foreach ($this->wire->templates as $tpl) {
+
+      // get magic templates from cache
+      $templates = $this->wire->cache->get('magic-templates', function () {
+        $templates = [];
+        foreach ($this->wire->templates as $tpl) {
+          $p = $this->wire->pages->newPage(['template' => $tpl]);
+          if (!property_exists($p, "isMagicPage")) continue;
+          if (!$p->isMagicPage) continue;
+          $templates[] = $tpl->name;
+        }
+        return $templates;
+      });
+
+      // autoload magic templates
+      foreach ($templates as $tpl) {
         $p = $this->wire->pages->newPage(['template' => $tpl]);
-        if (!property_exists($p, "isMagicPage")) continue;
-        if (!$p->isMagicPage) continue;
+        if (!property_exists($p, "isMagicPage") || !$p->isMagicPage) {
+          // cache is outdated, recreate it
+          $this->wire->cache->delete('magic-templates');
+          continue;
+        }
         if (method_exists($p, 'init')) $p->init();
         if (method_exists($p, 'ready')) $this->readyClasses->add($p);
         $this->rockmigrations()->watch($p, method_exists($p, 'migrate'));
@@ -57,6 +74,9 @@ class MagicPages extends WireData implements Module
   public function init()
   {
     $this->wire->addHookAfter("ProcessPageEdit::buildForm", $this, "addPageAssets");
+    $this->wire->addHookAfter("Modules::refresh", function () {
+      $this->wire->cache->delete('magic-templates');
+    });
   }
 
   public function ready()
@@ -242,6 +262,29 @@ class MagicPages extends WireData implements Module
           $f->prependMarkup = "<style>#wrap_{$f->id} input[type=text] { display: none; }</style>";
           $f->notes = $this->_("Page name will be set automatically on save.");
         }
+      });
+    }
+
+    /**
+     * hook pagelist label
+     * This implementation is different to the core getPageListLabel()!
+     * When using pageListLabel() you will only modify the label in the regular
+     * page tree, but labels in the menu or in page reference fields will stay untouched.
+     */
+    if (method_exists($magicPage, "pageListLabel")) {
+      $this->wire->addHookAfter('ProcessPageListRender::getPageLabel', function (HookEvent $event) use ($magicPage) {
+        $page = $event->arguments('page');
+        if ($page->className(true) !== $magicPage->className(true)) return;
+        $options = $event->arguments(1);
+        $noTags = $options && is_array($options) && array_key_exists('noTags', $options) && $options['noTags'];
+        if ($noTags) {
+          // noTags is active, that means we are in a menu or such
+          return;
+        }
+        // regular pagelist --> modify label
+        $icon = "";
+        if ($icon = $page->template->icon) $icon = "<i class='icon fa fa-fw fa-$icon'></i> ";
+        $event->return = $icon . $page->pageListLabel($noTags);
       });
     }
   }

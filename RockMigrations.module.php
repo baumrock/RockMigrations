@@ -18,6 +18,7 @@ use TracyDebugger;
  * @license MIT
  * @link https://www.baumrock.com
  */
+require_once "functions.php";
 class RockMigrations extends WireData implements Module, ConfigurableModule
 {
 
@@ -167,6 +168,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   public function ready()
   {
+    $this->addSettingsRedirects();
     $this->hideFromGuests();
     $this->forceMigrate();
 
@@ -355,7 +357,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * foo.less --> foo.css
    *
-   * Requires the Less module and will silently return if anything goes wrong.
+   * Requires the Less module
    * The method is intended to easily develop module styles in LESS and ship
    * the CSS version.
    */
@@ -370,10 +372,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($onlySuperuser && !$this->wire->user->isSuperuser()) return;
 
     $css = $css ?: substr($less, 0, -5) . ".css";
-    if (!is_file($less)) return $css;
+    $min = substr($css, 0, -4) . ".min.css";
+    if (!is_file($less)) throw new WireException("Less file $less not found");
 
     $mLESS = filemtime($less);
-    $mCSS = is_file($css) ? filemtime($css) : 0;
+    if ($minify && !$keepCSS) $mCSS = is_file($min) ? filemtime($min) : 0;
+    else $mCSS = is_file($css) ? filemtime($css) : 0;
 
     if ($mLESS > $mCSS) {
       if ($parser = $this->wire->modules->get('Less')) {
@@ -389,7 +393,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     if ($minify) {
       $min = $this->minify($css);
-      if (!$keepCSS) $this->wire->files->unlink($css);
+      if (!$keepCSS && is_file($css)) $this->wire->files->unlink($css);
       return $min;
     }
 
@@ -403,8 +407,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * $rm->minify("/path/to/style.css"); // creates /path/to/style.min.css
    * $rm->minify("/path/to/style.css", "/newpath/style.min.css");
    */
-  public function minify($file, $minFile = null): string
+  public function minify($file, $minFile = null): string|false
   {
+    // this method is intended to be used on development only!
+    if (!$this->wire->user->isSuperuser()) return false;
+    if (!$this->wire->config->debug) return false;
+
     $ext = pathinfo($file, PATHINFO_EXTENSION);
     require_once __DIR__ . "/vendor/autoload.php";
     if ($ext == 'css') {
@@ -521,7 +529,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // set new page name for all languages
     foreach ($this->wire->languages as $lang) {
       // get old page name
-      $old = $page->localName($lang);
+      // use try/catch to prevent localName does not exist errors
+      try {
+        $old = $page->localName($lang);
+      } catch (\Throwable $th) {
+        $old = $page->name;
+      }
 
       // get new page name
       if (!is_array($fields)) {
@@ -855,6 +868,36 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Add hooks for short-url feature on settings page
+   */
+  private function addSettingsRedirects(): void
+  {
+    // no settings template --> exit
+    if (!$this->getTemplate('settings', 'true')) return;
+
+    // reset cache if field was saved
+    if (
+      $this->wire->page->id === 10 // page edit
+      && $data = $this->wire->input->post('settings_redirects')
+    ) {
+      $data = $this->parseRedirects($data);
+      $this->wire->cache->save('settings-redirects', $data);
+      $this->message("Saved " . count($data) . " redirect rules to cache");
+    }
+
+    // get redirects from cache
+    $redirects = $this->wire->cache->get('settings-redirects');
+    if (!is_array($redirects)) return;
+
+    // add redirect hook for every item
+    foreach ($redirects as $from => $to) {
+      $this->wire->addHook("/$from", function (HookEvent $event) use ($to) {
+        $event->wire->session->redirect($to);
+      });
+    }
+  }
+
+  /**
    * Add the possibility to add success messages on inputfields
    */
   private function addSuccessMessageFeature()
@@ -1123,7 +1166,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     bool $allLanguages = true
   ) {
     // create pagename from page title if it is not set
-    if (!$name) $name = $this->sanitizer->pageNameTranslate($title);
+    if (!$name && $title) $name = $this->sanitizer->pageNameTranslate($title);
     if (!$name) $name = $this->wire->pages->names()->uniquePageName();
 
     $parentName = $parent;
@@ -2586,7 +2629,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $http = $this->wire(new WireHttp());
         /** @var WireHttp $http */
         try {
-          $http->download($url, $file);
+          $http->download($url, $file, [
+            'timeout' => 2, // skip file after 2s
+          ]);
         } catch (\Throwable $th) {
           // do not throw exception, show error message instead
           $this->error($th->getMessage());
@@ -2827,7 +2872,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       /** @var WireData $d */
       $d->setArray($data);
       $this->createPage(
-        title: $d->title ?: $name,
+        title: $d->title,
         name: $name,
         template: $d->template,
         parent: $d->parent,
@@ -2975,6 +3020,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$file->migrate) return;
     if (!$this->doMigrate($file)) {
       $this->log("--- Skipping {$file->path} (no change)");
+      return;
+    }
+
+    // trigger migrate() of another object?
+    if ($file->trigger) {
+      $this->log("Trigger remote {$file->trigger}::migrate()");
+      $file->trigger->migrate();
       return;
     }
 
@@ -3216,9 +3268,32 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $muted = $opt->muted ? 'uk-text-muted' : '';
 
     return "<span
-      class='uk-text-small uk-margin-small-right uk-background-muted $muted {$opt->class}'
+      class='rm-badge uk-text-small uk-margin-small-right uk-background-muted $muted {$opt->class}'
       style='padding: 2px 10px; border-radius: 5px; display:inline-block;font-variant-numeric: tabular-nums; font-size:11px; {$opt->style}'
       >$str</span>";
+  }
+
+  /**
+   * Parse redirects textarea from settings page
+   */
+  private function parseRedirects($data): array
+  {
+    $redirects = explode("\n", $data);
+    $arr = [];
+    foreach ($redirects as $redirect) {
+      $redirect = trim($redirect);
+      if (!$redirect) continue;
+      $parts = explode(" --> ", $redirect);
+      if (count($parts) !== 2) {
+        $this->error("Redirect rule '$redirect' is invalid!");
+        continue;
+      }
+
+      $from = trim(ltrim($parts[0], "/"));
+      $to = trim($parts[1]);
+      $arr[$from] = $to;
+    }
+    return $arr;
   }
 
   /**
@@ -3507,6 +3582,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $user = $this->wire->user;
     $this->sudo();
+    $this->wire->cache->delete('magic-templates');
     $this->migrateWatchfiles(true);
     $this->wire->users->setCurrentUser($user);
   }
@@ -4213,7 +4289,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$field = $this->getField($field, false)) return;
     // do not add if there already is a matrix type with the same name
     if ($field->getMatrixTypeByName($name) !== false) return;
-    $hasFielddata = isset($data['fields']) && count(array_filter(array_keys($data['fields']), 'is_string')) > 0;
+    // standardize fields array
+    if (isset($data['fields'])) {
+      $data['fields'] = $this->standardizeFieldsArray($data['fields']);
+    }
     $info = array();
     // get number
     $n = 1;
@@ -4223,7 +4302,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $field->set($prefix . "name", $name);
     $field->set($prefix . "sort", $n - 1); // 'sort' is 0 based
     $info['fields'] = array();
-    foreach ($hasFielddata ? array_keys($data['fields']) : $data['fields'] as $fieldname) {
+    foreach (array_keys($data['fields']) as $fieldname) {
       if ($f = $this->wire->fields->get($fieldname)) $info['fields'][$fieldname] = $f;
     }
     $info['fieldIDs'] = array_map(function (Field $f) {
@@ -4299,10 +4378,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *      'bar' => [ // matrixtype name
    *          'label' => 'bar label', // matrixtype label
    *          'fields' => [ // matrixtype fields
-   *              'field1' => [
-   *                  'label' => 'foolabel', // matrixtype field options
-   *                  'columnWidth' => 50, // matrixtype field options
-   *              ],
+   *              'field1', can be field name only
+   *              // or assoc array with field data
    *              'field2' => [
    *                  'label' => 'foolabel', // matrixtype field options
    *                  'columnWidth' => 50, // matrixtype field options
@@ -4374,14 +4451,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$field = $this->getField($field, false)) return;
     $info = $field->getMatrixTypesInfo(['type' => $name]);
     if (!$info) return;
-    $hasFielddata = isset($data['fields']) && count(array_filter(array_keys($data['fields']), 'is_string')) > 0;
+    // standardize fields array
+    if (isset($data['fields'])) {
+      $data['fields'] = $this->standardizeFieldsArray($data['fields']);
+    }
     foreach ($this->getMatrixDataArray($data, $info) as $key => $val) {
       // eg set matrix1_label = ...
       $field->set($info['prefix'] . $key, $val);
       if ($key === "fields") {
         $tpl = $field->type->getMatrixTemplate($field);
         $this->addFieldsToTemplate($val, $tpl);
-        if ($hasFielddata) $this->setMatrixFieldDataInContext($data['fields'], $info, $tpl);
+        $this->setMatrixFieldDataInContext($data['fields'], $info, $tpl);
       }
     }
 
@@ -4415,6 +4495,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Sanitize repeater matrix array
+   * make sure that $data['fields'] is an array of field ids
    * @param array $data
    * @return array
    */
@@ -4425,6 +4506,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // make sure fields is an array of ids
       if ($key === 'fields') {
         $ids = [];
+        $val = $this->standardizeFieldsArray($val);
+        // get ids of all fields by field name
         foreach (array_keys($val) as $_field) {
           if (!$field = $this->wire->fields->get($_field)) continue;
           $ids[] = $field->id;
@@ -4462,6 +4545,28 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
 
     return $field;
+  }
+
+  /**
+   * Standardize the fields array to always be associative string fieldname => array fielddata.
+   * retain original order of fields
+   *
+   * @param array $fields The fields array to be standardized. Can either be indexed or associative or a mix.
+   * @return array The standardized fields array.
+   */
+  private function standardizeFieldsArray($fields)
+  {
+    $standardizedFields = [];
+    foreach ($fields as $key => $item) {
+      if (is_int($key)) {
+        // For indexed elements, add a new associative element with the same key.
+        $standardizedFields[$item] = [];
+      } else {
+        // For associative elements, keep them as is.
+        $standardizedFields[$key] = $item;
+      }
+    }
+    return $standardizedFields;
   }
 
   /** END Repeater Matrix */
@@ -4857,7 +4962,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * Note that migrations will only run when you are logged in as superuser!
    *
    * @param mixed $what File, directory or Module to be watched
-   * @param bool|float $migrate Execute migration? Float = priority (high=earlier, 1=default)
+   * @param bool|float|object $migrate Execute migration? Float = priority (high=earlier, 1=default)
    * @param array $options Array of options
    * @return void
    */
@@ -4870,6 +4975,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $opt->setArray([
       'recursive' => false,
       'force' => false,
+
+      // object to migrate
+      // usage: $rm->watch("file.php", true, ['trigger'=>$something]);
+      // will trigger $something->migrate() when file.php changes
+      // see RockCommerce.module.php/Product for an example
+      'trigger' => false,
     ]);
     $opt->setArray($options);
 
@@ -4952,6 +5063,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'callback' => $callback,
       'pageClass' => $opt->pageClass,
       'migrate' => (float)$migrate,
+      'trigger' => $opt->trigger,
       'trace' => "$tracefile:$traceline",
       'changed' => false,
       'force' => $opt->force,
@@ -5204,11 +5316,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $f = $this->wire->modules->get('InputfieldCheckboxes');
     $f->name = 'enabledTweaks';
     $f->label = "ProcessWire Tweaks";
+    $f->icon = 'magic';
     $f->entityEncodeText = false;
     foreach ($this->tweaks as $tweak) {
       $f->addOption($tweak->name, implode(' - ', array_filter([$tweak->name, $tweak->description])));
     }
     $f->value = (array)$this->enabledTweaks;
+    $inputfields->add($f);
+
+    $this->installMacros();
+    $f = $this->wire->modules->get('InputfieldCheckboxes');
+    $f->name = 'installMacros';
+    $f->label = "Macros";
+    $f->entityEncodeText = false;
+    foreach ($this->macros() as $macro) {
+      $f->addOption(
+        $macro->name,
+        implode(' - ', array_filter([$macro->name, $macro->description]))
+      );
+    }
+    $f->value = (array)$this->enabledTweaks;
+    $f->icon = 'code';
     $inputfields->add($f);
 
     $this->profileExecute();
@@ -5247,15 +5375,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return $inputfields;
   }
 
-  private function getConsoleCode()
-  {
-    $code = $this->wire->pages->get(1)->meta('rockmigrations-consolecode');
-    if ($code) return $code;
-    return $this->wire->sanitizer->entities(
-      $this->wire->files->fileGetContents(__DIR__ . "/profiles/default.php")
-    );
-  }
-
   /**
    * Execute console code
    */
@@ -5274,6 +5393,45 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->refresh();
     $this->wire->files->include($file, ['code' => $code]);
     $this->wire->files->unlink($file);
+  }
+
+  private function getConsoleCode()
+  {
+    $code = $this->wire->pages->get(1)->meta('rockmigrations-consolecode');
+    if ($code) return $code;
+    return $this->wire->sanitizer->entities(
+      $this->wire->files->fileGetContents(__DIR__ . "/profiles/default.php")
+    );
+  }
+
+  private function installMacros(): void
+  {
+    $macros = $this->wire->input->post->installMacros;
+    if (!is_array($macros)) return;
+
+    foreach ($macros as $name) {
+      $macro = $this->macros()->get($name);
+      include $macro->file;
+    }
+  }
+
+  private function macros(): WireArray
+  {
+    $macros = new WireArray();
+    $dir = $this->wire->config->paths($this) . "macros";
+    foreach ($this->wire->files->find($dir) as $file) {
+      $macro = new WireData();
+      $macro->file = $file;
+      $macro->name = substr(basename($file), 0, -4);
+
+      // load description
+      $content = $this->wire->files->fileGetContents($file);
+      preg_match('/\/\*\*\n \* (.*)/m', $content, $matches);
+      if (count($matches) === 2) $macro->description = $matches[1];
+
+      $macros->add($macro);
+    }
+    return $macros;
   }
 
   public function ___install(): void

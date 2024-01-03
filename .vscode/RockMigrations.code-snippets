@@ -2,11 +2,7 @@
   // load rockmigrations module into $rm variable
   "rm": {
     "prefix": "rm",
-    "body": [
-      "/** @var RockMigrations \\$rm */",
-      "\\$rm = \\$this->wire->modules->get('RockMigrations');",
-      "\\$rm->"
-    ],
+    "body": ["\\$rm = rockmigrations();", "\\$rm->"],
     "description": "Get RockMigrations Module"
   },
   "rm-migrate": {
@@ -38,6 +34,11 @@
     ],
     "description": "migrate() function for use in a RockPageBuilder block"
   },
+  "tpl": {
+    "prefix": "tpl",
+    "body": ["const tpl = \"$1\";", "const prefix = \"$1_\";"],
+    "description": "tpl and prefix constant"
+  },
 
   // helpers
   "rm-defaults": {
@@ -64,6 +65,11 @@
   },
 
   // field migrations
+  "rmf": {
+    "prefix": "rmf",
+    "body": ["const field_$1 = self::prefix . \"$1\";"],
+    "description": "Add a new field constant declaration"
+  },
   "rmf-text": {
     "prefix": "rmf-text",
     "body": [
@@ -114,7 +120,7 @@
       "  'label' => '$2',",
       "  'formatType' => 0, // integer 0/1",
       "  'labelType' => 0, // yes/no",
-      "  'inputfieldClass' => 0, // yes/no",
+      "  'inputfieldClass' => 0, // toggle buttons",
       "  'defaultOption' => 'yes',",
       "],"
     ]
@@ -296,7 +302,7 @@
     "prefix": "rmf-repeater",
     "body": [
       "$1 => [",
-      "  'label' => 'Repeater Label',",
+      "  'label' => '$2',",
       "  'type' => 'FieldtypeRepeater',",
       "  'fields' => [",
       "    'title',",
