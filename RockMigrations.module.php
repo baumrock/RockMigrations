@@ -14,11 +14,19 @@ use Symfony\Component\Yaml\Yaml;
 use TracyDebugger;
 
 /**
+ * Provide access to RockMigrations
+ * @return RockMigrations
+ */
+function rockmigrations(): RockMigrations
+{
+  return wire()->modules->get('RockMigrations');
+}
+
+/**
  * @author Bernhard Baumrock, 19.01.2022
  * @license MIT
  * @link https://www.baumrock.com
  */
-require_once "functions.php";
 class RockMigrations extends WireData implements Module, ConfigurableModule
 {
 
