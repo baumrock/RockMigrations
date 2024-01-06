@@ -138,12 +138,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->addHookAfter("Modules::install", $this, "migrateAfterModuleInstall");
     $this->addHookAfter("Page(template=admin)::render", $this, "addColorBar");
     $this->addHookBefore("InputfieldForm::render", $this, "addRmHints");
-    $this->addHookAfter("Modules::refresh", $this, "hookResetCache");
+    $this->addHookAfter("Modules::refresh", $this, "hookModulesRefresh");
 
     // other actions on init()
     $this->loadFilesOnDemand();
-    $this->syncSnippets();
-    $this->addXdebugLauncher();
   }
 
   private function loadTweaks()
@@ -982,7 +980,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Add xdebug launcher file for DDEV to PW root
    */
-  public function addXdebugLauncher()
+  private function addXdebugLauncher()
   {
     if (!$this->addXdebugLauncher) return;
     $src = __DIR__ . "/.vscode/launch.json";
@@ -1018,11 +1016,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Get data from cache that is automatically recreated on Modules::refresh
    *
+   * For development/debugging you can set $debug = true to always get the
+   * non-cached value from the callback.
+   *
    * Usage:
    * $rm->cache("my-cache", function() { return date("H:i:s"); });
    */
-  public function cache(string $name, callable $create)
+  public function cache(string $name, callable $create, $debug = false)
   {
+    if ($debug) $this->wire->cache->delete($name);
     $val = $this->wire->cache->get($name, $create);
     $this->cacheDelete .= ",$name";
     return $val;
@@ -1301,6 +1303,41 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'rockfrontend-alfred',
     ], $permissions ?: []);
     return $this->createRole($name, $permissions);
+  }
+
+  /**
+   * Create snippet files for .vscode folder
+   */
+  private function createSnippetfiles()
+  {
+    if (!$this->conf->syncSnippets) return;
+    if (!$this->wire->user->isSuperuser()) return;
+
+    $getJson = function (string $folder): string {
+      $files = $this->wire->files->find($folder);
+      $snippets = [];
+      foreach ($files as $file) {
+        $lines = file($file);
+        $name = substr(basename($file), 0, -4);
+        $description = trim(substr(array_shift($lines), 3));
+        $snippets[$name] = [
+          "prefix" => $name,
+          "body" => array_map("rtrim", $lines),
+          "description" => $description,
+        ];
+      }
+      return json_encode($snippets, JSON_PRETTY_PRINT);
+    };
+
+    $folders = glob(__DIR__ . "/snippets/*/");
+    foreach ($folders as $folder) {
+      $name = basename($folder);
+      $dir = $this->wire->config->paths->root . ".vscode";
+      $this->wire->files->filePutContents(
+        "$dir/$name.code-snippets",
+        $getJson($folder),
+      );
+    }
   }
 
   /**
@@ -2299,12 +2336,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Delete all caches that have been added via $rm->cache(...);
+   * Actions to perform on modules refresh
    */
-  protected function hookResetCache(HookEvent $event): void
+  protected function hookModulesRefresh(HookEvent $event): void
   {
+    // delete all RM caches
     $caches = array_filter(explode(",", $this->cacheDelete));
     foreach ($caches as $name) $this->wire->cache->delete($name);
+
+    // other actions
+    $this->addXdebugLauncher();
+    $this->createSnippetfiles();
   }
 
   /**
@@ -4769,22 +4811,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $su = $this->wire->users->get("sort=id,roles=$role");
     if (!$su->id) return $this->log("No superuser found");
     $this->wire->users->setCurrentUser($su);
-  }
-
-  /**
-   * Sync snippets
-   */
-  private function syncSnippets()
-  {
-    if (!$this->conf->syncSnippets) return;
-    $this->fileSync(
-      "/.vscode/RockMigrations.code-snippets",
-      __DIR__ . "/.vscode/RockMigrations.code-snippets"
-    );
-    $this->fileSync(
-      "/.vscode/ProcessWire.code-snippets",
-      __DIR__ . "/.vscode/ProcessWire.code-snippets"
-    );
   }
 
   /**

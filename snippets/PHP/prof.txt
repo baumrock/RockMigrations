@@ -1,0 +1,5 @@
+// Add a protected method
+protected function $1($2): ${3:void}
+{
+  $0
+}

@@ -1,0 +1,2 @@
+// ProcessWire 404 Exception
+throw new Wire404Exception("$1");

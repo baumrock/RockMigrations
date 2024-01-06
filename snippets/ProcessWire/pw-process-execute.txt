@@ -1,0 +1,18 @@
+// ProcessModule Execute Method Boilerplate
+/**
+ * $0
+ */
+public function execute$1() {
+  \$this->headline('$2');
+  \$this->browserTitle('$2');
+  /** @var InputfieldForm \$form */
+  \$form = \$this->wire->modules->get('InputfieldForm');
+
+  \$form->add([
+    'type' => 'markup',
+    'label' => 'foo',
+    'value' => 'bar',
+  ]);
+
+  return \$form->render();
+}

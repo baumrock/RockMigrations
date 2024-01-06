@@ -1,0 +1,5 @@
+// Add a public method
+public function $1($2): ${3:void}
+{
+  $0
+}

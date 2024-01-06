@@ -1,0 +1,7 @@
+// Add a textarea field via RockMigrations
+$1 => [
+  'type' => 'textarea',
+  'label' => '$3',
+  'rows' => ${4:5},
+  'icon' => '${5:align-left}',
+],

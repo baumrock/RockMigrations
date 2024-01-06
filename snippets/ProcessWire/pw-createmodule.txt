@@ -1,0 +1,29 @@
+// Regular Module Boilerplate
+${0:// info snippet}
+class ${1:Classname} extends WireData implements Module, ConfigurableModule {
+
+  public static function getModuleInfo() {
+    return [
+      'title' => '${1:Classname}',
+      'version' => '0.0.1',
+      'summary' => '${3:Your module description}',
+      'autoload' => ${4:true},
+      'singular' => ${5:true},
+      'icon' => '${6:smile-o}',
+      'requires' => [],
+      'installs' => [],
+    ];
+  }
+
+  public function init() {
+  }
+
+  /**
+   * Config inputfields
+   * @param InputfieldWrapper \$inputfields
+   */
+  public function getModuleConfigInputfields(\$inputfields) {
+    return \$inputfields;
+  }
+
+}

@@ -1,0 +1,9 @@
+// rmf-url
+$1 => [
+  'type' => 'URL',
+  'label' => '$3',
+  'icon' => 'link',
+  'textformatters' => [
+    'TextformatterEntities',
+  ],
+],
