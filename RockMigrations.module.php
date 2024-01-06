@@ -50,6 +50,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   const oneMonth = self::oneDay * 30;
   const oneYear = self::oneDay * 365;
 
+  private $cacheDelete = "";
+
   /** @var WireData */
   public $conf;
 
@@ -136,6 +138,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->addHookAfter("Modules::install", $this, "migrateAfterModuleInstall");
     $this->addHookAfter("Page(template=admin)::render", $this, "addColorBar");
     $this->addHookBefore("InputfieldForm::render", $this, "addRmHints");
+    $this->addHookAfter("Modules::refresh", $this, "hookResetCache");
 
     // other actions on init()
     $this->loadFilesOnDemand();
@@ -1010,6 +1013,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function basename($file)
   {
     return basename($this->filePath($file));
+  }
+
+  /**
+   * Get data from cache that is automatically recreated on Modules::refresh
+   *
+   * Usage:
+   * $rm->cache("my-cache", function() { return date("H:i:s"); });
+   */
+  public function cache(string $name, callable $create)
+  {
+    $val = $this->wire->cache->get($name, $create);
+    $this->cacheDelete .= ",$name";
+    return $val;
   }
 
   /**
@@ -2280,6 +2296,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->wire->session->redirect(
       $this->wire->pages->get($loginID)->url
     );
+  }
+
+  /**
+   * Delete all caches that have been added via $rm->cache(...);
+   */
+  protected function hookResetCache(HookEvent $event): void
+  {
+    $caches = array_filter(explode(",", $this->cacheDelete));
+    foreach ($caches as $name) $this->wire->cache->delete($name);
   }
 
   /**
@@ -3565,7 +3590,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * Reset "lastrun" cache to force migrations
    * @return void
    */
-  public function resetCache(HookEvent $event)
+  public function resetCache()
   {
     $this->updateLastrun(0);
   }
