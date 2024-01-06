@@ -1,17 +1,6 @@
-// // fix language tabs sometimes not having the correct language
-// // todo make that a selectable tweak
-// $(window).on("load", () => {
-//   if (typeof ProcessWire == "undefined") return;
-//   if (typeof ProcessWire.config == "undefined") return;
-//   if (typeof ProcessWire.config.rmUserLang == "undefined") return;
-//   let lang = ProcessWire.config.rmUserLang;
-//   setTimeout(() => {
-//     let tabs = $(".langTab" + lang);
-//     if (!tabs.length) return;
-//     tabs.trigger("click");
-//     console.log("LanguageTabs set via RockMigrations");
-//   }, 200);
-// });
+/**
+ * This file is loaded in the PW backend
+ */
 
 // add tooltips in the backend
 $(document).ready(() => {
@@ -28,5 +17,34 @@ $(document).ready(() => {
     ".rm-hints input[name], .rm-hints textarea[name], .rm-hints select[name]"
   ).each((i, el) => {
     addTooltip(el);
+  });
+});
+
+// copy page id and template name on click (if tweaks are enabled)
+$(document).on("mousedown", ".PageListTemplate, .PageListId", (e) => {
+  if (!e.shiftKey) return;
+  let el = e.target;
+
+  // trim content
+  let contentToCopy = $(el).text().trim();
+  if (contentToCopy.startsWith("#")) {
+    contentToCopy = contentToCopy.substring(1);
+  }
+  if (contentToCopy.startsWith("[") && contentToCopy.endsWith("]")) {
+    contentToCopy = contentToCopy.substring(1, contentToCopy.length - 1);
+  }
+
+  // copy to clipboard
+  const textarea = document.createElement("textarea");
+  textarea.value = contentToCopy;
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  document.body.removeChild(textarea);
+
+  // show notification
+  UIkit.tooltip(el).hide();
+  UIkit.notification("Copied " + contentToCopy + " to clipboard", {
+    status: "success",
   });
 });
