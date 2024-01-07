@@ -1,20 +1,16 @@
-# [3.34.0](https://github.com/baumrock/RockMigrations/compare/v3.33.0...v3.34.0) (2024-01-03)
+## [3.35.0](https://github.com/baumrock/RockMigrations/compare/v3.34.0...v3.35.0) (2024-01-07)
 
 
-### Bug Fixes
+### Features
 
-* early exit if redirects are not populated ([65c4f52](https://github.com/baumrock/RockMigrations/commit/65c4f52b11eb724ef880fec865a6044beaf7da95))
-* empty fields array flipping field order ([56e8f99](https://github.com/baumrock/RockMigrations/commit/56e8f99f0e8f92235c704ae6112a4b877388edfb))
-* fix createPage resetting title ([07b0655](https://github.com/baumrock/RockMigrations/commit/07b06557d1af5e1f4c91e60e0fd48ca921ac80a6))
-* fix pageListLabel removing template icon from pagelist ([c0431c7](https://github.com/baumrock/RockMigrations/commit/c0431c7d1ead71508b80b4f1c8770b0bab5670e0))
-* fix redirect rules ([2225c3d](https://github.com/baumrock/RockMigrations/commit/2225c3d7b680bbd1b34d34bcb3fb6cedad0af18c))
-* fix wrong comment in snippet ([85c28fb](https://github.com/baumrock/RockMigrations/commit/85c28fb97411f2af1ab3c77d3911b777d3f77ccf))
-* prevent localName does not exist error ([48d28d6](https://github.com/baumrock/RockMigrations/commit/48d28d60df606434e0841cb5dab9d85b12c20781))
-* remove console.log() ([62cd687](https://github.com/baumrock/RockMigrations/commit/62cd687cd952c41503e808c1a7bf6cb7dd93df1d))
-* **RepeaterMatrix:** retain original field order ([17bc932](https://github.com/baumrock/RockMigrations/commit/17bc932fb28ed5cd4ed8385bf1e53b4953b495c2))
-* **RepeaterMatrix:** standardize fields array ([375700c](https://github.com/baumrock/RockMigrations/commit/375700c0ba5f2881bec463d6e0f88f77cf2f6250))
-* revert redirects from repeater to textarea ([0216cb3](https://github.com/baumrock/RockMigrations/commit/0216cb38d95ecf196ad24faebc1ce17d2dbc419c))
-* saveCSS triggering Livereload if $keepCSS = false ([d11675d](https://github.com/baumrock/RockMigrations/commit/d11675d31359862b275907dffd2f72f07c9fbd90))
+* add auto-load feature for custom page classes in modules ([accd253](https://github.com/baumrock/RockMigrations/commit/accd253bff1320299b498cb4b6b86bbb57c1b63a))
+* add cache() method ([56d5789](https://github.com/baumrock/RockMigrations/commit/56d57891a104ba37b97759e23aefb9efa4b512d7))
+* add copy to clipboard for pagelist id+tpl ([2e4a077](https://github.com/baumrock/RockMigrations/commit/2e4a077aa0c3bc41b4e26837793d6aed8515f125))
+* add snippets ([2ec759e](https://github.com/baumrock/RockMigrations/commit/2ec759e270fc760763364d49a5c20a14af20ab56))
+* create VSCode snippets from single files ([7dd15de](https://github.com/baumrock/RockMigrations/commit/7dd15ded83be0dee90c9c3ce0f6082db88ea5c48))
+* move settings macro to dedicated RockSettings module ([6aa8e80](https://github.com/baumrock/RockMigrations/commit/6aa8e8064fcf1be014dee8d75c9280c1c5103763))
+
+## [3.34.0](https://github.com/baumrock/RockMigrations/compare/v3.33.0...v3.34.0) (2024-01-03)
 
 
 ### Features
@@ -38,8 +34,29 @@
 * use minify only for superusers and on debug ([1214154](https://github.com/baumrock/RockMigrations/commit/1214154449b6bd777537cad6252db25ad8603d8a))
 
 
+### Bug Fixes
 
-# [3.33.0](https://github.com/baumrock/RockMigrations/compare/v3.32.0...v3.33.0) (2023-12-03)
+* early exit if redirects are not populated ([65c4f52](https://github.com/baumrock/RockMigrations/commit/65c4f52b11eb724ef880fec865a6044beaf7da95))
+* empty fields array flipping field order ([56e8f99](https://github.com/baumrock/RockMigrations/commit/56e8f99f0e8f92235c704ae6112a4b877388edfb))
+* fix createPage resetting title ([07b0655](https://github.com/baumrock/RockMigrations/commit/07b06557d1af5e1f4c91e60e0fd48ca921ac80a6))
+* fix pageListLabel removing template icon from pagelist ([c0431c7](https://github.com/baumrock/RockMigrations/commit/c0431c7d1ead71508b80b4f1c8770b0bab5670e0))
+* fix redirect rules ([2225c3d](https://github.com/baumrock/RockMigrations/commit/2225c3d7b680bbd1b34d34bcb3fb6cedad0af18c))
+* fix wrong comment in snippet ([85c28fb](https://github.com/baumrock/RockMigrations/commit/85c28fb97411f2af1ab3c77d3911b777d3f77ccf))
+* prevent localName does not exist error ([48d28d6](https://github.com/baumrock/RockMigrations/commit/48d28d60df606434e0841cb5dab9d85b12c20781))
+* remove console.log() ([62cd687](https://github.com/baumrock/RockMigrations/commit/62cd687cd952c41503e808c1a7bf6cb7dd93df1d))
+* **RepeaterMatrix:** retain original field order ([17bc932](https://github.com/baumrock/RockMigrations/commit/17bc932fb28ed5cd4ed8385bf1e53b4953b495c2))
+* **RepeaterMatrix:** standardize fields array ([375700c](https://github.com/baumrock/RockMigrations/commit/375700c0ba5f2881bec463d6e0f88f77cf2f6250))
+* revert redirects from repeater to textarea ([0216cb3](https://github.com/baumrock/RockMigrations/commit/0216cb38d95ecf196ad24faebc1ce17d2dbc419c))
+* saveCSS triggering Livereload if $keepCSS = false ([d11675d](https://github.com/baumrock/RockMigrations/commit/d11675d31359862b275907dffd2f72f07c9fbd90))
+
+## [3.33.0](https://github.com/baumrock/RockMigrations/compare/v3.32.0...v3.33.0) (2023-12-03)
+
+
+### Features
+
+* add DelayedImageVariations to default profile ([a063964](https://github.com/baumrock/RockMigrations/commit/a063964635d19c64a69318470b25b75fde50c51d))
+* add keepCSS param in saveCSS method ([be46e16](https://github.com/baumrock/RockMigrations/commit/be46e1665e1930733cc192e833f895b2a42b2241))
+* add sql query snippet ([547f0ef](https://github.com/baumrock/RockMigrations/commit/547f0ef894c10938c076e3973279428093fbb057))
 
 
 ### Bug Fixes
@@ -51,16 +68,15 @@
 * title not updating when using createPage() ([147230c](https://github.com/baumrock/RockMigrations/commit/147230c614ddf1ac97c503e90338f7d652fdccee))
 * vscode links not working with latest vscode ([ec10745](https://github.com/baumrock/RockMigrations/commit/ec1074516641af2dd1f410be8c843d716ace1cf0))
 
+## [3.32.0](https://github.com/baumrock/RockMigrations/compare/v3.31.1...v3.32.0) (2023-11-02)
+
 
 ### Features
 
-* add DelayedImageVariations to default profile ([a063964](https://github.com/baumrock/RockMigrations/commit/a063964635d19c64a69318470b25b75fde50c51d))
-* add keepCSS param in saveCSS method ([be46e16](https://github.com/baumrock/RockMigrations/commit/be46e1665e1930733cc192e833f895b2a42b2241))
-* add sql query snippet ([547f0ef](https://github.com/baumrock/RockMigrations/commit/547f0ef894c10938c076e3973279428093fbb057))
-
-
-
-# [3.32.0](https://github.com/baumrock/RockMigrations/compare/v3.31.1...v3.32.0) (2023-11-02)
+* add CopyFieldNames tweak ([822b36b](https://github.com/baumrock/RockMigrations/commit/822b36bbd2bf7eca83a4293d4fcebf4f3e29a510))
+* add hideFromGuests() + preview password feature ([518788f](https://github.com/baumrock/RockMigrations/commit/518788f1bc33cf1ca2a661f52bcac4eac5300ec3))
+* improve PR from ivan to use internal refresh method ([0362f33](https://github.com/baumrock/RockMigrations/commit/0362f33fcf9bf72d19b9ef792c6a324119f2cdd4))
+* show current fileconfig on settings page ([4fbb444](https://github.com/baumrock/RockMigrations/commit/4fbb4448157f5cf4a77036f0de3174d2db4d8719))
 
 
 ### Bug Fixes
@@ -72,38 +88,10 @@
 * settings from config file not properly applied ([2aa8ea5](https://github.com/baumrock/RockMigrations/commit/2aa8ea508449efeb14f55c1fa146ed44653935b8))
 * tweak info icon falsely on new line ([d738b6b](https://github.com/baumrock/RockMigrations/commit/d738b6b34fe87a6f228f7b017f3b8a871fb1a426))
 
-
-### Features
-
-* add CopyFieldNames tweak ([822b36b](https://github.com/baumrock/RockMigrations/commit/822b36bbd2bf7eca83a4293d4fcebf4f3e29a510))
-* add hideFromGuests() + preview password feature ([518788f](https://github.com/baumrock/RockMigrations/commit/518788f1bc33cf1ca2a661f52bcac4eac5300ec3))
-* improve PR from ivan to use internal refresh method ([0362f33](https://github.com/baumrock/RockMigrations/commit/0362f33fcf9bf72d19b9ef792c6a324119f2cdd4))
-* show current fileconfig on settings page ([4fbb444](https://github.com/baumrock/RockMigrations/commit/4fbb4448157f5cf4a77036f0de3174d2db4d8719))
-
-
-
 ## [3.31.1](https://github.com/baumrock/RockMigrations/compare/v3.31.0...v3.31.1) (2023-10-09)
 
 
 ### Bug Fixes
 
 * PHP Warning: Invalid argument supplied for foreach() in RockMigrations.module.php:3510 ([bb24d33](https://github.com/baumrock/RockMigrations/commit/bb24d330e77cb2baceec9479f029580fce8ce5a9))
-
-
-
-# [3.31.0](https://github.com/baumrock/RockMigrations/compare/v3.30.0...v3.31.0) (2023-10-05)
-
-
-### Bug Fixes
-
-* docblock ([af3572e](https://github.com/baumrock/RockMigrations/commit/af3572ef772076b82c5c6a79103e1d1792190f42))
-* remove project-specific $rm->echo() ([b242f56](https://github.com/baumrock/RockMigrations/commit/b242f563f6830e55ba295d56b68d94b8a723bb58))
-* remove unused line ([070c28c](https://github.com/baumrock/RockMigrations/commit/070c28cdf288d6fb025c0f73532e696cdaefa428))
-
-
-### Features
-
-* add tweak to set all languages of new pages active by default ([98f9855](https://github.com/baumrock/RockMigrations/commit/98f98552d62922a54f9d7180d61575cf8c147d4d))
-
-
 
