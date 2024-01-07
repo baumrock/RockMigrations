@@ -1,0 +1,4 @@
+// Add a closing fieldset
+$1 . "_END" => [
+  'type' => 'FieldsetClose',
+],

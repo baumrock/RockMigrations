@@ -1,4 +1,8 @@
 // Regular Module Boilerplate
+<?php
+
+namespace ProcessWire;
+
 ${0:// info snippet}
 class ${1:Classname} extends WireData implements Module, ConfigurableModule {
 
