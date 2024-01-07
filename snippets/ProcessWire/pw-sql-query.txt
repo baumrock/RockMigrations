@@ -1,0 +1,5 @@
+// SQL Database Query
+// do proper sanitization!!!
+\$result = \$this->database->query("${1:SELECT * FROM pages LIMIT 5}");
+\$${2:foo} = \$result->fetchAll(\PDO::FETCH_OBJ);
+d(\$${2:foo});$0

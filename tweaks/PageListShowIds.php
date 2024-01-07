@@ -39,6 +39,6 @@ class PageListShowIds extends Tweak
 
     // regular page list
     $page = $event->arguments('page');
-    $event->return .= "<span class='PageListId'>#$page</span>";
+    $event->return .= "<span class='PageListId' title='Shift-Click to copy' uk-tooltip>#$page</span>";
   }
 }

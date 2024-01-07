@@ -39,6 +39,6 @@ class PageListShowTemplate extends Tweak
 
     // regular page list
     $page = $event->arguments('page');
-    $event->return .= "<span class='PageListTemplate'>[{$page->template}]</span>";
+    $event->return .= "<span class='PageListTemplate' title='Shift-Click to copy' uk-tooltip>[{$page->template}]</span>";
   }
 }

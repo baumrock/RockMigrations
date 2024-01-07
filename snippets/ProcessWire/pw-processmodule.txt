@@ -1,0 +1,48 @@
+// ProcessModule Boilerplate
+${0:// info snippet}
+class Process$1 extends Process {
+  public static function getModuleInfo() {
+    return [
+      'title' => '$2',
+      'version' => '${3:0.0.1}',
+      'summary' => '$4',
+      'icon' => '$5',
+      'requires' => [],
+      'installs' => [],
+
+      // name of permission required of users to execute this Process (optional)
+      'permission' => 'foo',
+      // permissions that you want automatically installed/uninstalled with this module (name => description)
+      'permissions' => ['foo' => 'May run the foo module'],
+
+      // page that you want created to execute this module
+      'page' => [
+        'name' => 'helloworld',
+        'parent' => 'setup',
+        'title' => 'Hello World'
+      ],
+
+      // optional extra navigation that appears in admin
+      // if you change this, you'll need to a Modules > Refresh to see changes
+      'nav' => [
+        [
+          'url' => '',
+          'label' => 'Hello',
+          'icon' => 'smile-o',
+        ],[
+          'url' => 'something/',
+          'label' => 'Something',
+          'icon' => 'beer',
+        ],
+      ]
+    ];
+  }
+
+  public function init() {
+    parent::init(); // always remember to call the parent init
+  }
+
+  public function execute() {
+    return "something";
+  }
+}

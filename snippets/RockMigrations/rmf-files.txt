@@ -1,0 +1,10 @@
+// Add a files field via RockMigrations
+$1 => [
+  'type' => 'file',
+  'label' => '$2',
+  'maxFiles' => $4,
+  'descriptionRows' => $5,
+  'extensions' => '${6:mp4 pdf xlsx}',
+  'icon' => 'files-o',
+  'outputFormat' => FieldtypeFile::outputFormatArray,
+],

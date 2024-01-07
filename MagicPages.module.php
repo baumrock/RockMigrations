@@ -11,6 +11,8 @@ use ProcessWire\WireArray;
 use ProcessWire\WireData;
 use ReflectionClass;
 
+use function ProcessWire\rockmigrations;
+
 class MagicPages extends WireData implements Module
 {
 
@@ -34,17 +36,37 @@ class MagicPages extends WireData implements Module
     ];
   }
 
+  /** special methods */
+
   public function __construct()
   {
     if ($this->wire->config->useMagicPages === 0) return;
     if ($this->wire->config->useMagicPages === false) return;
-    $this->wire->addHookAfter("ProcessWire::init", function () {
-      // note: must be wirearray, not pagearray
-      // pagearray does not allow adding multiple pages with id=0
-      $this->readyClasses = $this->wire(new WireArray());
+    $this->wire->addHookAfter("ProcessWire::init", $this, "pwInit");
+  }
 
-      // get magic templates from cache
-      $templates = $this->wire->cache->get('magic-templates', function () {
+  public function init()
+  {
+    $this->wire->addHookAfter("ProcessPageEdit::buildForm", $this, "addPageAssets");
+  }
+
+  public function ready()
+  {
+    $ready = $this->readyClasses ?: []; // prevents error on uninstall
+    foreach ($ready as $p) $p->ready();
+  }
+
+  protected function pwInit(): void
+  {
+    // note: must be wirearray, not pagearray
+    // pagearray does not allow adding multiple pages with id=0
+    $this->readyClasses = $this->wire(new WireArray());
+    $rm = rockmigrations();
+
+    // get magic templates from cache
+    $templates = $rm->cache(
+      "magic-templates",
+      function () {
         $templates = [];
         foreach ($this->wire->templates as $tpl) {
           $p = $this->wire->pages->newPage(['template' => $tpl]);
@@ -53,37 +75,25 @@ class MagicPages extends WireData implements Module
           $templates[] = $tpl->name;
         }
         return $templates;
-      });
+      },
+    );
 
-      // autoload magic templates
-      foreach ($templates as $tpl) {
-        $p = $this->wire->pages->newPage(['template' => $tpl]);
-        if (!property_exists($p, "isMagicPage") || !$p->isMagicPage) {
-          // cache is outdated, recreate it
-          $this->wire->cache->delete('magic-templates');
-          continue;
-        }
-        if (method_exists($p, 'init')) $p->init();
-        if (method_exists($p, 'ready')) $this->readyClasses->add($p);
-        $this->rockmigrations()->watch($p, method_exists($p, 'migrate'));
-        $this->addMagicMethods($p);
+    // autoload magic templates
+    foreach ($templates as $tpl) {
+      $p = $this->wire->pages->newPage(['template' => $tpl]);
+      if (!property_exists($p, "isMagicPage") || !$p->isMagicPage) {
+        // cache is outdated, recreate it
+        $this->wire->cache->delete('magic-templates');
+        continue;
       }
-    });
+      if (method_exists($p, 'init')) $p->init();
+      if (method_exists($p, 'ready')) $this->readyClasses->add($p);
+      $this->rockmigrations()->watch($p, method_exists($p, 'migrate'));
+      $this->addMagicMethods($p);
+    }
   }
 
-  public function init()
-  {
-    $this->wire->addHookAfter("ProcessPageEdit::buildForm", $this, "addPageAssets");
-    $this->wire->addHookAfter("Modules::refresh", function () {
-      $this->wire->cache->delete('magic-templates');
-    });
-  }
-
-  public function ready()
-  {
-    $ready = $this->readyClasses ?: []; // prevents error on uninstall
-    foreach ($ready as $p) $p->ready();
-  }
+  /** regular methods */
 
   /**
    * Attach magic field methods
@@ -298,7 +308,7 @@ class MagicPages extends WireData implements Module
   {
     $page = $event->process->getPage();
     $path = $this->getFilePath($page);
-    $rm = $this->rockmigrations();
+    $rm = rockmigrations();
 
     // is the asset stored in /site/classes ?
     // then move it to /site/assets because /site/classes is blocked by htaccess
@@ -321,8 +331,8 @@ class MagicPages extends WireData implements Module
         }
 
         // add asset to backend
-        if ($ext == 'css') $this->rockmigrations()->addStyles($cache);
-        elseif ($ext == 'js') $this->rockmigrations()->addScripts($cache);
+        if ($ext == 'css') $rm->addStyles($cache);
+        elseif ($ext == 'js') $rm->addScripts($cache);
       }
     }
     // now we have an assets from a pageclass inside a module (for example)
@@ -330,8 +340,8 @@ class MagicPages extends WireData implements Module
       foreach (['css', 'js'] as $ext) {
         // add asset to backend
         $file = substr($path, 0, -3) . $ext;
-        if ($ext == 'css') $this->rockmigrations()->addStyles($file);
-        elseif ($ext == 'js') $this->rockmigrations()->addScripts($file);
+        if ($ext == 'css') $rm->addStyles($file);
+        elseif ($ext == 'js') $rm->addScripts($file);
       }
     }
   }

@@ -1,0 +1,15 @@
+// Create a custom pageclass using magicpages
+<?php
+
+namespace ProcessWire;
+
+use RockMigrations\MagicPage;
+
+class $1Page extends ${2:Page}
+{
+  use MagicPage;
+
+  const tpl='$3';
+  const prefix='$3_';
+  $0
+}

@@ -1,0 +1,4 @@
+// Load a processwire module
+/** @var $1 $$2 */
+$$2 = wire()->modules->get('$1');
+$$2$0
