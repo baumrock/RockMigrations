@@ -3310,7 +3310,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // make PW autoload all files in given path
     $namespace = $module->className();
-    $this->wire->classLoader->addNamespace($namespace, $module->pageClassPath);
+    $module->pageClassPath = $path;
+    $this->wire->classLoader->addNamespace($namespace, $path);
 
     // create templates for all files
     $files = $this->pageClassFiles($module);
