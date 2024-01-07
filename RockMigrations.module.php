@@ -130,6 +130,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->watch($config->paths->site . "migrate", 9999);
     $this->watchModules();
 
+    // add pageClassLoaders for all installed modules
+    foreach ($this->wire->modules as $module) {
+      $this->pageClassLoader($module, "pageClasses");
+    }
+
     // hooks
     $this->addHookAfter("Modules::refresh", $this, "triggerMigrations");
     $this->addHookBefore("InputfieldForm::render", $this, "showEditInfo");
@@ -177,7 +182,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   public function ready()
   {
-    $this->addSettingsRedirects();
     $this->hideFromGuests();
     $this->forceMigrate();
 
@@ -877,36 +881,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Add hooks for short-url feature on settings page
-   */
-  private function addSettingsRedirects(): void
-  {
-    // no settings template --> exit
-    if (!$this->getTemplate('settings', 'true')) return;
-
-    // reset cache if field was saved
-    if (
-      $this->wire->page->id === 10 // page edit
-      && $data = $this->wire->input->post('settings_redirects')
-    ) {
-      $data = $this->parseRedirects($data);
-      $this->wire->cache->save('settings-redirects', $data);
-      $this->message("Saved " . count($data) . " redirect rules to cache");
-    }
-
-    // get redirects from cache
-    $redirects = $this->wire->cache->get('settings-redirects');
-    if (!is_array($redirects)) return;
-
-    // add redirect hook for every item
-    foreach ($redirects as $from => $to) {
-      $this->wire->addHook("/$from", function (HookEvent $event) use ($to) {
-        $event->wire->session->redirect($to);
-      });
-    }
-  }
-
-  /**
    * Add the possibility to add success messages on inputfields
    */
   private function addSuccessMessageFeature()
@@ -1348,13 +1322,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *   'fields' => ['foo', 'bar'],
    * ]);
    *
+   * Usage with custom page class in a module:
+   * $rm->createTemplate('foo', '\MyModule\FooPage');
+   *
    * @param string $name
-   * @param bool|array $data
+   * @param bool|array|string $data
    * @param bool $migrate
    * @return Template
    */
   public function createTemplate($name, $data = false, $migrate = true)
   {
+    $pageClass = false;
+    if (is_string($data)) $pageClass = $data;
+    elseif (is_array($data) and array_key_exists("pageClass", $data)) {
+      $pageClass = $data['pageClass'];
+    }
+
     // quietly get the template
     // it is quiet to prevent "template xx not found" logs
     $t = $this->getTemplate($name, true);
@@ -1368,6 +1351,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $t = $this->wire(new Template());
       $t->name = $name;
       $t->fieldgroup = $fg;
+      if ($pageClass) $t->pageClass = $pageClass;
       $t->save();
 
       if ($migrate) {
@@ -1377,6 +1361,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       }
     }
 
+    // now that the template exists we can set provided data
     // handle different types of second parameter
     if (is_bool($data)) {
       // add title field to this template if second param = TRUE
@@ -2184,6 +2169,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $permission = $this->permissions->get((string)$data);
     if ($permission and $permission->id) return $permission;
     if (!$quiet) $this->log("Permission $data not found");
+    return false;
+  }
+
+  /**
+   * Get repeater template for given field
+   */
+  public function getRepeaterTemplate(Field|string|int $field, $quiet = false): Template|false
+  {
+    $field = $this->getField($field, $quiet);
+    if ($field) return $field->type->getRepeaterTemplate($field);
     return false;
   }
 
@@ -3311,11 +3306,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $file = $this->wire->modules->getModuleFile($module);
     $path = $this->path(dirname($file) . "/" . $folder, true);
-    $namespace = $module->className();
-    $module->pageClassPath = $path;
+    if (!is_dir($path)) return;
 
     // make PW autoload all files in given path
-    $this->wire->classLoader->addNamespace($namespace, $path);
+    $namespace = $module->className();
+    $this->wire->classLoader->addNamespace($namespace, $module->pageClassPath);
 
     // create templates for all files
     $files = $this->pageClassFiles($module);
