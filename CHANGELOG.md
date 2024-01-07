@@ -1,3 +1,10 @@
+## [3.35.1](https://github.com/baumrock/RockMigrations/compare/v3.35.0...v3.35.1) (2024-01-07)
+
+
+### Bug Fixes
+
+* too much refactoring :D ([e816cea](https://github.com/baumrock/RockMigrations/commit/e816cea53a02eb7f14e321a8dd2ba6219c421261))
+
 ## [3.35.0](https://github.com/baumrock/RockMigrations/compare/v3.34.0...v3.35.0) (2024-01-07)
 
 
@@ -87,11 +94,4 @@
 * rewrite setPageNameFromField method ([dbd900e](https://github.com/baumrock/RockMigrations/commit/dbd900ec28b7feb6080e8f63711503ed0db0b58f))
 * settings from config file not properly applied ([2aa8ea5](https://github.com/baumrock/RockMigrations/commit/2aa8ea508449efeb14f55c1fa146ed44653935b8))
 * tweak info icon falsely on new line ([d738b6b](https://github.com/baumrock/RockMigrations/commit/d738b6b34fe87a6f228f7b017f3b8a871fb1a426))
-
-## [3.31.1](https://github.com/baumrock/RockMigrations/compare/v3.31.0...v3.31.1) (2023-10-09)
-
-
-### Bug Fixes
-
-* PHP Warning: Invalid argument supplied for foreach() in RockMigrations.module.php:3510 ([bb24d33](https://github.com/baumrock/RockMigrations/commit/bb24d330e77cb2baceec9479f029580fce8ce5a9))
 
