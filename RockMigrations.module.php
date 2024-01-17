@@ -3308,8 +3308,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $path = $this->path(dirname($file) . "/" . $folder, true);
     if (!is_dir($path)) return;
 
-    // make PW autoload all files in given path
+    // module name must match folder name
+    // this is to prevent ProcessRockCommerce loading pageclasses
     $namespace = $module->className();
+    $folder = basename(dirname($file));
+    if ($namespace !== $folder) return;
+
+    // make PW autoload all files in given path
     $module->pageClassPath = $path;
     $this->wire->classLoader->addNamespace($namespace, $path);
 
