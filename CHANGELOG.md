@@ -1,3 +1,10 @@
+## [3.35.2](https://github.com/baumrock/RockMigrations/compare/v3.35.1...v3.35.2) (2024-01-17)
+
+
+### Bug Fixes
+
+* migration hints messing up the fields selector field ([a1d16c2](https://github.com/baumrock/RockMigrations/commit/a1d16c285a25ab4c10f60774a26a02d367aef02f))
+
 ## [3.35.1](https://github.com/baumrock/RockMigrations/compare/v3.35.0...v3.35.1) (2024-01-07)
 
 
@@ -74,24 +81,4 @@
 * ready() not triggered in magicpages ([f4f09bc](https://github.com/baumrock/RockMigrations/commit/f4f09bcba34f4cfa7078bc94cd5a99589f923f49))
 * title not updating when using createPage() ([147230c](https://github.com/baumrock/RockMigrations/commit/147230c614ddf1ac97c503e90338f7d652fdccee))
 * vscode links not working with latest vscode ([ec10745](https://github.com/baumrock/RockMigrations/commit/ec1074516641af2dd1f410be8c843d716ace1cf0))
-
-## [3.32.0](https://github.com/baumrock/RockMigrations/compare/v3.31.1...v3.32.0) (2023-11-02)
-
-
-### Features
-
-* add CopyFieldNames tweak ([822b36b](https://github.com/baumrock/RockMigrations/commit/822b36bbd2bf7eca83a4293d4fcebf4f3e29a510))
-* add hideFromGuests() + preview password feature ([518788f](https://github.com/baumrock/RockMigrations/commit/518788f1bc33cf1ca2a661f52bcac4eac5300ec3))
-* improve PR from ivan to use internal refresh method ([0362f33](https://github.com/baumrock/RockMigrations/commit/0362f33fcf9bf72d19b9ef792c6a324119f2cdd4))
-* show current fileconfig on settings page ([4fbb444](https://github.com/baumrock/RockMigrations/commit/4fbb4448157f5cf4a77036f0de3174d2db4d8719))
-
-
-### Bug Fixes
-
-* empty previewPassword causes no redirect ([c74596f](https://github.com/baumrock/RockMigrations/commit/c74596ff03c96c6b19fe4664ff828bf3c242e34b))
-* installModule() does not actually install the module when run the 1st time, but only downloads it [#29](https://github.com/baumrock/RockMigrations/issues/29) ([ce59d2d](https://github.com/baumrock/RockMigrations/commit/ce59d2d6414f3c410bf2275b2641caaf28bf8e1b))
-* move livereload settings back to RockFrontend ([37eb50c](https://github.com/baumrock/RockMigrations/commit/37eb50cc9125a0568d74f0d9323b45ac163482b4))
-* rewrite setPageNameFromField method ([dbd900e](https://github.com/baumrock/RockMigrations/commit/dbd900ec28b7feb6080e8f63711503ed0db0b58f))
-* settings from config file not properly applied ([2aa8ea5](https://github.com/baumrock/RockMigrations/commit/2aa8ea508449efeb14f55c1fa146ed44653935b8))
-* tweak info icon falsely on new line ([d738b6b](https://github.com/baumrock/RockMigrations/commit/d738b6b34fe87a6f228f7b017f3b8a871fb1a426))
 
