@@ -1,3 +1,10 @@
+## [3.35.3](https://github.com/baumrock/RockMigrations/compare/v3.35.2...v3.35.3) (2024-01-17)
+
+
+### Bug Fixes
+
+* add check for title field flag after each run() ([2930675](https://github.com/baumrock/RockMigrations/commit/293067549744e6229ab9ad5e838690a90957e30d))
+
 ## [3.35.2](https://github.com/baumrock/RockMigrations/compare/v3.35.1...v3.35.2) (2024-01-17)
 
 
@@ -62,23 +69,4 @@
 * **RepeaterMatrix:** standardize fields array ([375700c](https://github.com/baumrock/RockMigrations/commit/375700c0ba5f2881bec463d6e0f88f77cf2f6250))
 * revert redirects from repeater to textarea ([0216cb3](https://github.com/baumrock/RockMigrations/commit/0216cb38d95ecf196ad24faebc1ce17d2dbc419c))
 * saveCSS triggering Livereload if $keepCSS = false ([d11675d](https://github.com/baumrock/RockMigrations/commit/d11675d31359862b275907dffd2f72f07c9fbd90))
-
-## [3.33.0](https://github.com/baumrock/RockMigrations/compare/v3.32.0...v3.33.0) (2023-12-03)
-
-
-### Features
-
-* add DelayedImageVariations to default profile ([a063964](https://github.com/baumrock/RockMigrations/commit/a063964635d19c64a69318470b25b75fde50c51d))
-* add keepCSS param in saveCSS method ([be46e16](https://github.com/baumrock/RockMigrations/commit/be46e1665e1930733cc192e833f895b2a42b2241))
-* add sql query snippet ([547f0ef](https://github.com/baumrock/RockMigrations/commit/547f0ef894c10938c076e3973279428093fbb057))
-
-
-### Bug Fixes
-
-* createPage() triggering page save all the time ([456c0b1](https://github.com/baumrock/RockMigrations/commit/456c0b1449a8b15d3a4b715bbfe39a4bc734f1e0))
-* dont add page id + template in dropdown menu ([0730ee3](https://github.com/baumrock/RockMigrations/commit/0730ee300bcb87d383bdfae647442834def63c47))
-* is_file() causing error when $path is null ([7e64380](https://github.com/baumrock/RockMigrations/commit/7e643806c3bf8feb5b04b766c20e962521c4f74b))
-* ready() not triggered in magicpages ([f4f09bc](https://github.com/baumrock/RockMigrations/commit/f4f09bcba34f4cfa7078bc94cd5a99589f923f49))
-* title not updating when using createPage() ([147230c](https://github.com/baumrock/RockMigrations/commit/147230c614ddf1ac97c503e90338f7d652fdccee))
-* vscode links not working with latest vscode ([ec10745](https://github.com/baumrock/RockMigrations/commit/ec1074516641af2dd1f410be8c843d716ace1cf0))
 
