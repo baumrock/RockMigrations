@@ -3430,34 +3430,33 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * @param Field|string $field
    * @param Template|string $template
-   * @param bool $force
    * @return void
    */
-  public function removeFieldFromTemplate($field, $template, $force = false)
+  public function removeFieldFromTemplate($field, $template)
   {
     $field = $this->getField($field);
     if (!$field) return;
     $template = $this->getTemplate($template);
     if (!$template) return;
 
-    $fg = $template->fieldgroup;
     /** @var Fieldgroup $fg */
-    if ($force) $field->flags = 0;
+    $fg = $template->fieldgroup;
 
     // if field is already removed we exit silently
     if (!$fg->get($field->name)) return;
 
     $fg->remove($field);
     $fg->save();
+
     $this->log("Removed field $field from template $template");
   }
 
   /**
    * See method above
    */
-  public function removeFieldsFromTemplate($fields, $template, $force = false)
+  public function removeFieldsFromTemplate($fields, $template)
   {
-    foreach ($fields as $field) $this->removeFieldFromTemplate($field, $template, $force);
+    foreach ($fields as $field) $this->removeFieldFromTemplate($field, $template);
   }
 
   /**
@@ -4255,8 +4254,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $name = (string)$field;
       if (!in_array($name, $names)) {
         // remove this field from the template
-        // global fields like the title field are also removed
-        $this->removeFieldFromTemplate($name, $template, true);
+        // note that this does not remove global fields unless the template
+        // has the noGlobal=1 flag. This is to prevent this error:
+        // https://processwire.com/talk/topic/29462-no-title-field-with-add-new-page-in-pw-anymore-after-hidetitle-true/#comment-238542
+        $this->removeFieldFromTemplate($name, $template);
       }
     }
   }
