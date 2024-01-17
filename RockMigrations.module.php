@@ -51,6 +51,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   const oneYear = self::oneDay * 365;
 
   private $cacheDelete = "";
+  private $cacheDeleteOnSave = "";
 
   /** @var WireData */
   public $conf;
@@ -144,6 +145,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->addHookAfter("Page(template=admin)::render", $this, "addColorBar");
     $this->addHookBefore("InputfieldForm::render", $this, "addRmHints");
     $this->addHookAfter("Modules::refresh", $this, "hookModulesRefresh");
+    $this->addHookAfter("Pages::saved", $this, "resetCachesOnSave");
 
     // other actions on init()
     $this->loadFilesOnDemand();
@@ -1050,8 +1052,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * Usage:
    * $rm->cache("my-cache", function() { return date("H:i:s"); });
    */
-  public function cache(string $name, callable $create, $debug = false)
-  {
+  public function cache(
+    string $name,
+    callable $create,
+    $debug = false,
+    bool $deleteOnSave = false,
+  ) {
     // when used from the cli we always return a fresh version of the callback
     // this is to make sure on deployment we always get the latest version of
     // data so that we don't get missing dependency errors in autoloadClasses()
@@ -1059,6 +1065,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($debug) $this->wire->cache->delete($name);
     $val = $this->wire->cache->get($name, $create);
     $this->cacheDelete .= ",$name";
+    $this->cacheDeleteOnSave .= ",$name";
     return $val;
   }
 
@@ -3693,6 +3700,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function resetCache()
   {
     $this->updateLastrun(0);
+  }
+
+  protected function resetCachesOnSave(HookEvent $event): void
+  {
+    // delete all RM caches that should be cleard on every page save
+    $caches = array_filter(explode(",", $this->cacheDeleteOnSave));
+    foreach ($caches as $name) $this->wire->cache->delete($name);
   }
 
   /**
