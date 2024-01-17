@@ -1037,22 +1037,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Temporary method to narrow down this issue:
-   * https://processwire.com/talk/topic/29462-no-title-field-with-add-new-page-in-pw-anymore-after-hidetitle-true/
-   * @return void
-   * @throws WireException
-   */
-  private function checkTitleFieldFlag(): void
-  {
-    $field = $this->wire->fields->get('title');
-    if ($field->flags !== 13) {
-      $this->log($field->_rockmigrations_log);
-      $this->log(Debug::backtrace());
-      $this->error("Title field lost global flag! Error has been logged - please report it here: https://processwire.com/talk/topic/29462-no-title-field-with-add-new-page-in-pw-anymore-after-hidetitle-true/");
-    }
-  }
-
-  /**
    * Create a field of the given type
    *
    * If run multiple times it will only update field data.
@@ -3670,7 +3654,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->sudo();
     $this->wire->cache->delete('magic-templates');
     $this->migrateWatchfiles(true);
-    $this->checkTitleFieldFlag();
     $this->wire->users->setCurrentUser($user);
   }
 
