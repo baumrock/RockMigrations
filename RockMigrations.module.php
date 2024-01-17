@@ -83,6 +83,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /** @var string */
   public $path;
 
+  private $readyClasses = [];
+
   /** @var WireArray */
   private $watchlist;
 
@@ -130,10 +132,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->watch($config->paths->site . "migrate", 9999);
     $this->watchModules();
 
-    // add pageClassLoaders for all installed modules
-    foreach ($this->wire->modules as $module) {
-      $this->pageClassLoader($module, "pageClasses");
-    }
+    // autoload pageclasses and repeater pageclasses
+    $this->autoloadClasses();
 
     // hooks
     $this->addHookAfter("Modules::refresh", $this, "triggerMigrations");
@@ -191,6 +191,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // trigger ready() of tweaks
     foreach ($this->tweaks->find("enabled=1") as $tweak) $tweak->ready();
+
+    // trigger ready() of repeater pageclasses
+    foreach ($this->readyClasses as $class) $class->ready();
 
     // load RockMigrations.js on backend
     if ($this->wire->page->template == 'admin') {
@@ -976,6 +979,56 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $file = "$path/$name.php";
       if (is_file($file)) require_once($file);
     });
+  }
+
+  /**
+   * Autoload classes and traits inside your module's directory
+   * This will load all php classes in the following folders:
+   * /site/modules/MyModule/classLoader
+   * /site/modules/MyModule/pageClasses
+   * /site/modules/MyModule/repeaterPageClasses
+   */
+  public function autoloadClasses(): void
+  {
+    // add classloader for all autoloadClasses folders
+    // load dirs from cache for better performance
+    $dirs = $this->cache("autoload-classloader-classes", function () {
+      return glob($this->wire->config->paths->siteModules . "*/classLoader");
+    });
+    foreach ($dirs as $dir) {
+      $namespace = basename(dirname($dir));
+      $this->wire->classLoader->addNamespace($namespace, $dir);
+    }
+
+    // autoload regular pageclasses
+    foreach ($this->wire->modules as $module) {
+      if (!$module instanceof Module) continue;
+      $this->pageClassLoader($module, "pageClasses");
+    }
+
+    // autoload repeater pageclasses
+    // load classes from cache for better performance
+    $classes = $this->cache("autoload-repeater-pageclasses", function () {
+      $classes = [];
+      $dirs = glob($this->wire->config->paths->siteModules . "*/repeaterPageClasses");
+      foreach ($dirs as $dir) {
+        $classes[$dir] = glob("$dir/*.php");
+      }
+      return $classes;
+    }, true);
+    foreach ($classes as $dir => $files) {
+      $namespace = basename(dirname($dir));
+      $this->wire->classLoader->addNamespace($namespace, $dir);
+      foreach ($files as $file) {
+        $name = substr(basename($file), 0, -4);
+        $class = "\\$namespace\\$name";
+        $tmp = new $class();
+        $field = $this->wire->fields->get($tmp::field);
+        $field->type->setCustomPageClass($field, $class);
+        if (method_exists($tmp, "init")) $tmp->init();
+        if (method_exists($tmp, "ready")) $this->readyClasses[] = $tmp;
+      }
+    }
   }
 
   /**
