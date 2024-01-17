@@ -1015,7 +1015,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $classes[$dir] = glob("$dir/*.php");
       }
       return $classes;
-    }, true);
+    });
     foreach ($classes as $dir => $files) {
       $namespace = basename(dirname($dir));
       $this->wire->classLoader->addNamespace($namespace, $dir);
@@ -1024,6 +1024,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $class = "\\$namespace\\$name";
         $tmp = new $class();
         $field = $this->wire->fields->get($tmp::field);
+        if (!$field) continue;
         $field->type->setCustomPageClass($field, $class);
         if (method_exists($tmp, "init")) $tmp->init();
         if (method_exists($tmp, "ready")) $this->readyClasses[] = $tmp;
@@ -1051,6 +1052,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function cache(string $name, callable $create, $debug = false)
   {
+    // when used from the cli we always return a fresh version of the callback
+    // this is to make sure on deployment we always get the latest version of
+    // data so that we don't get missing dependency errors in autoloadClasses()
+    if ($this->isCLI()) $debug = true;
     if ($debug) $this->wire->cache->delete($name);
     $val = $this->wire->cache->get($name, $create);
     $this->cacheDelete .= ",$name";
@@ -3710,7 +3715,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $user = $this->wire->user;
     $this->sudo();
-    $this->wire->cache->delete('magic-templates');
     $this->migrateWatchfiles(true);
     $this->wire->users->setCurrentUser($user);
   }
