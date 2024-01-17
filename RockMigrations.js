@@ -16,6 +16,9 @@ $(document).ready(() => {
   $(
     ".rm-hints input[name], .rm-hints textarea[name], .rm-hints select[name]"
   ).each((i, el) => {
+    // don't add hints on asm select fields
+    // this is to fix this issue: https://processwire.com/talk/topic/29462-no-title-field-with-add-new-page-in-pw-anymore-after-hidetitle-true/?do=findComment&comment=238531
+    if (el.closest(".InputfieldAsmSelect")) return;
     addTooltip(el);
   });
 });
