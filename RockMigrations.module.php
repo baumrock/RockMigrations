@@ -4872,6 +4872,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Manually prevent publish of a page for non-superusers
+   *
+   * Usabe:
+   * $rm->preventPublish("id=1010|1012");
+   *
    * @return void
    */
   public function preventPublish(
