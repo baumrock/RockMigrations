@@ -4871,6 +4871,72 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Manually prevent publish of a page for non-superusers
+   * @return void
+   */
+  public function preventPublish(
+    Page|string|int $selector,
+    $allowForSuperusers = false,
+  ): void {
+    $sudo = $this->wire->user->isSuperuser();
+    $page = $this->wire->page;
+    if (!$page) {
+      if ($sudo) throw new WireException("Call preventPublish() on ready() so that \$page is available");
+      else return; // silent exit
+    }
+
+    // only on admin pages
+    if ($page->template != 'admin') return;
+    $preventPage = $this->wire->pages->get($selector);
+    if (!$preventPage->id) {
+      if ($sudo) throw new WireException("Page $selector not found");
+      else return; // silent exit
+    }
+
+    // allow publish for superusers
+    if ($sudo and $allowForSuperusers) return;
+
+    // Remove publish button and unpublished checkbox in Page Edit
+    $this->wire->addHookAfter(
+      'ProcessPageEdit::buildForm',
+      function (HookEvent $event) use ($selector) {
+        $form = $event->return;
+        $page = $event->object->getPage();
+        if (!$page->isUnpublished()) return;
+        if (!$page->matches($selector)) return;
+        $form->remove("submit_publish");
+      }
+    );
+
+    // Remove publish button from Page List
+    $this->wire->addHookAfter(
+      'ProcessPageListActions::getExtraActions',
+      function (HookEvent $event) use ($selector) {
+        $page = $event->arguments(0);
+        $extras = $event->return;
+        if (!$page->isUnpublished()) return;
+        if (!$page->matches($selector)) return;
+        unset($extras['pub']);
+        $event->return = $extras;
+      }
+    );
+
+    // There might still be the checkbox in the settings tab
+    // We can't remove it because this will always publish the page.
+    $trace = Debug::backtrace()[0]['file'];
+    $this->wire->addHookAfter(
+      "Pages::published",
+      function (HookEvent $event) use ($selector, $trace) {
+        $page = $event->arguments('page');
+        if (!$page->matches($selector)) return;
+        $page->addStatus(Page::statusUnpublished);
+        $page->save();
+        $this->error("Publishing page $selector not allowed by $trace");
+      }
+    );
+  }
+
+  /**
    * Trigger migrate() method if it exists
    */
   private function triggerMigrate($object, $silent = false): void
