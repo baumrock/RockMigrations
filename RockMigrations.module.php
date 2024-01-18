@@ -151,37 +151,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->loadFilesOnDemand();
   }
 
-  private function loadTweaks()
-  {
-    $path = __DIR__ . "/tweaks";
-    $options = ['extensions' => ['php']];
-    $tweaks = $this->wire(new WireArray());
-    foreach ($this->wire->files->find($path, $options) as $file) {
-      $tweak = $this->loadTweak($file);
-      $tweaks->add($tweak);
-      if ($tweak->enabled) $tweak->init();
-    }
-    $this->tweaks = $tweaks;
-  }
-
-  private function loadTweak($file)
-  {
-    require_once __DIR__ . "/Tweak.php";
-    require_once $file;
-    $base = pathinfo($file, PATHINFO_FILENAME);
-    $class = "\RockMigrations\Tweaks\\$base";
-    try {
-      $tweak = new $class();
-      $tweak->name = $base;
-      $tweak->enabled = in_array($base, (array)$this->enabledTweaks);
-      return $tweak;
-    } catch (\Throwable $th) {
-      if ($this->wire->user->isSuperuser()) {
-        throw new WireException($th->getMessage());
-      }
-    }
-  }
-
   public function ready()
   {
     $this->hideFromGuests();
@@ -209,7 +178,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
   }
 
-  /** ########## tools ########## */
+  /** ##### regular methods ##### */
 
   /**
    * Add a runtime field to an inputfield wrapper
@@ -231,481 +200,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $wrapper->insertAfter($newItem, $existingItem);
     return $newItem;
   }
-
-  /**
-   * Add scripts to $config->scripts and add cache busting timestamp
-   */
-  public function addScripts($scripts)
-  {
-    if (!is_array($scripts)) $scripts = [$scripts];
-    foreach ($scripts as $script) {
-      $path = $this->filePath($script);
-      // if file is not found we silently skip it
-      // it is silent because of MagicPages::addPageAssets
-      if (!is_file($path)) continue;
-      $url = str_replace(
-        $this->wire->config->paths->root,
-        $this->wire->config->urls->root,
-        $path
-      );
-      $this->wire->config->scripts->add($url . "?m=" . filemtime($path));
-    }
-  }
-
-  /**
-   * Add styles to $config->styles and add cache busting timestamp
-   */
-  public function addStyles($styles)
-  {
-    if (!is_array($styles)) $styles = [$styles];
-    foreach ($styles as $style) {
-      $path = $this->filePath($style);
-
-      // check if it is a less file
-      if (pathinfo($path, PATHINFO_EXTENSION) === 'less') {
-        $path = $this->saveCSS($path);
-      }
-
-      // if file is not found we silently skip it
-      // it is silent because of MagicPages::addPageAssets
-      if (!is_file((string)$path)) continue;
-      $url = str_replace(
-        $this->wire->config->paths->root,
-        $this->wire->config->urls->root,
-        $path
-      );
-      $this->wire->config->styles->add($url . "?m=" . filemtime($path));
-    }
-  }
-
-  /**
-   * Set columnWidth for multiple fields of a form
-   *
-   * Usage:
-   * $rm->columnWidth($form, [
-   *   'foo' => 33,
-   *   'bar' => 33,
-   *   'baz' => 33,
-   * ]);
-   */
-  public function columnWidth(InputfieldWrapper $form, array $fields)
-  {
-    foreach ($fields as $name => $width) {
-      if ($f = $form->get($name)) $f->columnWidth($width);
-    }
-  }
-
-  /**
-   * Make all pages having given template be created on top of the list
-   * @return void
-   */
-  public function createOnTop($tpl)
-  {
-    $tpl = $this->wire->templates->get((string)$tpl);
-    $this->addHookAfter("Pages::added", function (HookEvent $event) {
-      $page = $event->arguments(0);
-      $this->wire->pages->sort($page, 0);
-    });
-  }
-
-  /**
-   * Hide fields of given form
-   *
-   * Usage:
-   * $rm->hideFormFields($form, ['foo', 'bar', 'baz']);
-   * $rm->hideFormFields($form, 'foo, bar, baz');
-   */
-  public function hideFormFields(InputfieldWrapper $form, $fields)
-  {
-    if (is_string($fields)) $fields = array_map('trim', explode(",", $fields));
-    foreach ($fields as $field) {
-      $f = $form->get($field);
-      if ($f) $f->collapsed = Inputfield::collapsedHidden;
-    }
-  }
-
-  /**
-   * Create inputfield from array syntax
-   *
-   * This is handy in combination of $form->insertBefore() or insertAfter()
-   * and similar methods, because PW unfortunately only supports array syntax
-   * for $form->add([...]) but not for prepend() append() etc.
-   *
-   * @return Inputfield
-   */
-  public function inputfield($data)
-  {
-    $fs = $this->wire(new InputfieldWrapper());
-    $fs->add($data);
-    return $fs->children()->last();
-  }
-
-  /**
-   * Check wether the environment is DDEV or not
-   */
-  public function isDDEV(): bool
-  {
-    return !!getenv('DDEV_HOSTNAME');
-  }
-
-  /**
-   * Remove non-breaking spaces in string
-   * @return string
-   */
-  public function regularSpaces($str)
-  {
-    return preg_replace('/\xc2\xa0/', ' ', $str);
-  }
-
-  /**
-   * Remove fields of given form
-   *
-   * Usage:
-   * $rm->removeFormFields($form, ['foo', 'bar', 'baz']);
-   * $rm->removeFormFields($form, 'foo, bar, baz');
-   */
-  public function removeFormFields(InputfieldWrapper $form, $fields)
-  {
-    if (is_string($fields)) $fields = array_map('trim', explode(",", $fields));
-    foreach ($fields as $field) $form->remove($field);
-  }
-
-  /**
-   * Compile LESS file and save CSS version
-   *
-   * foo.less --> foo.css
-   *
-   * Requires the Less module
-   * The method is intended to easily develop module styles in LESS and ship
-   * the CSS version.
-   */
-  public function saveCSS(
-    $less,
-    $onlySuperuser = true,
-    $css = null,
-    $minify = false,
-    $keepCSS = true,
-  ) {
-    // early exit?
-    if ($onlySuperuser && !$this->wire->user->isSuperuser()) return;
-
-    $css = $css ?: substr($less, 0, -5) . ".css";
-    $min = substr($css, 0, -4) . ".min.css";
-    if (!is_file($less)) throw new WireException("Less file $less not found");
-
-    $mLESS = filemtime($less);
-    if ($minify && !$keepCSS) $mCSS = is_file($min) ? filemtime($min) : 0;
-    else $mCSS = is_file($css) ? filemtime($css) : 0;
-
-    if ($mLESS > $mCSS) {
-      if ($parser = $this->wire->modules->get('Less')) {
-        // recreate css file
-        /** @var Less $parser */
-        $parser->addFile($less);
-        $parser->saveCss($css);
-        $this->log("Created new CSS file: $css");
-      } else {
-        $this->warning("LESS file changed but LESS module not installed! $less");
-      }
-    }
-
-    if ($minify) {
-      $min = $this->minify($css);
-      if (!$keepCSS && is_file($css)) $this->wire->files->unlink($css);
-      return $min;
-    }
-
-    return $css;
-  }
-
-  /**
-   * Minify given css or js file
-   *
-   * Usage:
-   * $rm->minify("/path/to/style.css"); // creates /path/to/style.min.css
-   * $rm->minify("/path/to/style.css", "/newpath/style.min.css");
-   */
-  public function minify($file, $minFile = null): string|false
-  {
-    // this method is intended to be used on development only!
-    if (!$this->wire->user->isSuperuser()) return false;
-    if (!$this->wire->config->debug) return false;
-
-    $ext = pathinfo($file, PATHINFO_EXTENSION);
-    require_once __DIR__ . "/vendor/autoload.php";
-    if ($ext == 'css') {
-      if (!$minFile) $minFile = substr($file, 0, -4) . ".min.css";
-      if ($this->isNewer($minFile, $file)) return $minFile;
-      $minify = new \MatthiasMullie\Minify\CSS($file);
-      $minify->minify($minFile);
-      $this->log("Minified $minFile");
-    } elseif ($ext == 'js') {
-      if (!$minFile) $minFile = substr($file, 0, -3) . ".min.js";
-      if ($this->isNewer($minFile, $file)) return $minFile;
-      $minify = new \MatthiasMullie\Minify\JS($file);
-      $minify->minify($minFile);
-      $this->log("Minified $minFile");
-    } else {
-      throw new WireException("Invalid Extension $ext");
-    }
-    return $minFile;
-  }
-
-  /**
-   * Set page name from field of template
-   *
-   * Usage:
-   * $rm->setPageNameFromField("basic-page", "headline");
-   *
-   * // set page name from headline (fallback to title)
-   * $rm->setPageNameFromField("basic-page", ["headline", "title"]);
-   *
-   * Make sure to install Page Path History module!
-   *
-   * @return void
-   */
-  public function setPageNameFromField($template, $fields = 'title')
-  {
-    if ($template instanceof Page) $template = $template->template;
-    $template = $this->wire->templates->get((string)$template);
-    if (!$template) return;
-    $tpl = "template=$template";
-    $this->addHookAfter("Pages::saved($tpl,id>0)", function (HookEvent $event) use ($fields) {
-      /** @var Page $page */
-      $page = $event->arguments(0);
-
-      if ($page->rmSetPageName) return;
-      $page->rmSetPageName = true;
-
-      if (!$this->wire->languages) $this->setPageNameLanguage($page, $fields);
-      else $this->setPageNameLanguages($page, $fields);
-    });
-    $this->addHookAfter("ProcessPageEdit::buildForm", function (HookEvent $event) use ($template, $fields) {
-      $field = is_array($fields) ? implode("|", $fields) : $fields;
-      $page = $event->object->getPage();
-      if ($page->template != $template) return;
-      $form = $event->return;
-      if ($f = $form->get('_pw_page_name')) {
-        $f->prependMarkup = "<style>#wrap_{$f->id} input[type=text] { display: none; }</style>";
-        $f->notes = $this->_("Page name will be set automatically from field '$field' on save.");
-      }
-    });
-  }
-
-  /**
-   * Set page name from page title
-   *
-   * Usage:
-   * $rm->setPageNameFromTitle("basic-page");
-   *
-   * Make sure to install Page Path History module!
-   *
-   * @param mixed $object
-   */
-  public function setPageNameFromTitle($template)
-  {
-    return $this->setPageNameFromField($template, 'title');
-  }
-
-  /**
-   * Set page name for a single language from fields
-   * Private helper method for setPageNameFromField()
-   */
-  private function setPageNameLanguage(Page $page, $fields): void
-  {
-    $old = $page->name;
-
-    // get new pagename
-    if (is_array($fields)) $new = $page->get(implode("|", $fields));
-    else $new = $page->get((string)$fields);
-
-    // sanitize pagename
-    $new = $this->wire->sanitizer->markupToText($new);
-    $new = $this->wire->sanitizer->pageNameTranslate($new);
-
-    // early exit if nothing changed
-    if ($old === $new) return;
-
-    // early exit if no new value
-    if (!$new) {
-      $this->warn("Unable to set new page name");
-      return;
-    }
-
-    // set new pagename
-    $new = $this->wire->pages->names()->uniquePageName($new, $page);
-    $page->setAndSave("name", $new);
-    $this->message("Page name updated from '$old' to '$new'");
-  }
-
-  /**
-   * Set page name for all languages from given fields
-   * Private helper method for setPageNameFromField()
-   */
-  private function setPageNameLanguages(Page $page, $fields): void
-  {
-    // set new page name for all languages
-    foreach ($this->wire->languages as $lang) {
-      // get old page name
-      // use try/catch to prevent localName does not exist errors
-      try {
-        $old = $page->localName($lang);
-      } catch (\Throwable $th) {
-        $old = $page->name;
-      }
-
-      // get new page name
-      if (!is_array($fields)) {
-        // get value of a single field
-        $new = $page->getLanguageValue($lang, (string)$fields);
-      } else {
-        // get value from a list of fields
-        // use the field that first returns any value
-        $new = false;
-        foreach ($fields as $field) {
-          if ($new) continue;
-          $new = $page->getLanguageValue($lang, (string)$field);
-        }
-      }
-
-      // sanitize the new pagename
-      $new = $this->wire->sanitizer->markupToText($new);
-      $new = $this->wire->sanitizer->pageNameTranslate($new);
-
-      // save values of default language for later
-      if ($lang->isDefault()) {
-        $newDefault = $new;
-        $oldDefault = $old;
-      }
-
-      // early exit if nothing changed
-      if ($old === $new) continue;
-
-      // if we have no new value for the default language we exit early
-      // and leave the page name as it was
-      if ($lang->isDefault() and !$new) continue;
-
-      // special case: new value is empty in non-default language
-      // that means we reset the page name so it uses the default name
-      if (!$lang->isDefault() && !$new) {
-        $page->setAndSave("name$lang", "");
-        $this->message("Page name updated from '$old' to '$newDefault' ($lang->name)");
-        continue;
-      }
-
-      // default use case: set the new page name
-      $new = $this->wire->pages->names()->uniquePageName($new, $page);
-      if ($lang->isDefault()) $page->setAndSave("name", $new);
-      else $page->setAndSave("name$lang", $new);
-
-      // if old value was empty it means it had the old default value
-      if (!$old) $old = $oldDefault;
-
-      // show message that we updated the page name
-      $this->message("Page name updated from '$old' to '$new' ($lang->name)");
-    }
-  }
-
-  public function sortFormFields(InputfieldWrapper $form, $fields)
-  {
-    $current = array_shift($fields);
-    $current = $form->get($current) ?: $form->children()->last();
-    foreach ($fields as $field) {
-      if (!$f = $form->get($field)) continue;
-      $form->insertAfter($f, $current);
-      $current = $f;
-    }
-  }
-
-  /**
-   * Wrap fields of a form into a fieldset
-   *
-   * Usage:
-   * $rm->wrapFields($form, ['foo', 'bar'], [
-   *   'label' => 'your fieldset label',
-   *   'icon' => 'bolt',
-   * ]);
-   *
-   * @return InputfieldFieldset
-   */
-  public function wrapFields(
-    InputfieldWrapper $form,
-    array $fields,
-    array $fieldset,
-    $placeAfter = null,
-    $placeBefore = null,
-  ) {
-    // If we only want to show a single field we exit early
-    // as we dont need the wrapper in that case. If you still want to show the
-    // wrapper add &wrapper=1 to your url.
-    if (!$this->wire->input->get('wrapper')) {
-      // check for single field
-      if ($this->wire->input->get('field')) return;
-      $fieldsStr = $this->wire->input->get('fields', 'string');
-      if ($fieldsStr and !strpos($fieldsStr, ",")) return;
-    }
-
-    $_fields = [];
-    $last = false;
-    foreach ($fields as $k => $v) {
-      $noLast = false;
-      $field = $v;
-      $fieldData = null;
-      if (is_string($k)) {
-        $field = $k;
-        $fieldData = $v;
-      }
-
-      if (is_array($field)) {
-        $form->add($field);
-        $field = $form->children()->last();
-        $noLast = true;
-      }
-
-      if (!$field instanceof Inputfield) $field = $form->get((string)$field);
-      if (!$field) continue;
-      if ($fieldData) $field->setArray($fieldData);
-      if ($field instanceof Inputfield) {
-        $_fields[] = $field;
-
-        // we update the "last" variable to be the current field
-        // we do not use runtime fields (applied via array syntax)
-        // this ensures that the wrapper is at the same position where
-        // the field of the form was
-        if (!$noLast) $last = $field;
-      }
-    }
-
-    // no fields, no render
-    // this can be the case in modal windows when the page editor is called
-    // with a ?field or ?fields get parameter to only render specific fields
-    if (!count($_fields)) return;
-
-    /** @var InputfieldFieldset $fs */
-    $fs = $this->wire('modules')->get('InputfieldFieldset');
-    foreach ($fieldset as $k => $v) $fs->$k = $v;
-    if ($placeAfter) {
-      if (!$placeAfter instanceof Inputfield) $placeAfter = $form->get((string)$placeAfter);
-      $form->insertAfter($fs, $placeAfter);
-    } elseif ($placeBefore) {
-      if (!$placeBefore instanceof Inputfield) $placeBefore = $form->get((string)$placeBefore);
-      $form->insertBefore($fs, $placeBefore);
-    } elseif ($last) $form->insertAfter($fs, $last);
-    else $form->add($fs);
-
-    // now remove fields from the form and add them to the fieldset
-    foreach ($_fields as $f) {
-      // if the field is a runtime only field we add a temporary name
-      // otherwise the remove causes an endless loop
-      if (!$f->name) $f->name = uniqid();
-      $form->remove($f);
-      $fs->add($f);
-    }
-
-    return $fs;
-  }
-
-  /** ########## end tools ########## */
 
   /**
    * Add color-bar to DDEV and staging sites
@@ -883,6 +377,52 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $user->of(false);
     $user->addRole($role);
     $user->save();
+  }
+
+  /**
+   * Add scripts to $config->scripts and add cache busting timestamp
+   */
+  public function addScripts($scripts)
+  {
+    if (!is_array($scripts)) $scripts = [$scripts];
+    foreach ($scripts as $script) {
+      $path = $this->filePath($script);
+      // if file is not found we silently skip it
+      // it is silent because of MagicPages::addPageAssets
+      if (!is_file($path)) continue;
+      $url = str_replace(
+        $this->wire->config->paths->root,
+        $this->wire->config->urls->root,
+        $path
+      );
+      $this->wire->config->scripts->add($url . "?m=" . filemtime($path));
+    }
+  }
+
+  /**
+   * Add styles to $config->styles and add cache busting timestamp
+   */
+  public function addStyles($styles)
+  {
+    if (!is_array($styles)) $styles = [$styles];
+    foreach ($styles as $style) {
+      $path = $this->filePath($style);
+
+      // check if it is a less file
+      if (pathinfo($path, PATHINFO_EXTENSION) === 'less') {
+        $path = $this->saveCSS($path);
+      }
+
+      // if file is not found we silently skip it
+      // it is silent because of MagicPages::addPageAssets
+      if (!is_file((string)$path)) continue;
+      $url = str_replace(
+        $this->wire->config->paths->root,
+        $this->wire->config->urls->root,
+        $path
+      );
+      $this->wire->config->styles->add($url . "?m=" . filemtime($path));
+    }
   }
 
   /**
@@ -1102,6 +642,23 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Set columnWidth for multiple fields of a form
+   *
+   * Usage:
+   * $rm->columnWidth($form, [
+   *   'foo' => 33,
+   *   'bar' => 33,
+   *   'baz' => 33,
+   * ]);
+   */
+  public function columnWidth(InputfieldWrapper $form, array $fields)
+  {
+    foreach ($fields as $name => $width) {
+      if ($f = $form->get($name)) $f->columnWidth($width);
+    }
+  }
+
+  /**
    * Create a field of the given type
    *
    * If run multiple times it will only update field data.
@@ -1190,6 +747,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $dir = $this->wire->config->paths->assets . "sessions";
     if (!is_dir($dir)) $this->wire->files->mkdir($dir);
+  }
+
+  /**
+   * Make all pages having given template be created on top of the list
+   * @return void
+   */
+  public function createOnTop($tpl)
+  {
+    $tpl = $this->wire->templates->get((string)$tpl);
+    $this->addHookAfter("Pages::added", function (HookEvent $event) {
+      $page = $event->arguments(0);
+      $this->wire->pages->sort($page, 0);
+    });
   }
 
   /**
@@ -2295,6 +1865,34 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Get template by name
+   *
+   * Returns FALSE if template is not found
+   *
+   * @param Template|string $name
+   * @return Template|false
+   */
+  public function getTemplate($name, $quiet = false)
+  {
+    if ($name instanceof RockPageBuilderBlock) return $name->getTpl();
+    if ($name instanceof Page) {
+      if (!$name->template) {
+        try {
+          $name = $name::tpl;
+        } catch (\Throwable $th) {
+        }
+      } else $name = $name->template;
+    }
+    $template = $this->templates->get((string)$name);
+    if ($template and $template->id) return $template;
+    if (!$quiet) {
+      $this->log("Template $name not found");
+      // $this->log(Debug::backtrace());
+    }
+    return false;
+  }
+
+  /**
    * Get trace log for field/template log
    *
    * This log will be shown on fields/templates that are under control of RM
@@ -2334,31 +1932,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Get template by name
+   * Hide fields of given form
    *
-   * Returns FALSE if template is not found
-   *
-   * @param Template|string $name
-   * @return Template|false
+   * Usage:
+   * $rm->hideFormFields($form, ['foo', 'bar', 'baz']);
+   * $rm->hideFormFields($form, 'foo, bar, baz');
    */
-  public function getTemplate($name, $quiet = false)
+  public function hideFormFields(InputfieldWrapper $form, $fields)
   {
-    if ($name instanceof RockPageBuilderBlock) return $name->getTpl();
-    if ($name instanceof Page) {
-      if (!$name->template) {
-        try {
-          $name = $name::tpl;
-        } catch (\Throwable $th) {
-        }
-      } else $name = $name->template;
+    if (is_string($fields)) $fields = array_map('trim', explode(",", $fields));
+    foreach ($fields as $field) {
+      $f = $form->get($field);
+      if ($f) $f->collapsed = Inputfield::collapsedHidden;
     }
-    $template = $this->templates->get((string)$name);
-    if ($template and $template->id) return $template;
-    if (!$quiet) {
-      $this->log("Template $name not found");
-      // $this->log(Debug::backtrace());
-    }
-    return false;
   }
 
   /**
@@ -2462,6 +2048,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $this->log($th->getMessage());
       }
     }
+  }
+
+  /**
+   * Create inputfield from array syntax
+   *
+   * This is handy in combination of $form->insertBefore() or insertAfter()
+   * and similar methods, because PW unfortunately only supports array syntax
+   * for $form->add([...]) but not for prepend() append() etc.
+   *
+   * @return Inputfield
+   */
+  public function inputfield($data)
+  {
+    $fs = $this->wire(new InputfieldWrapper());
+    $fs->add($data);
+    return $fs->children()->last();
   }
 
   /**
@@ -2622,6 +2224,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Check wether the environment is DDEV or not
+   */
+  public function isDDEV(): bool
+  {
+    return !!getenv('DDEV_HOSTNAME');
+  }
+
+  /**
    * @return bool
    */
   public function isDebug()
@@ -2775,6 +2385,37 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     };
     $this->addHookAfter("Pagefile::url", $hook);
     $this->addHookAfter("Pagefile::filename", $hook);
+  }
+
+  private function loadTweak($file)
+  {
+    require_once __DIR__ . "/Tweak.php";
+    require_once $file;
+    $base = pathinfo($file, PATHINFO_FILENAME);
+    $class = "\RockMigrations\Tweaks\\$base";
+    try {
+      $tweak = new $class();
+      $tweak->name = $base;
+      $tweak->enabled = in_array($base, (array)$this->enabledTweaks);
+      return $tweak;
+    } catch (\Throwable $th) {
+      if ($this->wire->user->isSuperuser()) {
+        throw new WireException($th->getMessage());
+      }
+    }
+  }
+
+  private function loadTweaks()
+  {
+    $path = __DIR__ . "/tweaks";
+    $options = ['extensions' => ['php']];
+    $tweaks = $this->wire(new WireArray());
+    foreach ($this->wire->files->find($path, $options) as $file) {
+      $tweak = $this->loadTweak($file);
+      $tweaks->add($tweak);
+      if ($tweak->enabled) $tweak->init();
+    }
+    $this->tweaks = $tweaks;
   }
 
   /**
@@ -3310,6 +2951,39 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Minify given css or js file
+   *
+   * Usage:
+   * $rm->minify("/path/to/style.css"); // creates /path/to/style.min.css
+   * $rm->minify("/path/to/style.css", "/newpath/style.min.css");
+   */
+  public function minify($file, $minFile = null): string|false
+  {
+    // this method is intended to be used on development only!
+    if (!$this->wire->user->isSuperuser()) return false;
+    if (!$this->wire->config->debug) return false;
+
+    $ext = pathinfo($file, PATHINFO_EXTENSION);
+    require_once __DIR__ . "/vendor/autoload.php";
+    if ($ext == 'css') {
+      if (!$minFile) $minFile = substr($file, 0, -4) . ".min.css";
+      if ($this->isNewer($minFile, $file)) return $minFile;
+      $minify = new \MatthiasMullie\Minify\CSS($file);
+      $minify->minify($minFile);
+      $this->log("Minified $minFile");
+    } elseif ($ext == 'js') {
+      if (!$minFile) $minFile = substr($file, 0, -3) . ".min.js";
+      if ($this->isNewer($minFile, $file)) return $minFile;
+      $minify = new \MatthiasMullie\Minify\JS($file);
+      $minify->minify($minFile);
+      $this->log("Minified $minFile");
+    } else {
+      throw new WireException("Invalid Extension $ext");
+    }
+    return $minFile;
+  }
+
+  /**
    * Move one page on top of another one
    * @return void
    */
@@ -3478,6 +3152,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Remove non-breaking spaces in string
+   * @return string
+   */
+  public function regularSpaces($str)
+  {
+    return preg_replace('/\xc2\xa0/', ' ', $str);
+  }
+
+  /**
    * Remove Field from Template
    *
    * Will silently return if field has already been removed
@@ -3511,6 +3194,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function removeFieldsFromTemplate($fields, $template)
   {
     foreach ($fields as $field) $this->removeFieldFromTemplate($field, $template);
+  }
+
+  /**
+   * Remove fields of given form
+   *
+   * Usage:
+   * $rm->removeFormFields($form, ['foo', 'bar', 'baz']);
+   * $rm->removeFormFields($form, 'foo, bar, baz');
+   */
+  public function removeFormFields(InputfieldWrapper $form, $fields)
+  {
+    if (is_string($fields)) $fields = array_map('trim', explode(",", $fields));
+    foreach ($fields as $field) $form->remove($field);
   }
 
   /**
@@ -3742,6 +3438,54 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return $this->wire->files->render($file, [], [
       'allowedPaths' => [dirname($file)],
     ]);
+  }
+
+  /**
+   * Compile LESS file and save CSS version
+   *
+   * foo.less --> foo.css
+   *
+   * Requires the Less module
+   * The method is intended to easily develop module styles in LESS and ship
+   * the CSS version.
+   */
+  public function saveCSS(
+    $less,
+    $onlySuperuser = true,
+    $css = null,
+    $minify = false,
+    $keepCSS = true,
+  ) {
+    // early exit?
+    if ($onlySuperuser && !$this->wire->user->isSuperuser()) return;
+
+    $css = $css ?: substr($less, 0, -5) . ".css";
+    $min = substr($css, 0, -4) . ".min.css";
+    if (!is_file($less)) throw new WireException("Less file $less not found");
+
+    $mLESS = filemtime($less);
+    if ($minify && !$keepCSS) $mCSS = is_file($min) ? filemtime($min) : 0;
+    else $mCSS = is_file($css) ? filemtime($css) : 0;
+
+    if ($mLESS > $mCSS) {
+      if ($parser = $this->wire->modules->get('Less')) {
+        // recreate css file
+        /** @var Less $parser */
+        $parser->addFile($less);
+        $parser->saveCss($css);
+        $this->log("Created new CSS file: $css");
+      } else {
+        $this->warning("LESS file changed but LESS module not installed! $less");
+      }
+    }
+
+    if ($minify) {
+      $min = $this->minify($css);
+      if (!$keepCSS && is_file($css)) $this->wire->files->unlink($css);
+      return $min;
+    }
+
+    return $css;
   }
 
   /**
@@ -4119,6 +3863,161 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function setOutputLevel($level)
   {
     $this->outputLevel = $level;
+  }
+
+  /**
+   * Set page name from field of template
+   *
+   * Usage:
+   * $rm->setPageNameFromField("basic-page", "headline");
+   *
+   * // set page name from headline (fallback to title)
+   * $rm->setPageNameFromField("basic-page", ["headline", "title"]);
+   *
+   * Make sure to install Page Path History module!
+   *
+   * @return void
+   */
+  public function setPageNameFromField($template, $fields = 'title')
+  {
+    if ($template instanceof Page) $template = $template->template;
+    $template = $this->wire->templates->get((string)$template);
+    if (!$template) return;
+    $tpl = "template=$template";
+    $this->addHookAfter("Pages::saved($tpl,id>0)", function (HookEvent $event) use ($fields) {
+      /** @var Page $page */
+      $page = $event->arguments(0);
+
+      if ($page->rmSetPageName) return;
+      $page->rmSetPageName = true;
+
+      if (!$this->wire->languages) $this->setPageNameLanguage($page, $fields);
+      else $this->setPageNameLanguages($page, $fields);
+    });
+    $this->addHookAfter("ProcessPageEdit::buildForm", function (HookEvent $event) use ($template, $fields) {
+      $field = is_array($fields) ? implode("|", $fields) : $fields;
+      $page = $event->object->getPage();
+      if ($page->template != $template) return;
+      $form = $event->return;
+      if ($f = $form->get('_pw_page_name')) {
+        $f->prependMarkup = "<style>#wrap_{$f->id} input[type=text] { display: none; }</style>";
+        $f->notes = $this->_("Page name will be set automatically from field '$field' on save.");
+      }
+    });
+  }
+
+  /**
+   * Set page name from page title
+   *
+   * Usage:
+   * $rm->setPageNameFromTitle("basic-page");
+   *
+   * Make sure to install Page Path History module!
+   *
+   * @param mixed $object
+   */
+  public function setPageNameFromTitle($template)
+  {
+    return $this->setPageNameFromField($template, 'title');
+  }
+
+  /**
+   * Set page name for a single language from fields
+   * Private helper method for setPageNameFromField()
+   */
+  private function setPageNameLanguage(Page $page, $fields): void
+  {
+    $old = $page->name;
+
+    // get new pagename
+    if (is_array($fields)) $new = $page->get(implode("|", $fields));
+    else $new = $page->get((string)$fields);
+
+    // sanitize pagename
+    $new = $this->wire->sanitizer->markupToText($new);
+    $new = $this->wire->sanitizer->pageNameTranslate($new);
+
+    // early exit if nothing changed
+    if ($old === $new) return;
+
+    // early exit if no new value
+    if (!$new) {
+      $this->warn("Unable to set new page name");
+      return;
+    }
+
+    // set new pagename
+    $new = $this->wire->pages->names()->uniquePageName($new, $page);
+    $page->setAndSave("name", $new);
+    $this->message("Page name updated from '$old' to '$new'");
+  }
+
+  /**
+   * Set page name for all languages from given fields
+   * Private helper method for setPageNameFromField()
+   */
+  private function setPageNameLanguages(Page $page, $fields): void
+  {
+    // set new page name for all languages
+    foreach ($this->wire->languages as $lang) {
+      // get old page name
+      // use try/catch to prevent localName does not exist errors
+      try {
+        $old = $page->localName($lang);
+      } catch (\Throwable $th) {
+        $old = $page->name;
+      }
+
+      // get new page name
+      if (!is_array($fields)) {
+        // get value of a single field
+        $new = $page->getLanguageValue($lang, (string)$fields);
+      } else {
+        // get value from a list of fields
+        // use the field that first returns any value
+        $new = false;
+        foreach ($fields as $field) {
+          if ($new) continue;
+          $new = $page->getLanguageValue($lang, (string)$field);
+        }
+      }
+
+      // sanitize the new pagename
+      $new = $this->wire->sanitizer->markupToText($new);
+      $new = $this->wire->sanitizer->pageNameTranslate($new);
+
+      // save values of default language for later
+      if ($lang->isDefault()) {
+        $newDefault = $new;
+        $oldDefault = $old;
+      }
+
+      // early exit if nothing changed
+      if ($old === $new) continue;
+
+      // if we have no new value for the default language we exit early
+      // and leave the page name as it was
+      if ($lang->isDefault() and !$new) continue;
+
+      // special case: new value is empty in non-default language
+      // that means we reset the page name so it uses the default name
+      if (!$lang->isDefault() && !$new) {
+        $page->setAndSave("name$lang", "");
+        $this->message("Page name updated from '$old' to '$newDefault' ($lang->name)");
+        continue;
+      }
+
+      // default use case: set the new page name
+      $new = $this->wire->pages->names()->uniquePageName($new, $page);
+      if ($lang->isDefault()) $page->setAndSave("name", $new);
+      else $page->setAndSave("name$lang", $new);
+
+      // if old value was empty it means it had the old default value
+      if (!$old) $old = $oldDefault;
+
+      // show message that we updated the page name
+      $this->message("Page name updated from '$old' to '$new' ($lang->name)");
+    }
   }
 
   /**
@@ -4805,6 +4704,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return $arr->sort('name');
   }
 
+  public function sortFormFields(InputfieldWrapper $form, $fields)
+  {
+    $current = array_shift($fields);
+    $current = $form->get($current) ?: $form->children()->last();
+    foreach ($fields as $field) {
+      if (!$f = $form->get($field)) continue;
+      $form->insertAfter($f, $current);
+      $current = $f;
+    }
+  }
+
   /**
    * Sort watchlist by priority and by file path
    * This is very important to ensure that migrations always run in the
@@ -5280,6 +5190,94 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       }
     } elseif (is_file($path)) $this->watchPageClass($path, $namespace, $options, $migrate);
     else $this->log("Nothing to watch in $path");
+  }
+
+  /**
+   * Wrap fields of a form into a fieldset
+   *
+   * Usage:
+   * $rm->wrapFields($form, ['foo', 'bar'], [
+   *   'label' => 'your fieldset label',
+   *   'icon' => 'bolt',
+   * ]);
+   *
+   * @return InputfieldFieldset
+   */
+  public function wrapFields(
+    InputfieldWrapper $form,
+    array $fields,
+    array $fieldset,
+    $placeAfter = null,
+    $placeBefore = null,
+  ) {
+    // If we only want to show a single field we exit early
+    // as we dont need the wrapper in that case. If you still want to show the
+    // wrapper add &wrapper=1 to your url.
+    if (!$this->wire->input->get('wrapper')) {
+      // check for single field
+      if ($this->wire->input->get('field')) return;
+      $fieldsStr = $this->wire->input->get('fields', 'string');
+      if ($fieldsStr and !strpos($fieldsStr, ",")) return;
+    }
+
+    $_fields = [];
+    $last = false;
+    foreach ($fields as $k => $v) {
+      $noLast = false;
+      $field = $v;
+      $fieldData = null;
+      if (is_string($k)) {
+        $field = $k;
+        $fieldData = $v;
+      }
+
+      if (is_array($field)) {
+        $form->add($field);
+        $field = $form->children()->last();
+        $noLast = true;
+      }
+
+      if (!$field instanceof Inputfield) $field = $form->get((string)$field);
+      if (!$field) continue;
+      if ($fieldData) $field->setArray($fieldData);
+      if ($field instanceof Inputfield) {
+        $_fields[] = $field;
+
+        // we update the "last" variable to be the current field
+        // we do not use runtime fields (applied via array syntax)
+        // this ensures that the wrapper is at the same position where
+        // the field of the form was
+        if (!$noLast) $last = $field;
+      }
+    }
+
+    // no fields, no render
+    // this can be the case in modal windows when the page editor is called
+    // with a ?field or ?fields get parameter to only render specific fields
+    if (!count($_fields)) return;
+
+    /** @var InputfieldFieldset $fs */
+    $fs = $this->wire('modules')->get('InputfieldFieldset');
+    foreach ($fieldset as $k => $v) $fs->$k = $v;
+    if ($placeAfter) {
+      if (!$placeAfter instanceof Inputfield) $placeAfter = $form->get((string)$placeAfter);
+      $form->insertAfter($fs, $placeAfter);
+    } elseif ($placeBefore) {
+      if (!$placeBefore instanceof Inputfield) $placeBefore = $form->get((string)$placeBefore);
+      $form->insertBefore($fs, $placeBefore);
+    } elseif ($last) $form->insertAfter($fs, $last);
+    else $form->add($fs);
+
+    // now remove fields from the form and add them to the fieldset
+    foreach ($_fields as $f) {
+      // if the field is a runtime only field we add a temporary name
+      // otherwise the remove causes an endless loop
+      if (!$f->name) $f->name = uniqid();
+      $form->remove($f);
+      $fs->add($f);
+    }
+
+    return $fs;
   }
 
   /**
