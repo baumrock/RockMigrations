@@ -4930,12 +4930,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $trace = Debug::backtrace()[0]['file'];
     $this->wire->addHookAfter(
       "Pages::published",
-      function (HookEvent $event) use ($selector, $trace) {
+      function (HookEvent $event) use ($selector, $trace, $sudo) {
         $page = $event->arguments('page');
         if (!$page->matches($selector)) return;
         $page->addStatus(Page::statusUnpublished);
         $page->save();
-        $this->error("Publishing page $selector not allowed by $trace");
+        $msg = "Publishing page $selector not allowed";
+        if ($sudo) $msg .= " by $trace";
+        $this->error($msg);
       }
     );
   }
