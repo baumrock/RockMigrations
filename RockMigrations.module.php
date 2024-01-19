@@ -2371,6 +2371,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $host = rtrim($host, "/");
         $src = "$host/site/assets/files/";
         $url = str_replace($config->paths->files, $src, $file);
+        $this->log("FilesOnDemand loading $url");
         $http = $this->wire(new WireHttp());
         /** @var WireHttp $http */
         try {
@@ -2380,6 +2381,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         } catch (\Throwable $th) {
           // do not throw exception, show error message instead
           $this->error($th->getMessage());
+          $this->log($th->getMessage());
         }
       }
     };
