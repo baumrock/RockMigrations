@@ -2957,13 +2957,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Minify given css or js file
    *
+   * This method is intended to be used on development only! It will only
+   * work when logged in as superuser and debug is on.
+   *
    * Usage:
    * $rm->minify("/path/to/style.css"); // creates /path/to/style.min.css
    * $rm->minify("/path/to/style.css", "/newpath/style.min.css");
    */
   public function minify($file, $minFile = null): string|false
   {
-    // this method is intended to be used on development only!
     if (!$this->wire->user->isSuperuser()) return false;
     if (!$this->wire->config->debug) return false;
 
