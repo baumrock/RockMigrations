@@ -1,5 +1,5 @@
 // rockshell config
-$config->rockshell = [
+\$config->rockshell = [
   // 'remotePHP' => 'keyhelp-php81',
   'remotes' => [
     'staging' => [

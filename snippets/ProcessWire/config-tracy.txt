@@ -1,5 +1,5 @@
 // tracy config
-$config->tracy = [
+\$config->tracy = [
   // use this only on local dev!!!!
   'outputMode' => 'development',
   'guestForceDevelopmentLocal' => true,
