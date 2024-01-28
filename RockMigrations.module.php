@@ -5432,20 +5432,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // prepare fileconfig string
     $fileConfig = $this->wire->config->rockmigrations;
     if (is_array($fileConfig)) {
-      $fileConfig = "<p>Current config from file:</p><pre>" . print_r($fileConfig, true) . "</pre>";
+      $fileConfig = "<pre>" . print_r($fileConfig, true) . "</pre>";
     } else $fileConfig = "";
 
     $inputfields->add([
       'type' => 'markup',
       'label' => 'RockMigrations Config Options',
-      'value' => 'You can set all settings either here via GUI or alternatively via config array:<br>
+      'value' => $fileConfig ?:
+        'You can set all settings either here via GUI or alternatively via config array:<br>
         <pre>$config->rockmigrations = [<br>'
         . '  "syncSnippets" => true,<br>'
         . '];</pre>'
-        . 'Note that settings in config.php have precedence over GUI settings!'
-        . $fileConfig,
+        . 'Note that settings in config.php have precedence over GUI settings!',
       'icon' => 'cogs',
       'collapsed' => $fileConfig ? 0 : 1,
+      'notes' => $fileConfig ? "Current config from config[-local].php" : "",
     ]);
 
     $inputfields->add([
