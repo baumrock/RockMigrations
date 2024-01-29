@@ -147,6 +147,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->addHookAfter("Modules::refresh", $this, "hookModulesRefresh");
     $this->addHookAfter("Pages::saved", $this, "resetCachesOnSave");
 
+    // core enhancements
+    $this->wire->addHookProperty("Pagefile::isImage", $this, "hookIsImage");
+
     // other actions on init()
     $this->loadFilesOnDemand();
   }
@@ -2004,6 +2007,28 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function homeTemplate(): Template
   {
     return $this->wire->pages->get(1)->template;
+  }
+
+  /**
+   * Add $file->isImage property to pagefile objects until this feature is in the core
+   * See https://github.com/processwire/processwire-requests/issues/517
+   * @param HookEvent $event
+   * @return void
+   */
+  public function hookIsImage(HookEvent $event): void
+  {
+    $file = $event->object;
+    $event->return = false;
+    switch ($file->ext) {
+      case "jpg":
+      case "jpeg":
+      case "gif":
+      case "png":
+      case "tiff":
+      case "webp":
+      case "svg":
+        $event->return = true;
+    }
   }
 
   /**
