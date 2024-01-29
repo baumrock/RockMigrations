@@ -137,18 +137,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->autoloadClasses();
 
     // hooks
-    $this->addHookAfter("Modules::refresh", $this, "triggerMigrations");
-    $this->addHookBefore("InputfieldForm::render", $this, "showEditInfo");
-    $this->addHookBefore("InputfieldForm::render", $this, "showCopyCode");
-    $this->addHookBefore("Modules::uninstall", $this, "unwatchBeforeUninstall");
-    $this->addHookAfter("Modules::install", $this, "migrateAfterModuleInstall");
-    $this->addHookAfter("Page(template=admin)::render", $this, "addColorBar");
-    $this->addHookBefore("InputfieldForm::render", $this, "addRmHints");
-    $this->addHookAfter("Modules::refresh", $this, "hookModulesRefresh");
-    $this->addHookAfter("Pages::saved", $this, "resetCachesOnSave");
+    wire()->addHookAfter("Modules::refresh",             $this, "triggerMigrations");
+    wire()->addHookBefore("InputfieldForm::render",      $this, "showEditInfo");
+    wire()->addHookBefore("InputfieldForm::render",      $this, "showCopyCode");
+    wire()->addHookBefore("Modules::uninstall",          $this, "unwatchBeforeUninstall");
+    wire()->addHookAfter("Modules::install",             $this, "migrateAfterModuleInstall");
+    wire()->addHookAfter("Page(template=admin)::render", $this, "addColorBar");
+    wire()->addHookBefore("InputfieldForm::render",      $this, "addRmHints");
+    wire()->addHookAfter("Modules::refresh",             $this, "hookModulesRefresh");
+    wire()->addHookAfter("Pages::saved",                 $this, "resetCachesOnSave");
 
     // core enhancements
-    $this->wire->addHookProperty("Pagefile::isImage", $this, "hookIsImage");
+    wire()->addHookProperty("Pagefile::isImage",  $this, "hookIsImage");
+    wire()->addHookMethod("Pagefile::resizedUrl", $this, "hookPagefileResizedUrl");
 
     // other actions on init()
     $this->loadFilesOnDemand();
@@ -2029,6 +2030,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       case "svg":
         $event->return = true;
     }
+  }
+
+  /**
+   * Thx RobinS https://processwire.com/talk/topic/24071-thumbnails-for-pagefiles/?do=findComment&comment=204516
+   * @param HookEvent $event
+   * @return void
+   * @throws WireException
+   */
+  public function hookPagefileResizedUrl(HookEvent $event): void
+  {
+    $pagefile = $event->object;
+    $width = $event->arguments(0) ?: 300;
+    $height = $event->arguments(1) ?: 200;
+    $variation_basename = $pagefile->basename(false) . ".{$width}x{$height}." . $pagefile->ext();
+    $variation_filename = $pagefile->pagefiles->path . $variation_basename;
+    if (!is_file($variation_filename)) {
+      copy($pagefile->filename, $variation_filename);
+      $sizer = new ImageSizer($variation_filename);
+      $sizer->resize($width, $height);
+    }
+    $event->return = $pagefile->pagefiles->url . $variation_basename;
   }
 
   /**
