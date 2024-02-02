@@ -5,6 +5,6 @@
   'guestForceDevelopmentLocal' => true,
   'forceIsLocal' => true,
 
-  'localRootPath' => '/path/to/your/project/', // with trailing slash!
+  'localRootPath' => getenv("DDEV_APPROOT"),
   'numLogEntries' => 100, // for RockMigrations
 ];
