@@ -2979,7 +2979,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
       foreach ($items as $path) {
         $file = $this->watchlist->get("path=$path");
-        $this->migrateWatchfile($file);
+        if ($file) $this->migrateWatchfile($file);
+        else $this->log("No file for $path");
       }
     }
 
