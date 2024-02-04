@@ -178,6 +178,48 @@ class MagicPages extends WireData implements Module
       });
     }
 
+    // execute onAdded on saved when id=0
+    if (method_exists($magicPage, "onAdded")) {
+      $this->wire->addHookAfter("Pages::added", function ($event) use ($magicPage) {
+        $page = $event->arguments(0);
+        if ($page->className(true) !== $magicPage->className(true)) return;
+        $page->onAdded();
+      });
+    }
+
+    // field value changed
+    if (method_exists($magicPage, "onChanged")) {
+      $this->wire->addHookAfter("Page::changed", function ($event) use ($magicPage) {
+        $page = $event->object;
+        if ($page->className(true) !== $magicPage->className(true)) return;
+        $page->onChanged(
+          $event->arguments(0),
+          $event->arguments(1),
+          $event->arguments(2)
+        );
+      });
+    }
+
+    // execute onCreate on saveReady when id=0
+    if (method_exists($magicPage, "onCreate")) {
+      $this->wire->addHookAfter("Pages::saveReady", function ($event) use ($magicPage) {
+        $page = $event->arguments(0);
+        if ($page->id) return;
+        if ($page->className(true) !== $magicPage->className(true)) return;
+        $page->onCreate();
+      });
+    }
+
+    // form processing
+    if (method_exists($magicPage, "onProcessInput")) {
+      $this->wire->addHookAfter("InputfieldForm::processInput", function ($event) use ($magicPage) {
+        if ($event->process != "ProcessPageEdit") return;
+        $page = $event->process->getPage();
+        if ($page->className(true) !== $magicPage->className(true)) return;
+        $page->onProcessInput($event->arguments(0), $event->return);
+      });
+    }
+
     // execute onSaved on every save
     // this will also fire when id=0
     if (method_exists($magicPage, "onSaved")) {
@@ -198,25 +240,6 @@ class MagicPages extends WireData implements Module
       });
     }
 
-    // execute onCreate on saveReady when id=0
-    if (method_exists($magicPage, "onCreate")) {
-      $this->wire->addHookAfter("Pages::saveReady", function ($event) use ($magicPage) {
-        $page = $event->arguments(0);
-        if ($page->id) return;
-        if ($page->className(true) !== $magicPage->className(true)) return;
-        $page->onCreate();
-      });
-    }
-
-    // execute onAdded on saved when id=0
-    if (method_exists($magicPage, "onAdded")) {
-      $this->wire->addHookAfter("Pages::added", function ($event) use ($magicPage) {
-        $page = $event->arguments(0);
-        if ($page->className(true) !== $magicPage->className(true)) return;
-        $page->onAdded();
-      });
-    }
-
     // execute onTrashed hook
     if (method_exists($magicPage, "onTrashed")) {
       $this->wire->addHookAfter("Pages::trashed", function ($event) use ($magicPage) {
@@ -226,26 +249,26 @@ class MagicPages extends WireData implements Module
       });
     }
 
-    // form processing
-    if (method_exists($magicPage, "onProcessInput")) {
-      $this->wire->addHookAfter("InputfieldForm::processInput", function ($event) use ($magicPage) {
-        if ($event->process != "ProcessPageEdit") return;
-        $page = $event->process->getPage();
+    /**
+     * hook pagelist label
+     * This implementation is different to the core getPageListLabel()!
+     * When using pageListLabel() you will only modify the label in the regular
+     * page tree, but labels in the menu or in page reference fields will stay untouched.
+     */
+    if (method_exists($magicPage, "pageListLabel")) {
+      $this->wire->addHookAfter('ProcessPageListRender::getPageLabel', function (HookEvent $event) use ($magicPage) {
+        $page = $event->arguments('page');
         if ($page->className(true) !== $magicPage->className(true)) return;
-        $page->onProcessInput($event->arguments(0), $event->return);
-      });
-    }
-
-    // field value changed
-    if (method_exists($magicPage, "onChanged")) {
-      $this->wire->addHookAfter("Page::changed", function ($event) use ($magicPage) {
-        $page = $event->object;
-        if ($page->className(true) !== $magicPage->className(true)) return;
-        $page->onChanged(
-          $event->arguments(0),
-          $event->arguments(1),
-          $event->arguments(2)
-        );
+        $options = $event->arguments(1);
+        $noTags = $options && is_array($options) && array_key_exists('noTags', $options) && $options['noTags'];
+        if ($noTags) {
+          // noTags is active, that means we are in a menu or such
+          return;
+        }
+        // regular pagelist --> modify label
+        $icon = "";
+        if ($icon = $page->template->icon) $icon = "<i class='icon fa fa-fw fa-$icon'></i> ";
+        $event->return = $icon . $page->pageListLabel($noTags);
       });
     }
 
@@ -272,29 +295,6 @@ class MagicPages extends WireData implements Module
           $f->prependMarkup = "<style>#wrap_{$f->id} input[type=text] { display: none; }</style>";
           $f->notes = $this->_("Page name will be set automatically on save.");
         }
-      });
-    }
-
-    /**
-     * hook pagelist label
-     * This implementation is different to the core getPageListLabel()!
-     * When using pageListLabel() you will only modify the label in the regular
-     * page tree, but labels in the menu or in page reference fields will stay untouched.
-     */
-    if (method_exists($magicPage, "pageListLabel")) {
-      $this->wire->addHookAfter('ProcessPageListRender::getPageLabel', function (HookEvent $event) use ($magicPage) {
-        $page = $event->arguments('page');
-        if ($page->className(true) !== $magicPage->className(true)) return;
-        $options = $event->arguments(1);
-        $noTags = $options && is_array($options) && array_key_exists('noTags', $options) && $options['noTags'];
-        if ($noTags) {
-          // noTags is active, that means we are in a menu or such
-          return;
-        }
-        // regular pagelist --> modify label
-        $icon = "";
-        if ($icon = $page->template->icon) $icon = "<i class='icon fa fa-fw fa-$icon'></i> ";
-        $event->return = $icon . $page->pageListLabel($noTags);
       });
     }
   }

@@ -1,10 +1,10 @@
 // tracy config
-$config->tracy = [
+\$config->tracy = [
   // use this only on local dev!!!!
   'outputMode' => 'development',
   'guestForceDevelopmentLocal' => true,
   'forceIsLocal' => true,
 
-  'localRootPath' => '/path/to/your/project/', // with trailing slash!
+  'localRootPath' => getenv("DDEV_APPROOT"),
   'numLogEntries' => 100, // for RockMigrations
 ];

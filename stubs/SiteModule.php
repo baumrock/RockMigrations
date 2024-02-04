@@ -22,7 +22,7 @@ class Site extends WireData implements Module
       'singular' => true,
       'icon' => 'bolt',
       'requires' => [
-        'RockMigrations>=2.0.10',
+        'RockMigrations>=3.34',
       ],
     ];
   }
@@ -40,7 +40,6 @@ class Site extends WireData implements Module
 
   public function migrate()
   {
-    /** @var RockMigrations $rm */
-    $rm = $this->wire->modules->get('RockMigrations');
+    $rm = rockmigrations();
   }
 }

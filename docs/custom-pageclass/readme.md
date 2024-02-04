@@ -11,10 +11,13 @@ $rm->createTemplate('your-template');
 
 ## Migrating custom pageclasses in modules
 
-- Create a folder `/pageClasses` in your module's directory and place your pageclasses there
-- Make sure the namespace of your pageclasses is equal to your module's name
+RockMigrations can also auto-load pageclasses from within your module's folder structure. Please see the <a href=../classloader>docs about the class autoloading</a> for details.
 
 ### Example
+
+```
+/site/modules/RockSettings/pageClasses/SettingsPage.php
+```
 
 ```php
 <?php

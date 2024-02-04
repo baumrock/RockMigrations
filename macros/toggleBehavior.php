@@ -4,6 +4,7 @@ namespace ProcessWire;
 
 /**
  * Use consistent toggle behaviour in AdminThemeUikit
+ * See https://github.com/processwire/processwire/pull/169
  */
 
 $wire = wire();
