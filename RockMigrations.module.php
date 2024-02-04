@@ -3217,7 +3217,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Remove Field from Template
    *
-   * Will silently return if field has already been removed
+   * Will silently return if field has already been removed.
+   *
+   * Note that this will intentionally not remove any global fields from the
+   * template as this would make fields non-global and can cause problems!
+   * See https://processwire.com/talk/topic/29462-solved-no-title-field-with-add-new-page-in-pw-anymore-after-hidetitle-true/
    *
    * @param Field|string $field
    * @param Template|string $template
