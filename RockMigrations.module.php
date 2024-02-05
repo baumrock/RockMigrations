@@ -609,7 +609,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($debug) $this->wire->cache->delete($name);
     $val = $this->wire->cache->get($name, $create);
     $this->cacheDelete .= ",$name";
-    $this->cacheDeleteOnSave .= ",$name";
+    if ($deleteOnSave) $this->cacheDeleteOnSave .= ",$name";
     return $val;
   }
 
