@@ -388,5 +388,9 @@ $rm->createRepeaterMatrixField('repeater_matrix_field_name', [
 
 // remove a matrix type from a matrix field
 $rm->removeMatrixItem('repeater_matrix_field_name', 'name_of_type');
-// do not forget to also remove the type from the 'matrixItems' array above 
+// do not forget to also remove the type from the 'matrixItems' array above
 ```
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=baumrock/RockMigrations&type=Date)](https://star-history.com/#baumrock/RockMigrations&Date)
