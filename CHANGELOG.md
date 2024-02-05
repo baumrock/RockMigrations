@@ -1,3 +1,10 @@
+## [3.36.1](https://github.com/baumrock/RockMigrations/compare/v3.36.0...v3.36.1) (2024-02-05)
+
+
+### Bug Fixes
+
+* missing check for deleteOnSave in cache() ([a764c5a](https://github.com/baumrock/RockMigrations/commit/a764c5af1fc7a74a6b0196db0f34fb0f3c8adcdc))
+
 ## [3.36.0](https://github.com/baumrock/RockMigrations/compare/v3.35.5...v3.36.0) (2024-02-04)
 
 
@@ -48,11 +55,4 @@
 ### Bug Fixes
 
 * add check for title field flag after each run() ([2930675](https://github.com/baumrock/RockMigrations/commit/293067549744e6229ab9ad5e838690a90957e30d))
-
-## [3.35.2](https://github.com/baumrock/RockMigrations/compare/v3.35.1...v3.35.2) (2024-01-17)
-
-
-### Bug Fixes
-
-* migration hints messing up the fields selector field ([a1d16c2](https://github.com/baumrock/RockMigrations/commit/a1d16c285a25ab4c10f60774a26a02d367aef02f))
 
