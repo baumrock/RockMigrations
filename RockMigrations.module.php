@@ -1622,7 +1622,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       unset($data['_rockmigrations_log']);
     }
 
-    $this->ksortMulti($data);
+    ksort($data, SORT_NATURAL);
 
     // if code was requested as array return it now
     if ($raw == 2) return $data;
@@ -1632,18 +1632,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return "'{$item->name}' => $code";
   }
 
-  /** Sort arrays recursively by keys. Can be associative
-   * @param array $array Array to sort recursively by keys. Can be associative
-   */
-  public static function ksortMulti(array &$array)
-  {
-    ksort($array);
-    foreach(array_keys($array) as $k) {
-      if(gettype($array[$k])=="array") {
-        self::ksortMulti($array[$k]);
-      }
-    }
-  }
 
   /**
    * Convert an array into a WireData config object
@@ -4712,8 +4700,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$existing) return;
 
     $code = $this->wire->sanitizer->entities1($this->getCode($item));
-    $codeExport = '';
-    $codeExport.='<style>
+    $codeExport ='<style>
       #rm-export {
         font-family: monospace;
         font-size: 0.875rem;
@@ -4729,9 +4716,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         border-radius: 4px;
         background-color: rgba(0,0,0,.5);
         -webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);
-      }</style>
-      <textarea id="rm-export" rows="15">' . $code . '</textarea>
-    ';
+      }
+      </style>
+      <textarea id="rm-export" rows="15">' . $code . '</textarea>';
     $form->add([
       'name' => '_RockMigrationsCopyInfo',
       'type' => 'markup',
