@@ -1622,12 +1622,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       unset($data['_rockmigrations_log']);
     }
 
+    $this->ksortMulti($data);
+
     // if code was requested as array return it now
     if ($raw == 2) return $data;
 
     $code = $this->varexport($data);
     if ($raw) return $code;
     return "'{$item->name}' => $code";
+  }
+
+  /** Sort arrays recursively by keys. Can be associative
+   * @param array $array Array to sort recursively by keys. Can be associative
+   */
+  public static function ksortMulti(array &$array)
+  {
+    ksort($array);
+    foreach(array_keys($array) as $k) {
+      if(gettype($array[$k])=="array") {
+        self::ksortMulti($array[$k]);
+      }
+    }
   }
 
   /**
@@ -4696,12 +4711,33 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // early exit (eg when changing fieldtype)
     if (!$existing) return;
 
+    $code = $this->wire->sanitizer->entities1($this->getCode($item));
+    $codeExport = '';
+    $codeExport.='<style>
+      #rm-export {
+        font-family: monospace;
+        font-size: 0.875rem;
+        resize: both;
+        min-height: 400px;
+        overflow-y: scroll;
+      }
+      #rm-export::-webkit-scrollbar {
+        -webkit-appearance: none;
+        width: 7px;
+      }
+      #rm-export::-webkit-scrollbar-thumb {
+        border-radius: 4px;
+        background-color: rgba(0,0,0,.5);
+        -webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);
+      }</style>
+      <textarea id="rm-export" rows="15">' . $code . '</textarea>
+    ';
     $form->add([
       'name' => '_RockMigrationsCopyInfo',
       'type' => 'markup',
       'label' => 'RockMigrations Code',
       'description' => 'This is the code you can use for your migrations. Use it in $rockmigrations->migrate():',
-      'value' => "<pre><code>" . $this->getCode($item) . "</code></pre>",
+      'value' => $codeExport,
       'collapsed' => Inputfield::collapsedYes,
       'icon' => 'code',
     ]);
@@ -5088,6 +5124,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       "/([ ]*)(\'[^\']+\') => ([\[\'])/" => '$1$2 => $3',
     ];
     $export = preg_replace(array_keys($patterns), array_values($patterns), $export);
+    $export = str_replace(["[\n  ]", '  '], ["[]", '    '], $export);
     if ((bool)$return) return $export;
     else echo $export;
   }
