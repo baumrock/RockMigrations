@@ -197,6 +197,11 @@ class Deployment extends WireData
       $dsn = "mysql:dbname={$config->dbName};host={$config->dbHost};port={$config->dbPort}";
       $db = new WireDatabasePDO($dsn, $config->dbUser, $config->dbPass);
       $db->prepare("DELETE FROM `caches` WHERE `name` LIKE 'FileCompiler__%'")->execute();
+
+      // delete cache from magicpages so that we dont get
+      // any fatal errors of page classes that have been removed
+      $db->prepare("DELETE FROM `caches` WHERE `name` = 'autoload-classloader-classes'")->execute();
+      $db->prepare("DELETE FROM `caches` WHERE `name` = 'autoload-repeater-pageclasses'")->execute();
       $this->ok();
     } catch (\Throwable $th) {
       $this->echo($th->getMessage());
