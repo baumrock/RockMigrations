@@ -1,3 +1,14 @@
+## [4.0.0](https://github.com/baumrock/RockMigrations/compare/v3.36.1...v4.0.0) (2024-02-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove ImageMurl tweak in favour of Latte Filter
+
+### Bug Fixes
+
+* remove ImageMurl tweak in favour of Latte Filter ([c706ece](https://github.com/baumrock/RockMigrations/commit/c706ecebb4966c19e0fd5d7daafba42525de366e))
+
 ## [3.36.1](https://github.com/baumrock/RockMigrations/compare/v3.36.0...v3.36.1) (2024-02-05)
 
 
@@ -48,11 +59,4 @@
 ### Bug Fixes
 
 * fix issue with removing global fields ([b7e4182](https://github.com/baumrock/RockMigrations/commit/b7e418249137a7b7d588ceabf426bb59a0a10332))
-
-## [3.35.3](https://github.com/baumrock/RockMigrations/compare/v3.35.2...v3.35.3) (2024-01-17)
-
-
-### Bug Fixes
-
-* add check for title field flag after each run() ([2930675](https://github.com/baumrock/RockMigrations/commit/293067549744e6229ab9ad5e838690a90957e30d))
 
