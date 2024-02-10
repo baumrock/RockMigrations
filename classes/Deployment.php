@@ -181,27 +181,11 @@ class Deployment extends WireData
   public function cleanupDB()
   {
     if ($this->dry) return $this->echo("Dry run - skipping cleanupDB()...");
-    $pwroot = $this->paths->root . "/current";
     try {
       $this->section("Cleanup database cache");
-      if (!is_file($f = "$pwroot/wire/config.php")) throw new Exception("$f not found");
-      if (!is_file($f = "$pwroot/site/config.php")) throw new Exception("$f not found");
-      $config = ProcessWire::buildConfig($pwroot);
-
-      if (!$config->dbHost) throw new Exception("No dbHost");
-      if (!$config->dbUser) throw new Exception("No dbUser");
-      if (!$config->dbName) throw new Exception("No dbName");
-      if (!$config->dbPass) throw new Exception("No dbPass");
-      if (!$config->dbPort) throw new Exception("No dbPort");
-
-      $dsn = "mysql:dbname={$config->dbName};host={$config->dbHost};port={$config->dbPort}";
-      $db = new WireDatabasePDO($dsn, $config->dbUser, $config->dbPass);
-      $db->prepare("DELETE FROM `caches` WHERE `name` LIKE 'FileCompiler__%'")->execute();
-
-      // delete cache from magicpages so that we dont get
-      // any fatal errors of page classes that have been removed
-      $db->prepare("DELETE FROM `caches` WHERE `name` = 'autoload-classloader-classes'")->execute();
-      $db->prepare("DELETE FROM `caches` WHERE `name` = 'autoload-repeater-pageclasses'")->execute();
+      $this->sql("DELETE FROM `caches` WHERE `name` LIKE 'FileCompiler__%'");
+      $this->sql("DELETE FROM `caches` WHERE `name` = 'autoload-classloader-classes'");
+      $this->sql("DELETE FROM `caches` WHERE `name` = 'autoload-repeater-pageclasses'");
       $this->ok();
     } catch (\Throwable $th) {
       $this->echo($th->getMessage());
@@ -354,6 +338,13 @@ class Deployment extends WireData
     return $out;
   }
 
+  public function exit($msg)
+  {
+    $this->echo("❌ $msg");
+    // dont use a string here otherwise the github action will not fail!
+    exit(1);
+  }
+
   /**
    * Finish deployment
    * This removes the tmp- prefix from the deployment folder
@@ -373,11 +364,25 @@ class Deployment extends WireData
     $this->deleteOldReleases($keep);
   }
 
-  public function exit($msg)
+  public function getDB(): WireDatabasePDO
   {
-    $this->echo("❌ $msg");
-    // dont use a string here otherwise the github action will not fail!
-    exit(1);
+    try {
+      $pwroot = $this->paths->root . "/current";
+      if (!is_file($f = "$pwroot/wire/config.php")) throw new Exception("$f not found");
+      if (!is_file($f = "$pwroot/site/config.php")) throw new Exception("$f not found");
+      $config = ProcessWire::buildConfig($pwroot);
+
+      if (!$config->dbHost) throw new Exception("No dbHost");
+      if (!$config->dbUser) throw new Exception("No dbUser");
+      if (!$config->dbName) throw new Exception("No dbName");
+      if (!$config->dbPass) throw new Exception("No dbPass");
+      if (!$config->dbPort) throw new Exception("No dbPort");
+
+      $dsn = "mysql:dbname={$config->dbName};host={$config->dbHost};port={$config->dbPort}";
+      return new WireDatabasePDO($dsn, $config->dbUser, $config->dbPass);
+    } catch (\Throwable $th) {
+      $this->echo($th->getMessage());
+    }
   }
 
   public function healthcheck()
@@ -649,6 +654,12 @@ class Deployment extends WireData
 
       $this->ok();
     }
+  }
+
+  public function sql(string $query): void
+  {
+    $db = $this->getDB();
+    $db->prepare($query)->execute();
   }
 
   /**
