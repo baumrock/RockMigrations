@@ -56,6 +56,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /** @var WireData */
   public $conf;
 
+  public $configRaw;
+  public $configForced;
+
   /** @var WireData */
   public $fieldSuccessMessages;
 
@@ -110,12 +113,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // for development
     // $this->watch($this, false);
 
-    $this->conf = $this->wire(new WireData());
-    $this->conf->setArray($this->getArray()); // get modules config
-    if (is_array($config->rockmigrations)) {
-      // set module settings from config file
-      $this->setArray($config->rockmigrations);
-    }
+    // merge config from config[-local].php
+    $this->mergeConfig();
 
     // load tweaks
     $this->loadTweaks();
@@ -153,6 +152,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // other actions on init()
     $this->loadFilesOnDemand();
+    $this->syncSnippets();
   }
 
   public function ready()
@@ -923,7 +923,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   private function createSnippetfiles()
   {
-    if (!$this->conf->syncSnippets) return;
+    if (!$this->syncSnippets) return;
     if (!$this->wire->user->isSuperuser()) return;
 
     $getJson = function (string $folder): string {
@@ -2570,6 +2570,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $this->log("Sent mail to superuser: " . $su->email);
     } else {
       $this->log("Superuser has no email in its profile");
+    }
+  }
+
+  private function mergeConfig(): void
+  {
+    $config = $this->wire->config;
+
+    $this->configForced = new WireData();
+
+    // save raw config for later use
+    $raw = $this->getArray();
+    ksort($raw);
+    $this->configRaw = (new WireData)->setArray($raw);
+
+    // set module settings from config file
+    if (is_array($config->rockmigrations)) {
+      $this->setArray($config->rockmigrations);
+      $this->configForced->setArray($config->rockmigrations);
     }
   }
 
@@ -4849,10 +4867,25 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function sudo()
   {
-    $role = $this->wire->roles->get('superuser');
-    $su = $this->wire->users->get("sort=id,roles=$role");
-    if (!$su->id) return $this->log("No superuser found");
+    $su = new User();
+    $su->addRole("superuser");
     $this->wire->users->setCurrentUser($su);
+  }
+
+  /**
+   * Sync snippets
+   */
+  private function syncSnippets()
+  {
+    if (!$this->syncSnippets) return;
+    $folders = glob(__DIR__ . "/snippets/*/");
+    foreach ($folders as $folder) {
+      $name = basename($folder);
+      $this->fileSync(
+        "/.vscode/$name.code-snippets",
+        __DIR__ . "/.vscode/$name.code-snippets"
+      );
+    }
   }
 
   /**
@@ -5457,6 +5490,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return Yaml::parseFile($pathOrArray);
   }
 
+  public function yamlDump($data)
+  {
+    require_once(__DIR__ . '/vendor/autoload.php');
+    return Yaml::dump($data);
+  }
+
   public function yamlParse($yaml)
   {
     require_once(__DIR__ . '/vendor/autoload.php');
@@ -5483,39 +5522,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         </ul>",
     ]);
 
-    // prepare fileconfig string
-    $fileConfig = $this->wire->config->rockmigrations;
-    if (is_array($fileConfig)) {
-      $fileConfig = "<pre>" . print_r($fileConfig, true) . "</pre>";
-    } else $fileConfig = "";
-
-    $inputfields->add([
-      'type' => 'markup',
-      'label' => 'RockMigrations Config Options',
-      'value' => $fileConfig ?:
-        'You can set all settings either here via GUI or alternatively via config array:<br>
-        <pre>$config->rockmigrations = [<br>'
-        . '  "syncSnippets" => true,<br>'
-        . '];</pre>'
-        . 'Note that settings in config.php have precedence over GUI settings!',
-      'icon' => 'cogs',
-      'collapsed' => $fileConfig ? 0 : 1,
-      'notes' => $fileConfig ? "Current config from config[-local].php" : "",
-    ]);
+    $this->showConfigInfo($inputfields);
 
     $inputfields->add([
       'type' => 'checkbox',
       'name' => 'disabled',
       'label' => 'Disable all migrations',
       'notes' => 'This can be helpful for debugging or if you just want to use some useful methods of RockMigrations (like the asset minify feature).',
-      'checked' => $this->disabled ? 'checked' : '',
+      'checked' => $this->configRaw->disabled ? 'checked' : '',
     ]);
     $inputfields->add([
       'type' => 'checkbox',
       'name' => 'colorBar',
       'label' => 'Add colorbar to DEV and STAGING sites',
       'notes' => 'Adds a green colorbar to .ddev.site hosts and an organge bar to hosts containing the word staging.',
-      'checked' => $this->colorBar ? 'checked' : '',
+      'checked' => $this->configRaw->colorBar ? 'checked' : '',
     ]);
 
     $inputfields->add([
@@ -5523,27 +5544,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'name' => 'syncSnippets',
       'label' => 'Sync VSCode Snippets to PW root',
       'notes' => "If this option is enabled the module will copy the vscode snippets file to the PW root directory. If you are using VSCode I highly recommend using this option. See readme for details.",
-      'checked' => $this->syncSnippets ? 'checked' : '',
+      'checked' => $this->configRaw->syncSnippets ? 'checked' : '',
     ]);
     $inputfields->add([
       'type' => 'checkbox',
       'name' => 'addXdebugLauncher',
       'label' => 'Add xDebug launcher file for DDEV to .vscode folder',
       'notes' => 'All you have to do to use xDebug is "ddev xdebug on" and then start an xDebug session from within VSCode - see [docs](https://ddev.readthedocs.io/en/latest/users/debugging-profiling/step-debugging/#visual-studio-code-vs-code-debugging-setup)',
-      'checked' => $this->addXdebugLauncher ? 'checked' : '',
+      'checked' => $this->configRaw->addXdebugLauncher ? 'checked' : '',
     ]);
     $inputfields->add([
       'type' => 'checkbox',
       'name' => 'addHost',
       'label' => 'Add hostname to the PW admin footer',
-      'checked' => $this->addHost ? 'checked' : '',
+      'checked' => $this->configRaw->addHost ? 'checked' : '',
       'notes' => 'Superusers will also see a the root folders name and modified date on hover in a tooltip!',
     ]);
     $inputfields->add([
       'type' => 'checkbox',
       'name' => 'addVersion',
       'label' => 'Add version number from package.json in root folder to the PW admin footer',
-      'checked' => $this->addVersion ? 'checked' : '',
+      'checked' => $this->configRaw->addVersion ? 'checked' : '',
       'notes' => 'When using [fully automated releases and version numbers](https://processwire.com/talk/topic/28235-how-to-get-fully-automated-releases-tags-changelog-and-version-numbers-for-your-module-or-processwire-project/) for your project, github will create a package.json in the root directory of your project file for every release. If you check the box RockMigrations will show that info in the footer: [screenshot](https://i.imgur.com/0pkdKBd.png)'
     ]);
     $inputfields->add([
@@ -5551,14 +5572,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'name' => 'hideFromGuests',
       'label' => 'Hide website from guests',
       'notes' => 'When checked all guest visits will be redirected to the login page, handy for hiding staging sites from unwanted access.',
-      'checked' => $this->hideFromGuests ? 'checked' : '',
+      'checked' => $this->configRaw->hideFromGuests ? 'checked' : '',
     ]);
     $inputfields->add([
       'type' => 'text',
       'name' => 'previewPassword',
       'label' => 'Preview Password',
       'notes' => 'Guests can append ?preview=XXX to any URL and will gain access to the site for their session (where XXX is the password that you set here).',
-      'value' => $this->previewPassword,
+      'value' => $this->configRaw->previewPassword,
       'showIf' => 'hideFromGuests=1',
     ]);
 
@@ -5584,7 +5605,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     foreach ($this->tweaks as $tweak) {
       $f->addOption($tweak->name, implode(' - ', array_filter([$tweak->name, $tweak->description])));
     }
-    $f->value = (array)$this->enabledTweaks;
+    $f->value = (array)$this->configRaw->enabledTweaks;
     $inputfields->add($f);
 
     $this->installMacros();
@@ -5598,7 +5619,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         implode(' - ', array_filter([$macro->name, $macro->description]))
       );
     }
-    $f->value = (array)$this->enabledTweaks;
     $f->icon = 'code';
     $inputfields->add($f);
 
@@ -5636,6 +5656,57 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     ]);
 
     return $inputfields;
+  }
+
+  private function showConfigInfo($inputfields)
+  {
+    // create table
+    $raw = $this->configRaw;
+    $table = "<style>
+        .config-info td,
+        .config-info th { padding: 5px 10px; white-space: nowrap; }
+      </style>
+      <div class='uk-overflow-auto'>
+      <table class='config-info uk-table uk-table-striped uk-margin-remove'>";
+    $table .= "<tr>
+      <th>Name</th>
+      <th>Module Config <small>from DB</small></th>
+      <th>File Config <small>config[-local].php</small></th>
+      <th>Final Config</th>
+      </tr>";
+    foreach ($raw as $key => $db) {
+      $db = $this->showConfigInfoDump($db);
+      $forced = $this->showConfigInfoDump($this->configForced->get($key));
+      $final = $this->showConfigInfoDump($this->get($key));
+      $changed = $forced && $db !== $forced ? " class='uk-alert uk-alert-warning uk-text-bold'" : "";
+
+      $edit = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M7 7H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-1"/><path d="M20.385 6.585a2.1 2.1 0 0 0-2.97-2.97L9 12v3h3l8.385-8.415zM16 5l3 3"/></g></svg>';
+      $table .= "<tr>
+      <td>
+        <a href='#wrap_Inputfield_$key' uk-scroll>$edit</a> $key
+      </td>
+      <td>{$this->showConfigInfoDump($db)}</td>
+      <td>{$this->showConfigInfoDump($forced)}</td>
+      <td$changed>{$this->showConfigInfoDump($final)}</td>
+      </tr>";
+    }
+    $table .= "</table></div>";
+
+    // add inputfield
+    $inputfields->add([
+      'type' => 'markup',
+      'label' => 'Config Info',
+      'icon' => 'cogs',
+      'value' => $table,
+    ]);
+  }
+
+  private function showConfigInfoDump($data)
+  {
+    if (!$data) return;
+    if (is_int($data)) return $data;
+    if (is_string($data)) return $data;
+    return nl2br($this->yamlDump($data));
   }
 
   /**
