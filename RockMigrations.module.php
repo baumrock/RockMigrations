@@ -152,7 +152,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // other actions on init()
     $this->loadFilesOnDemand();
-    $this->syncSnippets();
+    $this->createSnippetfiles();
   }
 
   public function ready()
@@ -921,7 +921,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Create snippet files for .vscode folder
    */
-  private function createSnippetfiles()
+  private function createSnippetfiles($force = false)
   {
     if (!$this->syncSnippets) return;
     if (!$this->wire->user->isSuperuser()) return;
@@ -942,15 +942,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       return json_encode($snippets, JSON_PRETTY_PRINT);
     };
 
+    $src = __DIR__ . "/snippets";
+    $dst = $this->wire->config->paths->root . ".vscode";
+    $hasChanged = $force || $this->isNewer($src, $dst);
+    if (!$hasChanged) return;
+
     $folders = glob(__DIR__ . "/snippets/*/");
+    $cnt = count($folders);
     foreach ($folders as $folder) {
       $name = basename($folder);
-      $dir = $this->wire->config->paths->root . ".vscode";
       $this->wire->files->filePutContents(
-        "$dir/$name.code-snippets",
+        "$dst/$name.code-snippets",
         $getJson($folder),
       );
     }
+
+    if (function_exists("bd")) bd("Recreated $cnt snippet files");
   }
 
   /**
@@ -1404,8 +1411,25 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return "vscode://file/" . ltrim($file, "/");
   }
 
-  public function filemtime($file)
+  /**
+   * Get filemtime of given file or folder
+   */
+  public function filemtime($file, $depth = 3)
   {
+    if ($depth < 1) $depth = 1;
+    if (is_dir($file)) {
+      $latestTime = 0;
+      $directory = new \RecursiveDirectoryIterator($file);
+      $iterator = new \RecursiveIteratorIterator($directory, \RecursiveIteratorIterator::SELF_FIRST);
+      $iterator->setMaxDepth($depth - 1); // Limiting recursion to 3 levels (0, 1, 2)
+      foreach ($iterator as $fileinfo) {
+        if (!$fileinfo->isFile()) continue;
+        $fileTime = $fileinfo->getMTime();
+        if ($fileTime <= $latestTime) continue;
+        $latestTime = $fileTime;
+      }
+      return $latestTime;
+    }
     $path = $this->getAbsolutePath($file);
     if (is_file($path)) return filemtime($path);
     return 0;
@@ -1996,7 +2020,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // other actions
     $this->addXdebugLauncher();
-    $this->createSnippetfiles();
+    $this->createSnippetfiles(true);
   }
 
   /**
@@ -2307,12 +2331,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Is given file newer than the comparison file?
+   *
+   * You can also compare two directories!
+   *
    * Returns true if comparison file does not exist
    * Returns false if file does not exist
    */
-  public function isNewer($file, $comparison): bool
+  public function isNewer($file, $comparison, $depth = 3): bool
   {
-    return $this->filemtime($file) > $this->filemtime($comparison);
+    return $this->filemtime($file, $depth) > $this->filemtime($comparison, $depth = 3);
   }
 
   /**
@@ -4873,22 +4900,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Sync snippets
-   */
-  private function syncSnippets()
-  {
-    if (!$this->syncSnippets) return;
-    $folders = glob(__DIR__ . "/snippets/*/");
-    foreach ($folders as $folder) {
-      $name = basename($folder);
-      $this->fileSync(
-        "/.vscode/$name.code-snippets",
-        __DIR__ . "/.vscode/$name.code-snippets"
-      );
-    }
-  }
-
-  /**
    * Make sure that the given file/directory path is absolute
    * This will NOT check if the directory or path exists!
    * It will always prepend the PW root directory so this method does not work
@@ -5542,7 +5553,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $inputfields->add([
       'type' => 'checkbox',
       'name' => 'syncSnippets',
-      'label' => 'Sync VSCode Snippets to PW root',
+      'label' => 'Copy VSCode Snippets to PW root',
       'notes' => "If this option is enabled the module will copy the vscode snippets file to the PW root directory. If you are using VSCode I highly recommend using this option. See readme for details.",
       'checked' => $this->configRaw->syncSnippets ? 'checked' : '',
     ]);
