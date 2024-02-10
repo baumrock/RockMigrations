@@ -2841,7 +2841,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   private function migrateWatchfile(WatchFile $file): void
   {
     if ($this->wire->config->debug and $this->isCLI()) {
-      $this->log("Watchfile: " . $file->path);
+      $this->log("Watchfile: " . $file->url);
     }
 
     if (!$file->migrate) return;
@@ -2852,7 +2852,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // trigger migrate() of another object?
     if ($file->trigger) {
-      $this->log("Trigger remote {$file->trigger}::migrate()");
+      $this->log("  => {$file->trigger}::migrate()");
       $file->trigger->migrate();
       return;
     }
@@ -2877,7 +2877,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           method_exists($tmp, 'migrate') or
           (is_object($module) and method_exists($module, "___migrate"))
         ) {
-          $this->log("Trigger {$file->pageClass}::migrate()");
+          $this->log("  => {$file->pageClass}::migrate()");
           $tmp->migrate();
         }
       } else $this->log("--- Skip {$file->pageClass} (no change)");
@@ -5232,6 +5232,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     /** @var WatchFile $data */
     $data->setArray([
       'path' => $path . $hash,
+      'url' => $this->toUrl($path), // for logs
       'module' => $module,
       'callback' => $callback,
       'pageClass' => $opt->pageClass,
