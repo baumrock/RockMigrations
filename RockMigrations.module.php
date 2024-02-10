@@ -4696,12 +4696,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // early exit (eg when changing fieldtype)
     if (!$existing) return;
 
+    $code = $this->wire->sanitizer->entities1($this->getCode($item));
     $form->add([
       'name' => '_RockMigrationsCopyInfo',
       'type' => 'markup',
       'label' => 'RockMigrations Code',
       'description' => 'This is the code you can use for your migrations. Use it in $rockmigrations->migrate():',
-      'value' => "<pre><code>" . $this->getCode($item) . "</code></pre>",
+      'value' => "<pre><code>$code</code></pre>",
       'collapsed' => Inputfield::collapsedYes,
       'icon' => 'code',
     ]);
