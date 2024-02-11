@@ -4,6 +4,9 @@ namespace RockMigrations\Tweaks;
 
 use ProcessWire\HookEvent;
 
+/**
+ * Note: See https://github.com/processwire/processwire-issues/issues/1826
+ */
 class LangActive extends Tweak
 {
   public $description = "Set all languages of new pages active by default";
