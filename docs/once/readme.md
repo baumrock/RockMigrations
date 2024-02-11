@@ -1,5 +1,7 @@
 # Once
 
+<img src=screenshot.png class=blur>
+
 You can make sure that some migrations are only ever executed once on your system by wrapping the migration in the `once()` callback:
 
 ```php
