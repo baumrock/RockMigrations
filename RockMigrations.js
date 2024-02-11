@@ -9,7 +9,9 @@ $(document).ready(() => {
     if (name == "templateLabel") name = "label";
     else if (name == "field_label") name = "label";
     else if (name == "asmSelect0") return;
-    $(el).attr("title", name + " = " + el.value);
+    let code = '"' + name + '" => "' + el.value + '",';
+    $(el).attr("title", code + " (shift-click to copy)");
+    $(el).attr("rockmigrations-code", code);
     UIkit.tooltip(el);
     // console.log("added tooltip", el, el.value);
   };
@@ -20,6 +22,21 @@ $(document).ready(() => {
     // this is to fix this issue: https://processwire.com/talk/topic/29462-no-title-field-with-add-new-page-in-pw-anymore-after-hidetitle-true/?do=findComment&comment=238531
     if (el.closest(".InputfieldAsmSelect")) return;
     addTooltip(el);
+  });
+
+  // on shift-click copy the attribute "rockmigrations-code" of the clicked element to the clipboard
+  $(document).on("click", "[rockmigrations-code]", function (e) {
+    if (!e.shiftKey) return;
+    const codeToCopy = $(this).attr("rockmigrations-code");
+    if (codeToCopy) {
+      const textarea = document.createElement("textarea");
+      textarea.value = codeToCopy;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      UIkit.notification("Copied: " + codeToCopy, { status: "success" });
+    }
   });
 });
 
