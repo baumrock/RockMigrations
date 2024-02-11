@@ -1806,6 +1806,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return $data;
   }
 
+  public function getOnceHistory(): array
+  {
+    $history = $this->wire->cache->get("rm:once|*") ?: [];
+    uasort($history, function ($a, $b) {
+      return $a['time'] <=> $b['time'];
+    });
+    return array_reverse($history);
+  }
+
   /**
    * Get page
    * Returns FALSE if page is not found
@@ -3120,6 +3129,37 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * See docs about the once feature
+   */
+  public function once(
+    $key,
+    $callback,
+    $debug = false,
+    callable $confirm = null,
+  ): void {
+    $key = "rm:once|$key";
+    if (!$debug && $this->wire->cache->get($key)) return;
+    try {
+      $callback($this);
+      $trace = debug_backtrace()[0];
+      $data = [
+        'file' => $this->toUrl($trace['file']) . ":" . $trace['line'],
+        'time' => microtime(true),
+      ];
+      if ($confirm) {
+        $confirmed = !!$confirm();
+        if (!$confirmed) {
+          $this->log("Confirmation for $key failed");
+          return;
+        }
+      }
+      $this->wire->cache->save($key, $data);
+    } catch (\Throwable $th) {
+      $this->log($th->getMessage());
+    }
+  }
+
+  /**
    * Get all pageclass files of given module
    */
   private function pageClassFiles(Module $module): array
@@ -3392,7 +3432,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Remove all template context field settings
+   * Remove template context for given field
    * @return void
    */
   public function removeTemplateContext($tpl, $field)
@@ -3535,6 +3575,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $user = $this->wire->user;
     $this->sudo();
+
+    // install process module if it is not installed
+    $this->once(
+      "11.02.2024: Install RockMigrations Process Module",
+      function (RockMigrations $rm) {
+        $rm->installModule("ProcessRockMigrations");
+      },
+      confirm: function () {
+        return $this->wire->modules->isInstalled("ProcessRockMigrations");
+      },
+    );
+
     $this->migrateWatchfiles(true);
     $this->wire->users->setCurrentUser($user);
   }
