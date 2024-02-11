@@ -10,6 +10,7 @@ use RockMigrations\Deployment;
 use RockMigrations\MagicPages;
 use RockMigrations\WatchFile;
 use RockPageBuilder\Block as RockPageBuilderBlock;
+use RockShell\Application;
 use Symfony\Component\Yaml\Yaml;
 use TracyDebugger;
 
@@ -3506,6 +3507,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // delete all RM caches that should be cleard on every page save
     $caches = array_filter(explode(",", $this->cacheDeleteOnSave));
     foreach ($caches as $name) $this->wire->cache->delete($name);
+  }
+
+  public function rockshell(): Application
+  {
+    require_once $this->wire->config->paths->root . "RockShell/rock.php";
+    return $app;
   }
 
   /**
