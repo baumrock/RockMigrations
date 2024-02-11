@@ -27,6 +27,7 @@
     // on shift-click copy the attribute "rockmigrations-code" of the clicked element to the clipboard
     $(document).on("click", "[rockmigrations-code]", function (e) {
       if (!e.shiftKey) return;
+      addTooltip(e.target);
       const codeToCopy = $(this).attr("rockmigrations-code");
       copyToClipboard(codeToCopy);
     });
