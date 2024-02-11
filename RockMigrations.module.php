@@ -1647,6 +1647,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       unset($data['_rockmigrations_log']);
     }
 
+    // sort properties alphabetically
     ksort($data, SORT_NATURAL);
 
     // if code was requested as array return it now
@@ -4803,7 +4804,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$existing) return;
 
     $code = $this->wire->sanitizer->entities1($this->getCode($item));
-    $codeExport ='<style>
+    $codeExport = '<style>
       #rm-export {
         font-family: monospace;
         font-size: 0.875rem;
@@ -5208,14 +5209,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $export = var_export($expression, TRUE);
     $patterns = [
+      // change array() syntax to []
       "/array \(/" => '[',
       "/^([ ]*)\)(,?)$/m" => '$1]$2',
+
+      // Adjust formatting for array notation to ensure proper spacing
       "/=>[ ]?\n[ ]+\[/" => '=> [',
+
+      // Ensure consistent spacing around the '=>' array operator
       "/([ ]*)(\'[^\']+\') => ([\[\'])/" => '$1$2 => $3',
+
+      // make empty arrays more compact
       "/\[\s*\]/" => '[]',
     ];
     $export = preg_replace(array_keys($patterns), array_values($patterns), $export);
+
+    // make it use 4 spaces as preferred by PR from @donatasben - thx :)
     $export = str_replace(['  '], ['    '], $export);
+
     if ((bool)$return) return $export;
     else echo $export;
   }
