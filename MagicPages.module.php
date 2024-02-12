@@ -193,9 +193,9 @@ class MagicPages extends WireData implements Module
         $page = $event->object;
         if ($page->className(true) !== $magicPage->className(true)) return;
         $page->onChanged(
-          $event->arguments(0),
-          $event->arguments(1),
-          $event->arguments(2)
+          $event->arguments(0), // fieldname
+          $event->arguments(1), // old value
+          $event->arguments(2), // new value
         );
       });
     }
