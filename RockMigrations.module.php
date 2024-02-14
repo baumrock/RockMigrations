@@ -3143,6 +3143,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $key = "rm:once|$key";
     if (!$debug && $this->wire->cache->get($key)) return;
     try {
+      $this->log($key);
       $callback($this);
       $trace = debug_backtrace()[0];
       $data = [
