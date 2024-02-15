@@ -8,6 +8,8 @@ use ProcessWire\ProcessWire;
 use ProcessWire\WireData;
 use ProcessWire\WireDatabasePDO;
 
+use function ProcessWire\rockmigrations;
+
 chdir(__DIR__);
 chdir("../../../../");
 require_once "wire/core/ProcessWire.php";
@@ -364,7 +366,10 @@ class Deployment extends WireData
     $this->deleteOldReleases($keep);
   }
 
-  public function getDB(): WireDatabasePDO
+  /**
+   * @return WireDatabasePDO|void
+   */
+  public function getDB()
   {
     try {
       $pwroot = $this->paths->root . "/current";
@@ -428,6 +433,20 @@ class Deployment extends WireData
     }
     if (!$this->dry and !is_array($out)) return $this->exit("migrate.php failed");
     $this->ok();
+  }
+
+  /**
+   * Remove path from delete array
+   */
+  public function nodelete(string|array $path): void
+  {
+    if (is_array($path)) {
+      foreach ($path as $p) $this->undelete($p);
+      return;
+    }
+    if (($key = array_search($path, $this->delete)) !== false) {
+      unset($this->delete[$key]);
+    }
   }
 
   public function ok($msg = "Done")
@@ -658,6 +677,7 @@ class Deployment extends WireData
 
   public function sql(string $query): void
   {
+    if (!rockmigrations()->isCLI()) return;
     $db = $this->getDB();
     $db->prepare($query)->execute();
   }
@@ -678,5 +698,13 @@ class Deployment extends WireData
   public function verbose()
   {
     $this->isVerbose = true;
+  }
+
+  public function __debugInfo()
+  {
+    return [
+      'share' => $this->share,
+      'delete' => $this->delete,
+    ];
   }
 }
