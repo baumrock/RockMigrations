@@ -8,8 +8,6 @@ use ProcessWire\ProcessWire;
 use ProcessWire\WireData;
 use ProcessWire\WireDatabasePDO;
 
-use function ProcessWire\rockmigrations;
-
 chdir(__DIR__);
 chdir("../../../../");
 require_once "wire/core/ProcessWire.php";
