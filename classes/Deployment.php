@@ -677,7 +677,7 @@ class Deployment extends WireData
 
   public function sql(string $query): void
   {
-    if (!rockmigrations()->isCLI()) return;
+    if (php_sapi_name() !== 'cli') return;
     $db = $this->getDB();
     $db->prepare($query)->execute();
   }
