@@ -1,0 +1,7 @@
+// add block settings
+public function settingsTable(\ProcessWire\RockFieldsField \$field)
+{
+  \$settings = \$this->getDefaultSettings(\$field);
+  $0
+  return \$settings;
+}
