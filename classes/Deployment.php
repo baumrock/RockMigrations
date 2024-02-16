@@ -558,9 +558,7 @@ class Deployment extends WireData
     $release = $this->paths->release;
     $shared = $this->paths->shared;
     $this->section("Securing file and folder permissions...");
-    $this->exec("      find $release -type d -exec chmod 755 {} \;
-      find $release -type f -exec chmod 644 {} \;
-      chmod 440 $release/site/config.php
+    $this->exec("chmod 440 $release/site/config.php
       chmod 440 $shared/site/config-local.php", true);
     $this->ok();
   }
