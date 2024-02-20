@@ -569,12 +569,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       foreach ($files as $file) {
         $name = substr(basename($file), 0, -4);
         $class = "\\$namespace\\$name";
-        $tmp = new $class();
-        $field = $this->wire->fields->get($tmp::field);
-        if (!$field) continue;
-        $field->type->setCustomPageClass($field, $class);
-        if (method_exists($tmp, "init")) $tmp->init();
-        if (method_exists($tmp, "ready")) $this->readyClasses[] = $tmp;
+        try {
+          $tmp = new $class();
+          $field = $this->wire->fields->get($tmp::field);
+          if (!$field) continue;
+          $field->type->setCustomPageClass($field, $class);
+          if (method_exists($tmp, "init")) $tmp->init();
+          if (method_exists($tmp, "ready")) $this->readyClasses[] = $tmp;
+        } catch (\Throwable $th) {
+          $this->log($th->getMessage());
+        }
       }
     }
   }
