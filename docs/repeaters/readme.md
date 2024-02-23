@@ -1,6 +1,6 @@
-# Migating Repeaters
+# Migrating Repeaters
 
-write nice: using repeaters with RockMigrations is quite simple. using the `rmf-repeater` snippet you'll get this:
+Utilizing repeaters with RockMigrations is straightforward. By employing the `rmf-repeater` snippet, you can achieve the following configuration:
 
 ```php
 'your_field' => [
@@ -20,7 +20,7 @@ write nice: using repeaters with RockMigrations is quite simple. using the `rmf-
 ],
 ```
 
-write nice: thats basically it. the only thing you need to take care of is that all fields defined in the fields array need to exist before you add them to the repeater. So in one migrate call it would be something like this:
+In essence, that's all there is to it. However, it's crucial to ensure that all fields listed in the 'fields' array are pre-existing before incorporating them into the repeater. Thus, within a single migration call, the process would resemble the following:
 
 ```php
 $rm->migrate([
@@ -70,4 +70,18 @@ $rm->migrate([
     ],
   ],
 ]);
+```
+
+Here's a helpful tip: You have the ability to directly configure the context of fields. This means you can, for instance, arrange three fields to display side-by-side for a more streamlined layout:
+
+```php
+'your_repeater_field' => [
+  ...
+  'fields' => [
+    'title' => ['columnWidth' => 33],
+    'foo'   => ['columnWidth' => 33],
+    'bar'   => ['columnWidth' => 33],
+  ],
+  ...
+],
 ```
