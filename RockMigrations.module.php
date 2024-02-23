@@ -5166,6 +5166,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       "/=>[ ]?\n[ ]+\[/" => '=> [',
       "/([ ]*)(\'[^\']+\') => ([\[\'])/" => '$1$2 => $3',
       "/\[\s*\]/" => '[]',
+      '/\d+\s=>\s/' => '',
     ];
     $export = preg_replace(array_keys($patterns), array_values($patterns), $export);
     $export = str_replace(['  '], ['    '], $export);
