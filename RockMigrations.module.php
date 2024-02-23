@@ -1588,12 +1588,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $data[$key] = $names;
       }
 
+      // Need to refetch template_id and parent_id as getExportData is not returning them correctly
+      if (isset($data['template_id']) && $data['template_id']==0) $data['template_id'] = $item->template_id;
+      if (isset($data['parent_id']) && $data['parent_id']==0) $data['parent_id'] = $item->parent_id;
+
       // we have a different syntax for options of an options field
       if ($item->type instanceof FieldtypeRepeater) {
         $data['fields'] = $data['fieldContexts'];
         unset($data['fieldContexts']);
         unset($data['repeaterFields']);
-        unset($data['template_ids']); // BUG: Exports as 'template_ids=0' that prevents repeater using correct template/fieldgroup
       } elseif ($item->type instanceof FieldtypeOptions) {
         $options = [];
         foreach ($item->type->manager->getOptions($item) as $opt) {
