@@ -1588,15 +1588,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $data[$key] = $names;
       }
 
-      // Set repeater fields fields and remove template_id and parent_id. Skip if it's RepeaterMatrix
+      // Set repeater field's fields and remove template_id and parent_id. Skip for now if it's RepeaterMatrix
       if ($item->type instanceof FieldtypeRepeater && !$item->type instanceof FieldtypeRepeaterMatrix) {
         $data['fields'] = $data['fieldContexts'];
+        // Get fields from the repeater template if they are not set (freshly migrated-in repeater)
+        if (empty($data['fields'])) {
+          $repeater_fields = $item->type->getRepeaterTemplate($item)->fieldgroup;
+          foreach ($repeater_fields as $f) {
+            $data['fields'][$f->name] = $repeater_fields->getFieldContextArray($f->id);
+          }
+        }
         unset($data['fieldContexts']);
         unset($data['repeaterFields']);
-        
-        // Must be not set to 0 to allow RM to figure out the values on the fly
-        if (isset($data['template_id'])) unset($data['template_id']);
-        if (isset($data['parent_id'])) unset($data['parent_id']);
+        // Must be not set to 0 to allow RM to figure out the values on the fly:
+        unset($data['template_id']);
+        unset($data['parent_id']);
       } elseif ($item->type instanceof FieldtypeRepeaterMatrix) {
         // @todo Should transform field data to a different new RockMigrations syntax for RepeaterMatrix, used by createRepeaterMatrixField()?
         // But will it run the createRepeaterMatrixField() to import with migrate(), or should user use createRepeaterMatrixField() instead?
