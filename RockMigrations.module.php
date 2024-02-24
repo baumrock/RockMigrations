@@ -1588,16 +1588,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $data[$key] = $names;
       }
 
-      // Need to refetch template_id and parent_id as getExportData is not returning them correctly
-      if (isset($data['template_id']) && $data['template_id']==0) $data['template_id'] = $item->template_id;
-      if (isset($data['parent_id']) && $data['parent_id']==0) $data['parent_id'] = $item->parent_id;
-
-      // we have a different syntax for options of an options field
-      if ($item->type instanceof FieldtypeRepeater) {
+      // Set repeater fields fields and remove template_id and parent_id. Skip if it's RepeaterMatrix
+      if ($item->type instanceof FieldtypeRepeater && !$item->type instanceof FieldtypeRepeaterMatrix) {
         $data['fields'] = $data['fieldContexts'];
         unset($data['fieldContexts']);
         unset($data['repeaterFields']);
+        
+        // Must be not set to 0 to allow RM to figure out the values on the fly
+        if (isset($data['template_id'])) unset($data['template_id']);
+        if (isset($data['parent_id'])) unset($data['parent_id']);
+      } elseif ($item->type instanceof FieldtypeRepeaterMatrix) {
+        // @todo Should transform field data to a different new RockMigrations syntax for RepeaterMatrix, used by createRepeaterMatrixField()?
+        // But will it run the createRepeaterMatrixField() to import with migrate(), or should user use createRepeaterMatrixField() instead?
       } elseif ($item->type instanceof FieldtypeOptions) {
+        // we have a different syntax for options of an options field
         $options = [];
         foreach ($item->type->manager->getOptions($item) as $opt) {
           $options[$opt->id] =
