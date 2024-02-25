@@ -704,7 +704,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // create the new field
       $_name = $this->wire->sanitizer->fieldName($name);
       if ($_name !== $name) throw new WireException("Invalid fieldname ($name)!");
-      $field = $this->wire(new Field());
+      // RepeaterMatrix must be returned of it's own instance otherwise it will lack methods needed when adding items to the field
+      if ($type == 'FieldtypeRepeaterMatrix') $field = $this->wire(new RepeaterMatrixField());
+      else $field = $this->wire(new Field());
       $field->type = $type;
       $field->name = $_name;
       $field->label = $_name; // set label (mandatory since ~3.0.172)
@@ -1588,11 +1590,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $data[$key] = $names;
       }
 
+      if ($item->type instanceof FieldtypeRepeater) {
+        // Must be not set to 0 to allow RM to figure out the values on the fly:
+        unset($data['template_id']);
+        unset($data['parent_id']);
+      }
       // Set repeater field's fields and remove template_id and parent_id. Skip for now if it's RepeaterMatrix
       if ($item->type instanceof FieldtypeRepeater && !$item->type instanceof FieldtypeRepeaterMatrix) {
         $data['fields'] = $data['fieldContexts'];
         // Get fields from the repeater template if they are not set (freshly migrated-in repeater)
         if (empty($data['fields'])) {
+          /** @var Fieldgroup $repeater_fields */
           $repeater_fields = $item->type->getRepeaterTemplate($item)->fieldgroup;
           foreach ($repeater_fields as $f) {
             $data['fields'][$f->name] = $repeater_fields->getFieldContextArray($f->id);
@@ -1600,12 +1608,52 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         }
         unset($data['fieldContexts']);
         unset($data['repeaterFields']);
-        // Must be not set to 0 to allow RM to figure out the values on the fly:
-        unset($data['template_id']);
-        unset($data['parent_id']);
       } elseif ($item->type instanceof FieldtypeRepeaterMatrix) {
-        // @todo Should transform field data to a different new RockMigrations syntax for RepeaterMatrix, used by createRepeaterMatrixField()?
-        // But will it run the createRepeaterMatrixField() to import with migrate(), or should user use createRepeaterMatrixField() instead?
+        // Transform into RockMigrations syntax for RepeaterMatrix (as in $rm->createRepeaterMatrixField())
+        // @todo: convert `allowMatrixTypes` type ids to type names for easier readability. Maybe output disabled items as commented out to allow easy enable/disable/sort?
+
+        // Determine the number of matrix items
+        $matrixCount = 0;
+        foreach ($data as $key => $value) {
+          if (is_numeric($key)) continue;
+          if (strpos($key, 'matrix') === 0 && is_numeric(substr($key, 6, 1))) {
+            $matrixNumber = intval(substr($key, 6, 1));
+            $matrixCount = max($matrixCount, $matrixNumber);
+          }
+        }
+        // Do the data structure transformation
+        $matrixItems = [];
+        $sortOrder = [];
+        for ($i = 1; $i <= $matrixCount; $i++) {
+          if (isset($data["matrix{$i}_name"])) {
+            $matrixName = $data["matrix{$i}_name"];
+            $matrixItems[$matrixName] = [
+              'label' => $data["matrix{$i}_label"],
+              'head' => $data["matrix{$i}_head"],
+              'fields' => [],
+            ];
+            foreach ($data["matrix{$i}_fields"] as $field) {
+              if (isset($data['fieldContexts'][$field]["NS_matrix{$i}"])) {
+                $matrixItems[$matrixName]['fields'][$field] = $data['fieldContexts'][$field]["NS_matrix{$i}"];
+              } else {
+                $matrixItems[$matrixName]['fields'][] = $field;
+              }
+            }
+            $sortOrder[$matrixName] = $data["matrix{$i}_sort"];
+            unset($data["matrix{$i}_name"]);
+            unset($data["matrix{$i}_label"]);
+            unset($data["matrix{$i}_head"]);
+            unset($data["matrix{$i}_fields"]);
+            unset($data["matrix{$i}_sort"]);
+          }
+        }
+        // Sort the matrix items by the defined sort order
+        uksort($matrixItems, function($a, $b) use ($sortOrder) {
+            return $sortOrder[$a] - $sortOrder[$b];
+        });
+        $data['matrixItems'] = $matrixItems;
+        unset($data['repeaterFields']);
+        unset($data['fieldContexts']);
       } elseif ($item->type instanceof FieldtypeOptions) {
         // we have a different syntax for options of an options field
         $options = [];
@@ -2722,7 +2770,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // set field+template data after they have been created
     foreach ($config->fields as $name => $data) {
-      if (is_array($data)) $this->setFieldData($name, $data);
+      if (!is_array($data)) continue;
+      // Special case for RepeaterMatrix fields - use createRepeaterMatrixField() method
+      if ($data['type'] == 'FieldtypeRepeaterMatrix' || $data['type'] == 'RepeaterMatrix') {
+        // Maybe this could be better suited inside setFieldData() method?
+        $this->createRepeaterMatrixField($name, $data);
+        continue;
+      }
+      $this->setFieldData($name, $data);
     }
     foreach ($config->templates as $name => $data) {
       // this check makes it possible to define templates without data
