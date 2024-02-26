@@ -1671,7 +1671,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           foreach ($this->wire->languages as $lang) {
             $options = [];
             foreach ($item->type->manager->getOptions($item) as $opt) {
-              $options[$opt->id] =
+              $options[] = $opt->id . '=' .
                 ($opt->value ? $opt->value . "|" : "") .
                 $opt->get("title$lang|title");
             }
@@ -3988,9 +3988,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     foreach ($options as $lang => $opt) {
       $lang = $this->getLanguage($lang);
       $string = "";
-      foreach ($opt as $k => $v) {
-        if ($k === 0) $this->log("Option with key 0 skipped");
-        else $string .= "\n$k=$v";
+      foreach ($opt as $v) {
+        $string .= "\n$v";
       }
       if ($lang->isDefault()) $defaults = $string;
       $optionsArray[$lang->id] = $string;
