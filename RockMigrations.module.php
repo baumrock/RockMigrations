@@ -1612,19 +1612,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         // Transform into RockMigrations syntax for RepeaterMatrix (as in $rm->createRepeaterMatrixField())
         // @todo: convert `allowMatrixTypes` type ids to type names for easier readability. Maybe output disabled items as commented out to allow easy enable/disable/sort?
 
-        // Determine the number of matrix items
-        $matrixCount = 0;
+        // Determine the matrix items numbers
+        $matrixTypes = [];
         foreach ($data as $key => $value) {
           if (is_numeric($key)) continue;
           if (strpos($key, 'matrix') === 0 && is_numeric(substr($key, 6, 1))) {
-            $matrixNumber = intval(substr($key, 6, 1));
-            $matrixCount = max($matrixCount, $matrixNumber);
+            $matrixTypes[] = intval(substr($key, 6, 1));
           }
         }
+        $matrixTypes = array_unique($matrixTypes);
         // Do the data structure transformation
         $matrixItems = [];
         $sortOrder = [];
-        for ($i = 1; $i <= $matrixCount; $i++) {
+        foreach ($matrixTypes as $i) {
           if (isset($data["matrix{$i}_name"])) {
             $matrixName = $data["matrix{$i}_name"];
             $matrixItems[$matrixName] = [
