@@ -100,14 +100,13 @@ class Deployment extends WireData
     $this->addRobots();
     $this->trigger("addRobots", "after");
 
-    $this->trigger("finish", "before");
-    $this->finish();
-    $this->trigger("finish", "after");
-
-    // chown must be after finish to affect current symlink!
     $this->trigger("chown", "before");
     $this->chown();
     $this->trigger("chown", "after");
+
+    $this->trigger("finish", "before");
+    $this->finish();
+    $this->trigger("finish", "after");
 
     $this->trigger("healthcheck", "before");
     $this->healthcheck();
@@ -184,8 +183,11 @@ class Deployment extends WireData
     try {
       $this->section("Cleanup database cache");
       $this->sql("DELETE FROM `caches` WHERE `name` LIKE 'FileCompiler__%'");
+
+      // reset autoload cache to make sure we don't run into issues
       $this->sql("DELETE FROM `caches` WHERE `name` = 'autoload-classloader-classes'");
       $this->sql("DELETE FROM `caches` WHERE `name` = 'autoload-repeater-pageclasses'");
+
       $this->ok();
     } catch (\Throwable $th) {
       $this->echo($th->getMessage());
@@ -361,6 +363,16 @@ class Deployment extends WireData
       cd {$this->paths->root}
       ln -snf $newName current
     ");
+
+    // chown symlink?
+    if ($this->chown) {
+      $this->echo("Updating symlink permissions");
+      $root = $this->paths->root;
+      $owner = fileowner($root);
+      $group = filegroup($root);
+      $this->exec("chown $owner:$group $root/current", true);
+    }
+
     $this->deleteOldReleases($keep);
   }
 

@@ -543,6 +543,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       return glob($this->wire->config->paths->siteModules . "*/classLoader");
     });
     foreach ($dirs as $dir) {
+      // if $dir is not within current site root we have an outdated cache
+      if (!str_starts_with($dir, $this->wire->config->paths->siteModules)) {
+        $this->wire->cache->delete("autoload-classloader-classes");
+        $this->wire->cache->delete("autoload-repeater-pageclasses");
+        $this->autoloadClasses();
+        return;
+      }
       $namespace = basename(dirname($dir));
       $this->wire->classLoader->addNamespace($namespace, $dir);
     }
@@ -564,6 +571,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       return $classes;
     });
     foreach ($classes as $dir => $files) {
+      if (!str_starts_with($dir, $this->wire->config->paths->siteModules)) {
+        $this->wire->cache->delete("autoload-classloader-classes");
+        $this->wire->cache->delete("autoload-repeater-pageclasses");
+        $this->autoloadClasses();
+        return;
+      }
       $namespace = basename(dirname($dir));
       $this->wire->classLoader->addNamespace($namespace, $dir);
       foreach ($files as $file) {
