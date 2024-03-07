@@ -5137,16 +5137,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // There might still be the checkbox in the settings tab
     // We can't remove it because this will always publish the page.
-    $trace = Debug::backtrace()[0]['file'];
     $this->wire->addHookAfter(
       "Pages::published",
-      function (HookEvent $event) use ($selector, $trace, $sudo) {
+      function (HookEvent $event) use ($selector, $file, $sudo) {
         $page = $event->arguments('page');
         if (!$page->matches($selector)) return;
         $page->addStatus(Page::statusUnpublished);
         $page->save();
         $msg = "Publishing page $selector not allowed";
-        if ($sudo) $msg .= " by $trace";
+        if ($sudo) $msg .= " by $file";
         $this->error($msg);
       }
     );
