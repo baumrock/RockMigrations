@@ -5105,15 +5105,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // allow publish for superusers
     if ($sudo and $allowForSuperusers) return;
 
+    // get trace for better info
+    $trace = Debug::backtrace();
+    $file = $trace[0]['file'];
+
     // Remove publish button and unpublished checkbox in Page Edit
     $this->wire->addHookAfter(
       'ProcessPageEdit::buildForm',
-      function (HookEvent $event) use ($selector) {
+      function (HookEvent $event) use ($selector, $file) {
         $form = $event->return;
         $page = $event->object->getPage();
         if (!$page->isUnpublished()) return;
         if (!$page->matches($selector)) return;
         $form->remove("submit_publish");
+        $page->message("$file prevents publishing this page.");
       }
     );
 
