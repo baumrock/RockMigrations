@@ -1,3 +1,33 @@
+## [4.1.0](https://github.com/baumrock/RockMigrations/compare/v4.0.0...v4.1.0) (2024-03-08)
+
+
+### Features
+
+* add new config info screen and improve merging file config into module config (also fixes syncSnippets) ([eba2dfe](https://github.com/baumrock/RockMigrations/commit/eba2dfee03cb872412b8c5c5b0e7d352dc1d385b))
+* add nodelete() method for deployments ([ea74cc8](https://github.com/baumrock/RockMigrations/commit/ea74cc8e66eb88627253abf446f37ac3ef60beb8))
+* add once() feature + docs ([d1573d6](https://github.com/baumrock/RockMigrations/commit/d1573d6d46fe3c865d1efc1d5defc4208346d752))
+* add RPB snippets for settings ([6ed6d35](https://github.com/baumrock/RockMigrations/commit/6ed6d35613853c73a0c27fd11c9f2980b9a92082))
+* add shift-click copy feature for settings ([e958d3d](https://github.com/baumrock/RockMigrations/commit/e958d3d5d232cac996efe4f9757476751223211f))
+* add sql() method to wipe caches on deploy ([b1bd9a4](https://github.com/baumrock/RockMigrations/commit/b1bd9a4eaa11e56cf20131cd4c6ae079c32acfc2))
+* add support to minify all files in directory ([53cff11](https://github.com/baumrock/RockMigrations/commit/53cff113c5cf06ef03d011a1988d5b7d0e6fb95e))
+* add trace what prevents publish ([fa9d0ab](https://github.com/baumrock/RockMigrations/commit/fa9d0abadfe78ee87350e18b6252558d63c55d72))
+* catch autoload errors ([8f022b5](https://github.com/baumrock/RockMigrations/commit/8f022b5f3d47fecfe0bc595c6c2f46ad1a8a206d))
+* improve deployment ([90a993c](https://github.com/baumrock/RockMigrations/commit/90a993c597cf5155f5093d1c78d1279a4ce19203))
+* improve rockshell api and add docs ([6194f19](https://github.com/baumrock/RockMigrations/commit/6194f19598c3b35e26931f61742c6670bf291af0))
+* merge fieldset open+close snippet ([4f5f6a4](https://github.com/baumrock/RockMigrations/commit/4f5f6a4ae4f7e2d834e0e029b7f08f4f8d11dc33))
+* set file/folder permissions via rsync ([8f4de29](https://github.com/baumrock/RockMigrations/commit/8f4de299a9572ed4a6e91317b6197ac0dbccee69))
+* tinymce paste as plaintext by default ([5748e67](https://github.com/baumrock/RockMigrations/commit/5748e6787fd1922dee0c5d0777cc3cffa5ae42c4))
+* update copy code on click ([ea9a6f8](https://github.com/baumrock/RockMigrations/commit/ea9a6f8b475f4a1935d0374f139c34185bfef735))
+
+
+### Bug Fixes
+
+* add entity encoder to migrations code info [#51](https://github.com/baumrock/RockMigrations/issues/51) ([4b0c296](https://github.com/baumrock/RockMigrations/commit/4b0c2963497d9fec013117159e2df466e8c083d4))
+* button without type breaks enter-submit ([8104b2b](https://github.com/baumrock/RockMigrations/commit/8104b2b846aa2e92ebd6e1f2732d60d7ad5fea75))
+* prevent fatal error on deploy if pageclass removed ([162a0b7](https://github.com/baumrock/RockMigrations/commit/162a0b7762300ebe3f1e5648b207db18281485e0))
+* rockmigrations() causing error on deploy ([7f80154](https://github.com/baumrock/RockMigrations/commit/7f80154ea7ec72872cdf4eaa1696beeb0f1f2362))
+* vscode snippets not created ([b5e2592](https://github.com/baumrock/RockMigrations/commit/b5e25928ea17e073a71325cee7b253654dbdd8bb))
+
 ## [4.0.0](https://github.com/baumrock/RockMigrations/compare/v3.36.1...v4.0.0) (2024-02-10)
 
 
@@ -52,11 +82,4 @@
 ### Bug Fixes
 
 * remove absolete title-field check ([5f2a944](https://github.com/baumrock/RockMigrations/commit/5f2a9445643b09bd4a03da3c76269fb43f050365))
-
-## [3.35.4](https://github.com/baumrock/RockMigrations/compare/v3.35.3...v3.35.4) (2024-01-17)
-
-
-### Bug Fixes
-
-* fix issue with removing global fields ([b7e4182](https://github.com/baumrock/RockMigrations/commit/b7e418249137a7b7d588ceabf426bb59a0a10332))
 
