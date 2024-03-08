@@ -10,6 +10,7 @@ use RockMigrations\Deployment;
 use RockMigrations\MagicPages;
 use RockMigrations\WatchFile;
 use RockPageBuilder\Block as RockPageBuilderBlock;
+use RockShell\Application;
 use Symfony\Component\Yaml\Yaml;
 use TracyDebugger;
 
@@ -55,6 +56,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /** @var WireData */
   public $conf;
+
+  public $configRaw;
+  public $configForced;
 
   /** @var WireData */
   public $fieldSuccessMessages;
@@ -110,12 +114,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // for development
     // $this->watch($this, false);
 
-    $this->conf = $this->wire(new WireData());
-    $this->conf->setArray($this->getArray()); // get modules config
-    if (is_array($config->rockmigrations)) {
-      // set module settings from config file
-      $this->setArray($config->rockmigrations);
-    }
+    // merge config from config[-local].php
+    $this->mergeConfig();
 
     // load tweaks
     $this->loadTweaks();
@@ -153,6 +153,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // other actions on init()
     $this->loadFilesOnDemand();
+    $this->createSnippetfiles();
   }
 
   public function ready()
@@ -542,6 +543,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       return glob($this->wire->config->paths->siteModules . "*/classLoader");
     });
     foreach ($dirs as $dir) {
+      // if $dir is not within current site root we have an outdated cache
+      if (!str_starts_with($dir, $this->wire->config->paths->siteModules)) {
+        $this->wire->cache->delete("autoload-classloader-classes");
+        $this->wire->cache->delete("autoload-repeater-pageclasses");
+        $this->autoloadClasses();
+        return;
+      }
       $namespace = basename(dirname($dir));
       $this->wire->classLoader->addNamespace($namespace, $dir);
     }
@@ -563,17 +571,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       return $classes;
     });
     foreach ($classes as $dir => $files) {
+      if (!str_starts_with($dir, $this->wire->config->paths->siteModules)) {
+        $this->wire->cache->delete("autoload-classloader-classes");
+        $this->wire->cache->delete("autoload-repeater-pageclasses");
+        $this->autoloadClasses();
+        return;
+      }
       $namespace = basename(dirname($dir));
       $this->wire->classLoader->addNamespace($namespace, $dir);
       foreach ($files as $file) {
         $name = substr(basename($file), 0, -4);
         $class = "\\$namespace\\$name";
-        $tmp = new $class();
-        $field = $this->wire->fields->get($tmp::field);
-        if (!$field) continue;
-        $field->type->setCustomPageClass($field, $class);
-        if (method_exists($tmp, "init")) $tmp->init();
-        if (method_exists($tmp, "ready")) $this->readyClasses[] = $tmp;
+        try {
+          $tmp = new $class();
+          $field = $this->wire->fields->get($tmp::field);
+          if (!$field) continue;
+          $field->type->setCustomPageClass($field, $class);
+          if (method_exists($tmp, "init")) $tmp->init();
+          if (method_exists($tmp, "ready")) $this->readyClasses[] = $tmp;
+        } catch (\Throwable $th) {
+          $this->log($th->getMessage());
+        }
       }
     }
   }
@@ -921,9 +939,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Create snippet files for .vscode folder
    */
-  private function createSnippetfiles()
+  private function createSnippetfiles($force = false)
   {
-    if (!$this->conf->syncSnippets) return;
+    if (!$this->syncSnippets) return;
     if (!$this->wire->user->isSuperuser()) return;
 
     $getJson = function (string $folder): string {
@@ -942,15 +960,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       return json_encode($snippets, JSON_PRETTY_PRINT);
     };
 
+    $src = __DIR__ . "/snippets";
+    $dst = $this->wire->config->paths->root . ".vscode";
+    $hasChanged = $force || $this->isNewer($src, $dst);
+    if (!$hasChanged) return;
+
     $folders = glob(__DIR__ . "/snippets/*/");
+    $cnt = count($folders);
     foreach ($folders as $folder) {
       $name = basename($folder);
-      $dir = $this->wire->config->paths->root . ".vscode";
       $this->wire->files->filePutContents(
-        "$dir/$name.code-snippets",
+        "$dst/$name.code-snippets",
         $getJson($folder),
       );
     }
+
+    if (function_exists("bd")) bd("Recreated $cnt snippet files");
   }
 
   /**
@@ -1404,8 +1429,25 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return "vscode://file/" . ltrim($file, "/");
   }
 
-  public function filemtime($file)
+  /**
+   * Get filemtime of given file or folder
+   */
+  public function filemtime($file, $depth = 3)
   {
+    if ($depth < 1) $depth = 1;
+    if (is_dir($file)) {
+      $latestTime = 0;
+      $directory = new \RecursiveDirectoryIterator($file);
+      $iterator = new \RecursiveIteratorIterator($directory, \RecursiveIteratorIterator::SELF_FIRST);
+      $iterator->setMaxDepth($depth - 1); // Limiting recursion to 3 levels (0, 1, 2)
+      foreach ($iterator as $fileinfo) {
+        if (!$fileinfo->isFile()) continue;
+        $fileTime = $fileinfo->getMTime();
+        if ($fileTime <= $latestTime) continue;
+        $latestTime = $fileTime;
+      }
+      return $latestTime;
+    }
     $path = $this->getAbsolutePath($file);
     if (is_file($path)) return filemtime($path);
     return 0;
@@ -1565,8 +1607,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
       // we have a different syntax for options of an options field
       if ($item->type instanceof FieldtypeRepeater) {
-        unset($data['repeaterFields']);
+        $data['fields'] = $data['fieldContexts'];
         unset($data['fieldContexts']);
+        unset($data['repeaterFields']);
+        unset($data['template_ids']); // BUG: Exports as 'template_ids=0' that prevents repeater using correct template/fieldgroup
       } elseif ($item->type instanceof FieldtypeOptions) {
         $options = [];
         foreach ($item->type->manager->getOptions($item) as $opt) {
@@ -1621,6 +1665,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (array_key_exists('_rockmigrations_log', $data)) {
       unset($data['_rockmigrations_log']);
     }
+
+    // sort properties alphabetically
+    ksort($data, SORT_NATURAL);
 
     // if code was requested as array return it now
     if ($raw == 2) return $data;
@@ -1779,6 +1826,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (is_array($conf)) $data->setArray($conf);
     if ($property) return $data->get($property);
     return $data;
+  }
+
+  public function getOnceHistory(): array
+  {
+    $history = $this->wire->cache->get("rm:once|*") ?: [];
+    uasort($history, function ($a, $b) {
+      return $a['time'] <=> $b['time'];
+    });
+    return array_reverse($history);
   }
 
   /**
@@ -1996,7 +2052,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // other actions
     $this->addXdebugLauncher();
-    $this->createSnippetfiles();
+    $this->createSnippetfiles(true);
   }
 
   /**
@@ -2307,12 +2363,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   /**
    * Is given file newer than the comparison file?
+   *
+   * You can also compare two directories!
+   *
    * Returns true if comparison file does not exist
    * Returns false if file does not exist
    */
-  public function isNewer($file, $comparison): bool
+  public function isNewer($file, $comparison, $depth = 3): bool
   {
-    return $this->filemtime($file) > $this->filemtime($comparison);
+    return $this->filemtime($file, $depth) > $this->filemtime($comparison, $depth = 3);
   }
 
   /**
@@ -2570,6 +2629,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $this->log("Sent mail to superuser: " . $su->email);
     } else {
       $this->log("Superuser has no email in its profile");
+    }
+  }
+
+  private function mergeConfig(): void
+  {
+    $config = $this->wire->config;
+
+    $this->configForced = new WireData();
+
+    // save raw config for later use
+    $raw = $this->getArray();
+    ksort($raw);
+    $this->configRaw = (new WireData)->setArray($raw);
+
+    // set module settings from config file
+    if (is_array($config->rockmigrations)) {
+      $this->setArray($config->rockmigrations);
+      $this->configForced->setArray($config->rockmigrations);
     }
   }
 
@@ -2841,7 +2918,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   private function migrateWatchfile(WatchFile $file): void
   {
     if ($this->wire->config->debug and $this->isCLI()) {
-      $this->log("Watchfile: " . $file->path);
+      $this->log("Watchfile: " . $file->url);
     }
 
     if (!$file->migrate) return;
@@ -2852,7 +2929,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // trigger migrate() of another object?
     if ($file->trigger) {
-      $this->log("Trigger remote {$file->trigger}::migrate()");
+      $this->log("  => {$file->trigger}::migrate()");
       $file->trigger->migrate();
       return;
     }
@@ -2877,7 +2954,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           method_exists($tmp, 'migrate') or
           (is_object($module) and method_exists($module, "___migrate"))
         ) {
-          $this->log("Trigger {$file->pageClass}::migrate()");
+          $this->log("  => {$file->pageClass}::migrate()");
           $tmp->migrate();
         }
       } else $this->log("--- Skip {$file->pageClass} (no change)");
@@ -3011,11 +3088,25 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * Usage:
    * $rm->minify("/path/to/style.css"); // creates /path/to/style.min.css
    * $rm->minify("/path/to/style.css", "/newpath/style.min.css");
+   *
+   * Minify all .js and .css files in a folder:
+   * $rm->minify("/path/to/folder");
    */
   public function minify($file, $minFile = null): string|false
   {
     if (!$this->wire->user->isSuperuser()) return false;
     if (!$this->wire->config->debug) return false;
+
+    if (is_dir($file)) {
+      $file = rtrim(Paths::normalizeSeparators($file), "/");
+      foreach (glob("$file/*.js") as $f) {
+        if (!str_ends_with($f, '.min.js')) $this->minify($f);
+      }
+      foreach (glob("$file/*.css") as $f) {
+        if (!str_ends_with($f, '.min.css')) $this->minify($f);
+      }
+      return false;
+    }
 
     $ext = pathinfo($file, PATHINFO_EXTENSION);
     require_once __DIR__ . "/vendor/autoload.php";
@@ -3071,6 +3162,38 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function noMigrate()
   {
     $this->noMigrate = true;
+  }
+
+  /**
+   * See docs about the once feature
+   */
+  public function once(
+    $key,
+    $callback,
+    $debug = false,
+    callable $confirm = null,
+  ): void {
+    $key = "rm:once|$key";
+    if (!$debug && $this->wire->cache->get($key)) return;
+    try {
+      $this->log($key);
+      $callback($this);
+      $trace = debug_backtrace()[0];
+      $data = [
+        'file' => $this->toUrl($trace['file']) . ":" . $trace['line'],
+        'time' => microtime(true),
+      ];
+      if ($confirm) {
+        $confirmed = !!$confirm();
+        if (!$confirmed) {
+          $this->log("Confirmation for $key failed");
+          return;
+        }
+      }
+      $this->wire->cache->save($key, $data);
+    } catch (\Throwable $th) {
+      $this->log($th->getMessage());
+    }
   }
 
   /**
@@ -3346,7 +3469,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Remove all template context field settings
+   * Remove template context for given field
    * @return void
    */
   public function removeTemplateContext($tpl, $field)
@@ -3463,6 +3586,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     foreach ($caches as $name) $this->wire->cache->delete($name);
   }
 
+  public function rockshell(): Application
+  {
+    require_once $this->wire->config->paths->root . "RockShell/rock.php";
+    return $app;
+  }
+
   /**
    * Get version number from package.json in PW root folder
    */
@@ -3483,6 +3612,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $user = $this->wire->user;
     $this->sudo();
+
+    // install process module if it is not installed
+    $this->once(
+      "11.02.2024: Install RockMigrations Process Module",
+      function (RockMigrations $rm) {
+        $rm->installModule("ProcessRockMigrations");
+      },
+      confirm: function () {
+        return $this->wire->modules->isInstalled("ProcessRockMigrations");
+      },
+    );
+
     $this->migrateWatchfiles(true);
     $this->wire->users->setCurrentUser($user);
   }
@@ -4696,12 +4837,33 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // early exit (eg when changing fieldtype)
     if (!$existing) return;
 
+    $code = $this->wire->sanitizer->entities1($this->getCode($item));
+    $codeExport = '<style>
+      #rm-export {
+        font-family: monospace;
+        font-size: 0.875rem;
+        resize: both;
+        min-height: 400px;
+        overflow-y: scroll;
+        overscroll-behavior: contain;
+      }
+      #rm-export::-webkit-scrollbar {
+        -webkit-appearance: none;
+        width: 7px;
+      }
+      #rm-export::-webkit-scrollbar-thumb {
+        border-radius: 4px;
+        background-color: rgba(0,0,0,.5);
+        -webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);
+      }
+      </style>
+      <textarea id="rm-export" rows="15">' . $code . '</textarea>';
     $form->add([
       'name' => '_RockMigrationsCopyInfo',
       'type' => 'markup',
       'label' => 'RockMigrations Code',
       'description' => 'This is the code you can use for your migrations. Use it in $rockmigrations->migrate():',
-      'value' => "<pre><code>" . $this->getCode($item) . "</code></pre>",
+      'value' => $codeExport,
       'collapsed' => Inputfield::collapsedYes,
       'icon' => 'code',
     ]);
@@ -4848,9 +5010,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function sudo()
   {
-    $role = $this->wire->roles->get('superuser');
-    $su = $this->wire->users->get("sort=id,roles=$role");
-    if (!$su->id) return $this->log("No superuser found");
+    $su = new User();
+    $su->addRole("superuser");
     $this->wire->users->setCurrentUser($su);
   }
 
@@ -4958,15 +5119,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // allow publish for superusers
     if ($sudo and $allowForSuperusers) return;
 
+    // get trace for better info
+    $trace = Debug::backtrace();
+    $file = $trace[0]['file'];
+
     // Remove publish button and unpublished checkbox in Page Edit
     $this->wire->addHookAfter(
       'ProcessPageEdit::buildForm',
-      function (HookEvent $event) use ($selector) {
+      function (HookEvent $event) use ($selector, $file) {
         $form = $event->return;
         $page = $event->object->getPage();
         if (!$page->isUnpublished()) return;
         if (!$page->matches($selector)) return;
         $form->remove("submit_publish");
+        $page->message("$file prevents publishing this page.");
       }
     );
 
@@ -4985,16 +5151,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // There might still be the checkbox in the settings tab
     // We can't remove it because this will always publish the page.
-    $trace = Debug::backtrace()[0]['file'];
     $this->wire->addHookAfter(
       "Pages::published",
-      function (HookEvent $event) use ($selector, $trace, $sudo) {
+      function (HookEvent $event) use ($selector, $file, $sudo) {
         $page = $event->arguments('page');
         if (!$page->matches($selector)) return;
         $page->addStatus(Page::statusUnpublished);
         $page->save();
         $msg = "Publishing page $selector not allowed";
-        if ($sudo) $msg .= " by $trace";
+        if ($sudo) $msg .= " by $file";
         $this->error($msg);
       }
     );
@@ -5082,12 +5247,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $export = var_export($expression, TRUE);
     $patterns = [
+      // change array() syntax to []
       "/array \(/" => '[',
       "/^([ ]*)\)(,?)$/m" => '$1]$2',
+
+      // Adjust formatting for array notation to ensure proper spacing
       "/=>[ ]?\n[ ]+\[/" => '=> [',
+
+      // Ensure consistent spacing around the '=>' array operator
       "/([ ]*)(\'[^\']+\') => ([\[\'])/" => '$1$2 => $3',
+
+      // make empty arrays more compact
+      "/\[\s*\]/" => '[]',
     ];
     $export = preg_replace(array_keys($patterns), array_values($patterns), $export);
+
+    // make it use 4 spaces as preferred by PR from @donatasben - thx :)
+    $export = str_replace(['  '], ['    '], $export);
+
     if ((bool)$return) return $export;
     else echo $export;
   }
@@ -5231,6 +5408,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     /** @var WatchFile $data */
     $data->setArray([
       'path' => $path . $hash,
+      'url' => $this->toUrl($path), // for logs
       'module' => $module,
       'callback' => $callback,
       'pageClass' => $opt->pageClass,
@@ -5455,6 +5633,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return Yaml::parseFile($pathOrArray);
   }
 
+  public function yamlDump($data)
+  {
+    require_once(__DIR__ . '/vendor/autoload.php');
+    return Yaml::dump($data);
+  }
+
   public function yamlParse($yaml)
   {
     require_once(__DIR__ . '/vendor/autoload.php');
@@ -5481,67 +5665,49 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         </ul>",
     ]);
 
-    // prepare fileconfig string
-    $fileConfig = $this->wire->config->rockmigrations;
-    if (is_array($fileConfig)) {
-      $fileConfig = "<pre>" . print_r($fileConfig, true) . "</pre>";
-    } else $fileConfig = "";
-
-    $inputfields->add([
-      'type' => 'markup',
-      'label' => 'RockMigrations Config Options',
-      'value' => $fileConfig ?:
-        'You can set all settings either here via GUI or alternatively via config array:<br>
-        <pre>$config->rockmigrations = [<br>'
-        . '  "syncSnippets" => true,<br>'
-        . '];</pre>'
-        . 'Note that settings in config.php have precedence over GUI settings!',
-      'icon' => 'cogs',
-      'collapsed' => $fileConfig ? 0 : 1,
-      'notes' => $fileConfig ? "Current config from config[-local].php" : "",
-    ]);
+    $this->showConfigInfo($inputfields);
 
     $inputfields->add([
       'type' => 'checkbox',
       'name' => 'disabled',
       'label' => 'Disable all migrations',
       'notes' => 'This can be helpful for debugging or if you just want to use some useful methods of RockMigrations (like the asset minify feature).',
-      'checked' => $this->disabled ? 'checked' : '',
+      'checked' => $this->configRaw->disabled ? 'checked' : '',
     ]);
     $inputfields->add([
       'type' => 'checkbox',
       'name' => 'colorBar',
       'label' => 'Add colorbar to DEV and STAGING sites',
       'notes' => 'Adds a green colorbar to .ddev.site hosts and an organge bar to hosts containing the word staging.',
-      'checked' => $this->colorBar ? 'checked' : '',
+      'checked' => $this->configRaw->colorBar ? 'checked' : '',
     ]);
 
     $inputfields->add([
       'type' => 'checkbox',
       'name' => 'syncSnippets',
-      'label' => 'Sync VSCode Snippets to PW root',
+      'label' => 'Copy VSCode Snippets to PW root',
       'notes' => "If this option is enabled the module will copy the vscode snippets file to the PW root directory. If you are using VSCode I highly recommend using this option. See readme for details.",
-      'checked' => $this->syncSnippets ? 'checked' : '',
+      'checked' => $this->configRaw->syncSnippets ? 'checked' : '',
     ]);
     $inputfields->add([
       'type' => 'checkbox',
       'name' => 'addXdebugLauncher',
       'label' => 'Add xDebug launcher file for DDEV to .vscode folder',
       'notes' => 'All you have to do to use xDebug is "ddev xdebug on" and then start an xDebug session from within VSCode - see [docs](https://ddev.readthedocs.io/en/latest/users/debugging-profiling/step-debugging/#visual-studio-code-vs-code-debugging-setup)',
-      'checked' => $this->addXdebugLauncher ? 'checked' : '',
+      'checked' => $this->configRaw->addXdebugLauncher ? 'checked' : '',
     ]);
     $inputfields->add([
       'type' => 'checkbox',
       'name' => 'addHost',
       'label' => 'Add hostname to the PW admin footer',
-      'checked' => $this->addHost ? 'checked' : '',
+      'checked' => $this->configRaw->addHost ? 'checked' : '',
       'notes' => 'Superusers will also see a the root folders name and modified date on hover in a tooltip!',
     ]);
     $inputfields->add([
       'type' => 'checkbox',
       'name' => 'addVersion',
       'label' => 'Add version number from package.json in root folder to the PW admin footer',
-      'checked' => $this->addVersion ? 'checked' : '',
+      'checked' => $this->configRaw->addVersion ? 'checked' : '',
       'notes' => 'When using [fully automated releases and version numbers](https://processwire.com/talk/topic/28235-how-to-get-fully-automated-releases-tags-changelog-and-version-numbers-for-your-module-or-processwire-project/) for your project, github will create a package.json in the root directory of your project file for every release. If you check the box RockMigrations will show that info in the footer: [screenshot](https://i.imgur.com/0pkdKBd.png)'
     ]);
     $inputfields->add([
@@ -5549,14 +5715,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'name' => 'hideFromGuests',
       'label' => 'Hide website from guests',
       'notes' => 'When checked all guest visits will be redirected to the login page, handy for hiding staging sites from unwanted access.',
-      'checked' => $this->hideFromGuests ? 'checked' : '',
+      'checked' => $this->configRaw->hideFromGuests ? 'checked' : '',
     ]);
     $inputfields->add([
       'type' => 'text',
       'name' => 'previewPassword',
       'label' => 'Preview Password',
       'notes' => 'Guests can append ?preview=XXX to any URL and will gain access to the site for their session (where XXX is the password that you set here).',
-      'value' => $this->previewPassword,
+      'value' => $this->configRaw->previewPassword,
       'showIf' => 'hideFromGuests=1',
     ]);
 
@@ -5582,7 +5748,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     foreach ($this->tweaks as $tweak) {
       $f->addOption($tweak->name, implode(' - ', array_filter([$tweak->name, $tweak->description])));
     }
-    $f->value = (array)$this->enabledTweaks;
+    $f->value = (array)$this->configRaw->enabledTweaks;
     $inputfields->add($f);
 
     $this->installMacros();
@@ -5596,7 +5762,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         implode(' - ', array_filter([$macro->name, $macro->description]))
       );
     }
-    $f->value = (array)$this->enabledTweaks;
     $f->icon = 'code';
     $inputfields->add($f);
 
@@ -5634,6 +5799,57 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     ]);
 
     return $inputfields;
+  }
+
+  private function showConfigInfo($inputfields)
+  {
+    // create table
+    $raw = $this->configRaw;
+    $table = "<style>
+        .config-info td,
+        .config-info th { padding: 5px 10px; white-space: nowrap; }
+      </style>
+      <div class='uk-overflow-auto'>
+      <table class='config-info uk-table uk-table-striped uk-margin-remove'>";
+    $table .= "<tr>
+      <th>Name</th>
+      <th>Module Config <small>from DB</small></th>
+      <th>File Config <small>config[-local].php</small></th>
+      <th>Final Config</th>
+      </tr>";
+    foreach ($raw as $key => $db) {
+      $db = $this->showConfigInfoDump($db);
+      $forced = $this->showConfigInfoDump($this->configForced->get($key));
+      $final = $this->showConfigInfoDump($this->get($key));
+      $changed = $forced && $db !== $forced ? " class='uk-alert uk-alert-warning uk-text-bold'" : "";
+
+      $edit = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M7 7H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-1"/><path d="M20.385 6.585a2.1 2.1 0 0 0-2.97-2.97L9 12v3h3l8.385-8.415zM16 5l3 3"/></g></svg>';
+      $table .= "<tr>
+      <td>
+        <a href='#wrap_Inputfield_$key' uk-scroll>$edit</a> $key
+      </td>
+      <td>{$this->showConfigInfoDump($db)}</td>
+      <td>{$this->showConfigInfoDump($forced)}</td>
+      <td$changed>{$this->showConfigInfoDump($final)}</td>
+      </tr>";
+    }
+    $table .= "</table></div>";
+
+    // add inputfield
+    $inputfields->add([
+      'type' => 'markup',
+      'label' => 'Config Info',
+      'icon' => 'cogs',
+      'value' => $table,
+    ]);
+  }
+
+  private function showConfigInfoDump($data)
+  {
+    if (!$data) return;
+    if (is_int($data)) return $data;
+    if (is_string($data)) return $data;
+    return nl2br($this->yamlDump($data));
   }
 
   /**

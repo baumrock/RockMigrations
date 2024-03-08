@@ -1,6 +1,0 @@
-// Add an opening fieldset
-$1 => [
-  'type' => 'FieldsetOpen',
-  'label' => '$2',
-  'icon' => '$3',
-],
