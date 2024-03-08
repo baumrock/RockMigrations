@@ -3088,11 +3088,25 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * Usage:
    * $rm->minify("/path/to/style.css"); // creates /path/to/style.min.css
    * $rm->minify("/path/to/style.css", "/newpath/style.min.css");
+   *
+   * Minify all .js and .css files in a folder:
+   * $rm->minify("/path/to/folder");
    */
   public function minify($file, $minFile = null): string|false
   {
     if (!$this->wire->user->isSuperuser()) return false;
     if (!$this->wire->config->debug) return false;
+
+    if (is_dir($file)) {
+      $file = rtrim(Paths::normalizeSeparators($file), "/");
+      foreach (glob("$file/*.js") as $f) {
+        if (!str_ends_with($f, '.min.js')) $this->minify($f);
+      }
+      foreach (glob("$file/*.css") as $f) {
+        if (!str_ends_with($f, '.min.css')) $this->minify($f);
+      }
+      return false;
+    }
 
     $ext = pathinfo($file, PATHINFO_EXTENSION);
     require_once __DIR__ . "/vendor/autoload.php";
