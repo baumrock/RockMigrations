@@ -974,8 +974,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $getJson($folder),
       );
     }
-
-    if (function_exists("bd")) bd("Recreated $cnt snippet files");
   }
 
   /**
