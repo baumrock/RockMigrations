@@ -5816,6 +5816,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       <th>Final Config</th>
       </tr>";
     foreach ($raw as $key => $db) {
+      if ($key == 'installMacros') continue;
+      if ($key == 'profile') continue;
+
       $db = $this->showConfigInfoDump($db);
       $forced = $this->showConfigInfoDump($this->configForced->get($key));
       $final = $this->showConfigInfoDump($this->get($key));
@@ -5844,7 +5847,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   private function showConfigInfoDump($data)
   {
-    if (!$data) return;
+    if ($data === null) return;
     if (is_int($data)) return $data;
     if (is_string($data)) return $data;
     return nl2br($this->yamlDump($data));
