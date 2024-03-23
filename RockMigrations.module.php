@@ -966,7 +966,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$hasChanged) return;
 
     $folders = glob(__DIR__ . "/snippets/*/");
-    $cnt = count($folders);
     foreach ($folders as $folder) {
       $name = basename($folder);
       $this->wire->files->filePutContents(
