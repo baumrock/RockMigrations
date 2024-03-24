@@ -962,6 +962,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     $src = __DIR__ . "/snippets";
     $dst = $this->wire->config->paths->root . ".vscode";
+    if (!is_dir($dst)) $this->wire->files->mkdir($dst);
+
     $hasChanged = $force || $this->isNewer($src, $dst);
     if (!$hasChanged) return;
 
