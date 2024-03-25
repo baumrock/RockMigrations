@@ -29,6 +29,16 @@ class PageListShowTemplate extends Tweak
       </style></head>",
       $event->return
     );
+    $event->return = str_replace(
+      "</body>",
+      "<script>
+      $(document).ajaxComplete(function() {
+        $('.Inputfield .PageListTemplate').remove();
+      });
+      </script>
+      </body>",
+      $event->return
+    );
   }
 
   public function hookPageLabel(HookEvent $event)

@@ -29,6 +29,16 @@ class PageListShowIds extends Tweak
       </style></head>",
       $event->return
     );
+    $event->return = str_replace(
+      "</body>",
+      "<script>
+      $(document).ajaxComplete(function() {
+        $('.Inputfield .PageListId').remove();
+      });
+      </script>
+      </body>",
+      $event->return
+    );
   }
 
   public function hookPageLabel(HookEvent $event)

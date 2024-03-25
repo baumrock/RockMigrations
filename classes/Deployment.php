@@ -100,14 +100,13 @@ class Deployment extends WireData
     $this->addRobots();
     $this->trigger("addRobots", "after");
 
-    $this->trigger("finish", "before");
-    $this->finish();
-    $this->trigger("finish", "after");
-
-    // chown must be after finish to affect current symlink!
     $this->trigger("chown", "before");
     $this->chown();
     $this->trigger("chown", "after");
+
+    $this->trigger("finish", "before");
+    $this->finish();
+    $this->trigger("finish", "after");
 
     $this->trigger("healthcheck", "before");
     $this->healthcheck();
@@ -184,8 +183,11 @@ class Deployment extends WireData
     try {
       $this->section("Cleanup database cache");
       $this->sql("DELETE FROM `caches` WHERE `name` LIKE 'FileCompiler__%'");
+
+      // reset autoload cache to make sure we don't run into issues
       $this->sql("DELETE FROM `caches` WHERE `name` = 'autoload-classloader-classes'");
       $this->sql("DELETE FROM `caches` WHERE `name` = 'autoload-repeater-pageclasses'");
+
       $this->ok();
     } catch (\Throwable $th) {
       $this->echo($th->getMessage());
@@ -361,10 +363,23 @@ class Deployment extends WireData
       cd {$this->paths->root}
       ln -snf $newName current
     ");
+
+    // chown symlink?
+    if ($this->chown) {
+      $this->echo("Updating symlink permissions");
+      $root = $this->paths->root;
+      $owner = fileowner($root);
+      $group = filegroup($root);
+      $this->exec("chown $owner:$group $root/current", true);
+    }
+
     $this->deleteOldReleases($keep);
   }
 
-  public function getDB(): WireDatabasePDO
+  /**
+   * @return WireDatabasePDO|void
+   */
+  public function getDB()
   {
     try {
       $pwroot = $this->paths->root . "/current";
@@ -428,6 +443,20 @@ class Deployment extends WireData
     }
     if (!$this->dry and !is_array($out)) return $this->exit("migrate.php failed");
     $this->ok();
+  }
+
+  /**
+   * Remove path from delete array
+   */
+  public function nodelete(string|array $path): void
+  {
+    if (is_array($path)) {
+      foreach ($path as $p) $this->undelete($p);
+      return;
+    }
+    if (($key = array_search($path, $this->delete)) !== false) {
+      unset($this->delete[$key]);
+    }
   }
 
   public function ok($msg = "Done")
@@ -541,9 +570,7 @@ class Deployment extends WireData
     $release = $this->paths->release;
     $shared = $this->paths->shared;
     $this->section("Securing file and folder permissions...");
-    $this->exec("      find $release -type d -exec chmod 755 {} \;
-      find $release -type f -exec chmod 644 {} \;
-      chmod 440 $release/site/config.php
+    $this->exec("chmod 440 $release/site/config.php
       chmod 440 $shared/site/config-local.php", true);
     $this->ok();
   }
@@ -658,6 +685,7 @@ class Deployment extends WireData
 
   public function sql(string $query): void
   {
+    if (php_sapi_name() !== 'cli') return;
     $db = $this->getDB();
     $db->prepare($query)->execute();
   }
@@ -678,5 +706,13 @@ class Deployment extends WireData
   public function verbose()
   {
     $this->isVerbose = true;
+  }
+
+  public function __debugInfo()
+  {
+    return [
+      'share' => $this->share,
+      'delete' => $this->delete,
+    ];
   }
 }

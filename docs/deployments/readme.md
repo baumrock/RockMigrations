@@ -283,6 +283,35 @@ $deploy->dry();
 $deploy->run();
 ```
 
+Or you can dump basic information with TracyDebugger. For example let's say you don't want to delete the sessions folder on every deploy. You can do so like this:
+
+```php
+// site/deploy.php
+<?php
+
+namespace RockMigrations;
+
+use function ProcessWire\rockmigrations;
+
+require_once __DIR__ . "/modules/RockMigrations/classes/Deployment.php";
+$deploy = new Deployment(@$argv);
+
+$deploy->nodelete("/site/assets/sessions");
+
+if (rockmigrations()->isCLI()) $deploy->run();
+else bd($deploy);
+```
+
+And then you can place this in `/site/ready.php`:
+
+```php
+if (rockmigrations()->isDDEV()) include "deploy.php";
+```
+
+Which will show debugging info like this:
+
+<img src=debug.png class=blur>
+
 ## Create Translations
 
 You can either do that manually or by using RockMigrations:

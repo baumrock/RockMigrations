@@ -1,7 +1,8 @@
 {
   "inline": true,
   "menubar": false,
-  "plugins": "anchor link lists pwlink quickbars",
+  "plugins": "anchor link lists pwlink quickbars paste",
+  "paste_as_text": true,
 
   "toolbar": "bold italic pwlink bullist numlist",
   "quickbars_selection_toolbar": "bold italic pwlink bullist numlist",

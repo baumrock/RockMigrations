@@ -1,0 +1,6 @@
+// add block settings checkbox
+\$settings->add([
+  'name' => '${1:demo_checkbox}',
+  'label' => '${2:Do Something}',
+  'value' => \$field->input('${1:demo_checkbox}', 'checkbox'),
+]);

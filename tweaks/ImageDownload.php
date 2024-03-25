@@ -27,7 +27,7 @@ class ImageDownload extends Tweak
       $class = $event->arguments(3); // class(es) to use on all returned actions
       $buttons = $event->return; // array, indexed by action name
       $icon = wireIconMarkup('download');
-      $buttons['download'] = "<button class='$class'><a download href='$image->url'>$icon Download</a></button>";
+      $buttons['download'] = "<button class='$class' type='button'><a download href='$image->url'>$icon Download</a></button>";
       $event->return = $buttons;
     });
   }

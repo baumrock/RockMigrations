@@ -15,5 +15,6 @@ $info = [
   ],
   'installs' => [
     'MagicPages',
+    'ProcessRockMigrations',
   ],
 ];

@@ -543,6 +543,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       return glob($this->wire->config->paths->siteModules . "*/classLoader");
     });
     foreach ($dirs as $dir) {
+      // if $dir is not within current site root we have an outdated cache
+      if (!str_starts_with($dir, $this->wire->config->paths->siteModules)) {
+        $this->wire->cache->delete("autoload-classloader-classes");
+        $this->wire->cache->delete("autoload-repeater-pageclasses");
+        $this->autoloadClasses();
+        return;
+      }
       $namespace = basename(dirname($dir));
       $this->wire->classLoader->addNamespace($namespace, $dir);
     }
@@ -564,17 +571,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       return $classes;
     });
     foreach ($classes as $dir => $files) {
+      if (!str_starts_with($dir, $this->wire->config->paths->siteModules)) {
+        $this->wire->cache->delete("autoload-classloader-classes");
+        $this->wire->cache->delete("autoload-repeater-pageclasses");
+        $this->autoloadClasses();
+        return;
+      }
       $namespace = basename(dirname($dir));
       $this->wire->classLoader->addNamespace($namespace, $dir);
       foreach ($files as $file) {
         $name = substr(basename($file), 0, -4);
         $class = "\\$namespace\\$name";
-        $tmp = new $class();
-        $field = $this->wire->fields->get($tmp::field);
-        if (!$field) continue;
-        $field->type->setCustomPageClass($field, $class);
-        if (method_exists($tmp, "init")) $tmp->init();
-        if (method_exists($tmp, "ready")) $this->readyClasses[] = $tmp;
+        try {
+          $tmp = new $class();
+          $field = $this->wire->fields->get($tmp::field);
+          if (!$field) continue;
+          $field->type->setCustomPageClass($field, $class);
+          if (method_exists($tmp, "init")) $tmp->init();
+          if (method_exists($tmp, "ready")) $this->readyClasses[] = $tmp;
+        } catch (\Throwable $th) {
+          $this->log($th->getMessage());
+        }
       }
     }
   }
@@ -947,11 +964,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     $src = __DIR__ . "/snippets";
     $dst = $this->wire->config->paths->root . ".vscode";
+    if (!is_dir($dst)) $this->wire->files->mkdir($dst);
+
     $hasChanged = $force || $this->isNewer($src, $dst);
     if (!$hasChanged) return;
 
     $folders = glob(__DIR__ . "/snippets/*/");
-    $cnt = count($folders);
     foreach ($folders as $folder) {
       $name = basename($folder);
       $this->wire->files->filePutContents(
@@ -959,8 +977,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $getJson($folder),
       );
     }
-
-    if (function_exists("bd")) bd("Recreated $cnt snippet files");
   }
 
   /**
@@ -1710,6 +1726,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       unset($data['_rockmigrations_log']);
     }
 
+    // sort properties alphabetically
     ksort($data, SORT_NATURAL);
 
     // if code was requested as array return it now
@@ -1869,6 +1886,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (is_array($conf)) $data->setArray($conf);
     if ($property) return $data->get($property);
     return $data;
+  }
+
+  public function getOnceHistory(): array
+  {
+    $history = $this->wire->cache->get("rm:once|*") ?: [];
+    uasort($history, function ($a, $b) {
+      return $a['time'] <=> $b['time'];
+    });
+    return array_reverse($history);
   }
 
   /**
@@ -3129,11 +3155,25 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * Usage:
    * $rm->minify("/path/to/style.css"); // creates /path/to/style.min.css
    * $rm->minify("/path/to/style.css", "/newpath/style.min.css");
+   *
+   * Minify all .js and .css files in a folder:
+   * $rm->minify("/path/to/folder");
    */
   public function minify($file, $minFile = null): string|false
   {
     if (!$this->wire->user->isSuperuser()) return false;
     if (!$this->wire->config->debug) return false;
+
+    if (is_dir($file)) {
+      $file = rtrim(Paths::normalizeSeparators($file), "/");
+      foreach (glob("$file/*.js") as $f) {
+        if (!str_ends_with($f, '.min.js')) $this->minify($f);
+      }
+      foreach (glob("$file/*.css") as $f) {
+        if (!str_ends_with($f, '.min.css')) $this->minify($f);
+      }
+      return false;
+    }
 
     $ext = pathinfo($file, PATHINFO_EXTENSION);
     require_once __DIR__ . "/vendor/autoload.php";
@@ -3189,6 +3229,38 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function noMigrate()
   {
     $this->noMigrate = true;
+  }
+
+  /**
+   * See docs about the once feature
+   */
+  public function once(
+    $key,
+    $callback,
+    $debug = false,
+    callable $confirm = null,
+  ): void {
+    $key = "rm:once|$key";
+    if (!$debug && $this->wire->cache->get($key)) return;
+    try {
+      $this->log($key);
+      $callback($this);
+      $trace = debug_backtrace()[0];
+      $data = [
+        'file' => $this->toUrl($trace['file']) . ":" . $trace['line'],
+        'time' => microtime(true),
+      ];
+      if ($confirm) {
+        $confirmed = !!$confirm();
+        if (!$confirmed) {
+          $this->log("Confirmation for $key failed");
+          return;
+        }
+      }
+      $this->wire->cache->save($key, $data);
+    } catch (\Throwable $th) {
+      $this->log($th->getMessage());
+    }
   }
 
   /**
@@ -3464,7 +3536,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Remove all template context field settings
+   * Remove template context for given field
    * @return void
    */
   public function removeTemplateContext($tpl, $field)
@@ -3607,6 +3679,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $user = $this->wire->user;
     $this->sudo();
+
+    // install process module if it is not installed
+    $this->once(
+      "11.02.2024: Install RockMigrations Process Module",
+      function (RockMigrations $rm) {
+        $rm->installModule("ProcessRockMigrations");
+      },
+      confirm: function () {
+        return $this->wire->modules->isInstalled("ProcessRockMigrations");
+      },
+    );
+
     $this->migrateWatchfiles(true);
     $this->wire->users->setCurrentUser($user);
   }
@@ -4820,7 +4904,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$existing) return;
 
     $code = $this->wire->sanitizer->entities1($this->getCode($item));
-    $codeExport ='<style>
+    $codeExport = '<style>
       #rm-export {
         font-family: monospace;
         font-size: 0.875rem;
@@ -5101,15 +5185,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // allow publish for superusers
     if ($sudo and $allowForSuperusers) return;
 
+    // get trace for better info
+    $trace = Debug::backtrace();
+    $file = $trace[0]['file'];
+
     // Remove publish button and unpublished checkbox in Page Edit
     $this->wire->addHookAfter(
       'ProcessPageEdit::buildForm',
-      function (HookEvent $event) use ($selector) {
+      function (HookEvent $event) use ($selector, $file) {
         $form = $event->return;
         $page = $event->object->getPage();
         if (!$page->isUnpublished()) return;
         if (!$page->matches($selector)) return;
         $form->remove("submit_publish");
+        $page->message("$file prevents publishing this page.");
       }
     );
 
@@ -5128,16 +5217,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // There might still be the checkbox in the settings tab
     // We can't remove it because this will always publish the page.
-    $trace = Debug::backtrace()[0]['file'];
     $this->wire->addHookAfter(
       "Pages::published",
-      function (HookEvent $event) use ($selector, $trace, $sudo) {
+      function (HookEvent $event) use ($selector, $file, $sudo) {
         $page = $event->arguments('page');
         if (!$page->matches($selector)) return;
         $page->addStatus(Page::statusUnpublished);
         $page->save();
         $msg = "Publishing page $selector not allowed";
-        if ($sudo) $msg .= " by $trace";
+        if ($sudo) $msg .= " by $file";
         $this->error($msg);
       }
     );
@@ -5225,15 +5313,25 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $export = var_export($expression, TRUE);
     $patterns = [
+      // change array() syntax to []
       "/array \(/" => '[',
       "/^([ ]*)\)(,?)$/m" => '$1]$2',
+
+      // Adjust formatting for array notation to ensure proper spacing
       "/=>[ ]?\n[ ]+\[/" => '=> [',
+
+      // Ensure consistent spacing around the '=>' array operator
       "/([ ]*)(\'[^\']+\') => ([\[\'])/" => '$1$2 => $3',
+
+      // make empty arrays more compact
       "/\[\s*\]/" => '[]',
       '/\d+\s=>\s/' => '',
     ];
     $export = preg_replace(array_keys($patterns), array_values($patterns), $export);
+
+    // make it use 4 spaces as preferred by PR from @donatasben - thx :)
     $export = str_replace(['  '], ['    '], $export);
+
     if ((bool)$return) return $export;
     else echo $export;
   }
@@ -5787,6 +5885,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       <th>Final Config</th>
       </tr>";
     foreach ($raw as $key => $db) {
+      if ($key == 'installMacros') continue;
+      if ($key == 'profile') continue;
+
       $db = $this->showConfigInfoDump($db);
       $forced = $this->showConfigInfoDump($this->configForced->get($key));
       $final = $this->showConfigInfoDump($this->get($key));
@@ -5815,7 +5916,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   private function showConfigInfoDump($data)
   {
-    if (!$data) return;
+    if ($data === null) return;
     if (is_int($data)) return $data;
     if (is_string($data)) return $data;
     return nl2br($this->yamlDump($data));

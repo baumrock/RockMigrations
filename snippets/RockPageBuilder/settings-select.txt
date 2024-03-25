@@ -1,0 +1,10 @@
+// add block settings select
+\$settings->add([
+  'name' => 'demo_select',
+  'label' => 'Select something',
+  'value' => \$field->input('demo_select', 'select', [
+    '*default' => 'Default label',
+    'foo' => 'Foo label',
+    'bar' => 'Bar label',
+  ]),
+]);
