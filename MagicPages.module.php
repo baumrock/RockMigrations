@@ -79,6 +79,7 @@ class MagicPages extends WireData implements Module
     );
 
     // autoload magic templates
+    if (!is_array($templates)) $templates = [];
     foreach ($templates as $tpl) {
       $p = $this->wire->pages->newPage(['template' => $tpl]);
       if (!property_exists($p, "isMagicPage") || !$p->isMagicPage) {
