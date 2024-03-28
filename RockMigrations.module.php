@@ -5816,7 +5816,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       <th>File Config <small>config[-local].php</small></th>
       <th>Final Config</th>
       </tr>";
+    $rows = 0;
     foreach ($raw as $key => $db) {
+      $rows++;
       if ($key == 'installMacros') continue;
       if ($key == 'profile') continue;
 
@@ -5838,12 +5840,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $table .= "</table></div>";
 
     // add inputfield
-    $inputfields->add([
-      'type' => 'markup',
-      'label' => 'Config Info',
-      'icon' => 'cogs',
-      'value' => $table,
-    ]);
+    // no rows, no field (thats the case right after installation)
+    if ($rows) {
+      $inputfields->add([
+        'type' => 'markup',
+        'label' => 'Config Info',
+        'icon' => 'cogs',
+        'value' => $table,
+      ]);
+    }
   }
 
   private function showConfigInfoDump($data)
