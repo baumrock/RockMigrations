@@ -962,11 +962,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     $src = __DIR__ . "/snippets";
     $dst = $this->wire->config->paths->root . ".vscode";
+    if (!is_dir($dst)) $this->wire->files->mkdir($dst);
+
     $hasChanged = $force || $this->isNewer($src, $dst);
     if (!$hasChanged) return;
 
     $folders = glob(__DIR__ . "/snippets/*/");
-    $cnt = count($folders);
     foreach ($folders as $folder) {
       $name = basename($folder);
       $this->wire->files->filePutContents(
@@ -974,8 +975,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $getJson($folder),
       );
     }
-
-    if (function_exists("bd")) bd("Recreated $cnt snippet files");
   }
 
   /**
@@ -5818,6 +5817,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       <th>Final Config</th>
       </tr>";
     foreach ($raw as $key => $db) {
+      if ($key == 'installMacros') continue;
+      if ($key == 'profile') continue;
+
       $db = $this->showConfigInfoDump($db);
       $forced = $this->showConfigInfoDump($this->configForced->get($key));
       $final = $this->showConfigInfoDump($this->get($key));
@@ -5846,7 +5848,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   private function showConfigInfoDump($data)
   {
-    if (!$data) return;
+    if ($data === null) return;
     if (is_int($data)) return $data;
     if (is_string($data)) return $data;
     return nl2br($this->yamlDump($data));
