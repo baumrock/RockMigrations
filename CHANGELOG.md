@@ -1,4 +1,4 @@
-## [4.1.0](https://github.com/baumrock/RockMigrations/compare/v4.0.0...v4.1.0) (2024-03-08)
+## [4.2.0](https://github.com/baumrock/RockMigrations/compare/v4.0.0...v4.2.0) (2024-03-28)
 
 
 ### Features
@@ -24,7 +24,12 @@
 
 * add entity encoder to migrations code info [#51](https://github.com/baumrock/RockMigrations/issues/51) ([4b0c296](https://github.com/baumrock/RockMigrations/commit/4b0c2963497d9fec013117159e2df466e8c083d4))
 * button without type breaks enter-submit ([8104b2b](https://github.com/baumrock/RockMigrations/commit/8104b2b846aa2e92ebd6e1f2732d60d7ad5fea75))
+* create snippets folder if it does not exist ([c54a38a](https://github.com/baumrock/RockMigrations/commit/c54a38a0d915479ebd8f863835cae4859ade8619))
+* final config not showing FALSE values ([b20d88a](https://github.com/baumrock/RockMigrations/commit/b20d88a3e5ca5d8d87bae9ff193b69a5c36c1237))
+* make sure magicpage cache is an array ([d6ca7e3](https://github.com/baumrock/RockMigrations/commit/d6ca7e31c2c9b16956926a41c113716960d92f1a))
+* pagelist id + template showing up in asm select ([291677b](https://github.com/baumrock/RockMigrations/commit/291677b51d7c07b4fec52f352f2467899edea01e))
 * prevent fatal error on deploy if pageclass removed ([162a0b7](https://github.com/baumrock/RockMigrations/commit/162a0b7762300ebe3f1e5648b207db18281485e0))
+* remove unused line ([da721f2](https://github.com/baumrock/RockMigrations/commit/da721f2100061b40790a28cf2524a917255b587a))
 * rockmigrations() causing error on deploy ([7f80154](https://github.com/baumrock/RockMigrations/commit/7f80154ea7ec72872cdf4eaa1696beeb0f1f2362))
 * vscode snippets not created ([b5e2592](https://github.com/baumrock/RockMigrations/commit/b5e25928ea17e073a71325cee7b253654dbdd8bb))
 
