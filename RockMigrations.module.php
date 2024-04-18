@@ -2041,6 +2041,23 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Hide given page from pagetree and adjust numchildren count
+   * @param mixed $page
+   * @return void
+   */
+  public function hidePageFromTree($page): void
+  {
+    $page = $this->wire->pages->get((string)$page);
+    $this->addHookAfter("ProcessPageList::find", function (HookEvent $event) use ($page) {
+      $event->return->remove($page);
+    });
+    $this->addHookBefore('ProcessPageListRender::getNumChildren', function (HookEvent $event) use ($page) {
+      $p = $event->arguments(0);
+      if ($p->id === $page->parent->id) $p->numChildren = $p->numChildren - 1;
+    });
+  }
+
+  /**
    * Actions to perform on modules refresh
    */
   protected function hookModulesRefresh(HookEvent $event): void
