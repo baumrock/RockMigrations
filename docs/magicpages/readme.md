@@ -60,7 +60,6 @@ Note: You can disable this feature in your config.php:
 
 ```php
 $config->noMagicMethods = true;
-$config->noMagicFieldMethods = true;
 ```
 
 When customizing the page editing experience for custom page classes you often have to hook into several aspects of your application. For example you might want to hook ProcessPageEdit::buildForm or you might want to hook Pages::saveReady.
@@ -122,6 +121,18 @@ That means you write less code and your code will also be better organised!
 - `setPageName`: This method is called after the `Pages::saved(id>0)` hook. It allows you to set the page name from a callback.
 
 See MagicPages.module.php method `addMagicMethods` for details.
+
+## Magic Field Methods
+
+Note: You can disable this feature in your config.php:
+
+```php
+$config->noMagicFieldMethods = true;
+```
+
+Magic Field Methods allow for more intuitive and concise access to page fields by enabling the use of shortened method names. This feature is particularly useful for fields with long, prefixed names, helping to avoid name collisions and maintain cleaner code.
+
+When enabled, you can access a field named `foo_bar_baz` simply by calling `$page->baz()`. By default, Magic Field Methods are enabled.
 
 ## Magic Assets
 
