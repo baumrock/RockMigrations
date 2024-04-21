@@ -56,6 +56,13 @@ This is necessary to make sure that everything defined in `init()` and `ready()`
 
 ## Magic Methods
 
+Note: You can disable this feature in your config.php:
+
+```php
+$config->noMagicMethods = true;
+$config->noMagicFieldMethods = true;
+```
+
 When customizing the page editing experience for custom page classes you often have to hook into several aspects of your application. For example you might want to hook ProcessPageEdit::buildForm or you might want to hook Pages::saveReady.
 
 A regular hook in /site/ready.php could look like this:

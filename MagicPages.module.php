@@ -90,7 +90,11 @@ class MagicPages extends WireData implements Module
       if (method_exists($p, 'init')) $p->init();
       if (method_exists($p, 'ready')) $this->readyClasses->add($p);
       $this->rockmigrations()->watch($p, method_exists($p, 'migrate'));
-      $this->addMagicMethods($p);
+
+      // add magic methods
+      $config = $this->wire->config;
+      if (!$config->noMagicFieldMethods) $this->addMagicFieldMethods($p);
+      if (!$config->noMagicMethods) $this->addMagicMethods($p);
     }
   }
 
@@ -150,8 +154,6 @@ class MagicPages extends WireData implements Module
    */
   public function addMagicMethods($magicPage)
   {
-    $this->addMagicFieldMethods($magicPage);
-
     if (method_exists($magicPage, "editForm")) {
       $this->wire->addHookAfter("ProcessPageEdit::buildForm", function ($event) use ($magicPage) {
         $page = $event->object->getPage();
