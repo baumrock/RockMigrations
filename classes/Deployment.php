@@ -120,7 +120,7 @@ class Deployment extends WireData
     if (!$this->robots()) return;
     $this->section("Hide site from search engines via robots.txt");
     $release = $this->paths->release;
-    $src = __DIR__ . "/robots.txt";
+    $src = __DIR__ . "/../stubs/robots.txt";
     $this->exec("cp -f $src $release/robots.txt");
   }
 
