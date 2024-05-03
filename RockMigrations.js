@@ -9,7 +9,20 @@
       if (name == "templateLabel") name = "label";
       else if (name == "field_label") name = "label";
       else if (name == "asmSelect0") return;
-      let code = '"' + name + '" => "' + el.value + '",';
+
+      // add comment?
+      let comment = "";
+      if (el.type == "radio") comment = $(el).parent().text();
+      else if (el.type == "select-one")
+        comment = $(el).find("option:selected").text();
+      else if (el.type == "checkbox") comment = $(el).parent().text().trim();
+      if (comment) comment = " // " + comment;
+
+      // value
+      let value = el.value;
+      if (el.type == "checkbox") value = $(el).is(":checked") ? 1 : 0;
+
+      let code = "'" + name + "' => '" + value + "'," + comment;
       $(el).attr("title", code + " (shift-click to copy)");
       $(el).attr("rockmigrations-code", code);
       UIkit.tooltip(el);
