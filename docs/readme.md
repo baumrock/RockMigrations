@@ -1,7 +1,7 @@
 See the video here:
 
-<a href="https://www.youtube.com/watch?v=eBOB8dZvRN4"><img src=thumb.png></a><br>
-<a href="https://www.youtube.com/watch?v=o6O859d3cFA"><img src=thumb2.png></a>
+<a href="https://www.youtube.com/watch?v=eBOB8dZvRN4"><img src=thumb.png width=400></a><br><br>
+<a href="https://www.youtube.com/watch?v=o6O859d3cFA"><img src=thumb2.png width=400></a>
 
 <br>
 

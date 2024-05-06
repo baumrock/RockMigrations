@@ -2041,6 +2041,23 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Hide given page from pagetree and adjust numchildren count
+   * @param mixed $page
+   * @return void
+   */
+  public function hidePageFromTree($page): void
+  {
+    $page = $this->wire->pages->get((string)$page);
+    $this->addHookAfter("ProcessPageList::find", function (HookEvent $event) use ($page) {
+      $event->return->remove($page);
+    });
+    $this->addHookBefore('ProcessPageListRender::getNumChildren', function (HookEvent $event) use ($page) {
+      $p = $event->arguments(0);
+      if ($p->id === $page->parent->id) $p->numChildren = $p->numChildren - 1;
+    });
+  }
+
+  /**
    * Actions to perform on modules refresh
    */
   protected function hookModulesRefresh(HookEvent $event): void
@@ -3504,36 +3521,34 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'labels' => [],
       'tooltips' => false,
       'tableclass' => "uk-table-striped",
+      'nl2br' => false,
     ]);
     $opt->setArray($options);
 
     if (is_string($values)) $values = json_decode($values);
     if (!is_array($values) and !is_object($values)) $values = [];
-    if (is_array($opt->labels)) $labels = (new WireData())->setArray($opt->labels);
+    if (is_array($opt->labels)) $labels = (new WireData())->setArray($opt->labels)->getArray();
+
     $out = "<table class='uk-table uk-table-small uk-margin-remove {$opt->tableclass}'>";
     foreach ($values as $k => $v) {
       if (is_bool($v)) $v = $this->renderTableCheckbox($v, $opt->tooltips);
       try {
         // try to render a table for arrays or objects
         if (!is_string($v) and !is_numeric($v)) $v = $this->renderTable($v);
-
-        // don't link urls in <svg elements (eg checkbox svg icon)
-        if (!str_starts_with($v, "<svg")) {
-          $v = preg_replace(
-            '/https?:\/\/[\w\-\.!~#?&=+\*\'"(),\/]+/',
-            '<a href="$0" target=_blank>$0</a>',
-            $v
-          );
-        }
       } catch (\Throwable $th) {
         $v = $this->renderTable($v, $opt->getArray());
       }
-      $label = $labels->get($k) ?: $k;
+
+      // prepare label
+      $label = $k;
+      if (array_key_exists($k, $labels)) $label = $labels[$k];
+
       $t = $opt->tooltips ? "title='$k' uk-tooltip" : "";
+      $val = $opt->nl2br ? nl2br($v) : $v;
       $out .= "<tr>
           <td class='uk-width-expand'>
             <span class='uk-text-small uk-text-muted' $t>$label</span><br>
-            $v
+            $val
           </td>
         </tr>";
     }
@@ -5816,7 +5831,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       <th>File Config <small>config[-local].php</small></th>
       <th>Final Config</th>
       </tr>";
+    $rows = 0;
     foreach ($raw as $key => $db) {
+      $rows++;
       if ($key == 'installMacros') continue;
       if ($key == 'profile') continue;
 
@@ -5838,12 +5855,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $table .= "</table></div>";
 
     // add inputfield
-    $inputfields->add([
-      'type' => 'markup',
-      'label' => 'Config Info',
-      'icon' => 'cogs',
-      'value' => $table,
-    ]);
+    // no rows, no field (thats the case right after installation)
+    if ($rows) {
+      $inputfields->add([
+        'type' => 'markup',
+        'label' => 'Config Info',
+        'icon' => 'cogs',
+        'value' => $table,
+      ]);
+    }
   }
 
   private function showConfigInfoDump($data)
