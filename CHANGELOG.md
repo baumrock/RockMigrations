@@ -1,3 +1,19 @@
+## [4.3.0](https://github.com/baumrock/RockMigrations/compare/v4.2.0...v4.3.0) (2024-05-06)
+
+
+### Features
+
+* add config setting to disable magic methods [#59](https://github.com/baumrock/RockMigrations/issues/59) ([23b1272](https://github.com/baumrock/RockMigrations/commit/23b127290bad52b16eb5f28f5e93ac324802d1e3))
+* add hidePageFromTree method ([e8c6681](https://github.com/baumrock/RockMigrations/commit/e8c66812062260885e5462f8901d9ba70443f93a))
+* improve copied code (add verbose comments) ([8c00534](https://github.com/baumrock/RockMigrations/commit/8c005340a123cb7bb68322f2456aabc2de9839e1))
+* improve renderTable() method ([09a4941](https://github.com/baumrock/RockMigrations/commit/09a49416dc0d4f050f862cb807e7cb72871b1754))
+
+
+### Bug Fixes
+
+* empty config info after installation ([00369e0](https://github.com/baumrock/RockMigrations/commit/00369e0037e765264f40562c1c71145c63b733d6))
+* wrong path for robots.txt stub ([ee3561e](https://github.com/baumrock/RockMigrations/commit/ee3561e3e4a730a4a0508d3f461bc01cf3d7671c))
+
 ## [4.2.0](https://github.com/baumrock/RockMigrations/compare/v4.0.0...v4.2.0) (2024-03-28)
 
 
@@ -80,11 +96,4 @@
 * dollar signs in snippets missing ([d8d636d](https://github.com/baumrock/RockMigrations/commit/d8d636de632bf3f972500a6bb6f6dea7152152c2))
 * don't use filesondemand on cli ([67f3388](https://github.com/baumrock/RockMigrations/commit/67f3388f4d37144dc0e6cd932e8c5d0cd3c6f41f))
 * prevent process module auto-loading pageclasses ([aa78554](https://github.com/baumrock/RockMigrations/commit/aa7855435bddd1aab648858c255642ebc15101da))
-
-## [3.35.5](https://github.com/baumrock/RockMigrations/compare/v3.35.4...v3.35.5) (2024-01-17)
-
-
-### Bug Fixes
-
-* remove absolete title-field check ([5f2a944](https://github.com/baumrock/RockMigrations/commit/5f2a9445643b09bd4a03da3c76269fb43f050365))
 
