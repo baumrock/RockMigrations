@@ -3541,7 +3541,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
       // prepare label
       $label = $k;
-      if (array_key_exists($k, $labels)) $label = $labels[$k];
+      if (array_key_exists($k, $labels)) {
+        $l = trim($labels[$k]);
+        if ($l) $label = $l;
+      }
 
       $t = $opt->tooltips ? "title='$k' uk-tooltip" : "";
       $val = $opt->nl2br ? nl2br($v) : $v;
