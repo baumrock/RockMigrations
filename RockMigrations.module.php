@@ -608,6 +608,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Get data from cache that is automatically recreated on Modules::refresh
    *
+   * Note: The ->cache() call must happen on every request so that the
+   * Modules::refresh knows about all the caches it has to delete!
+   *
    * For development/debugging you can set $debug = true to always get the
    * non-cached value from the callback.
    *
@@ -625,7 +628,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // data so that we don't get missing dependency errors in autoloadClasses()
     if ($this->isCLI()) $debug = true;
     if ($debug) $this->wire->cache->delete($name);
-    $val = $this->wire->cache->get($name, $create);
+    $val = $this->wire->cache->get($name, WireCache::expireNever, $create);
     $this->cacheDelete .= ",$name";
     if ($deleteOnSave) $this->cacheDeleteOnSave .= ",$name";
     return $val;
