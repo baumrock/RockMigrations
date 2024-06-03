@@ -22,7 +22,7 @@ class PageListShowTemplate extends Tweak
       "</head>",
       "<style>
       .PageListTemplate{
-        color:#afafaf;
+        opacity:0.8;
         margin-left:5px;
         font-size:0.7rem;
       }
