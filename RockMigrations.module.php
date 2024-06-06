@@ -114,6 +114,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // for development
     // $this->watch($this, false);
 
+    $this->disableProcache();
+
     // merge config from config[-local].php
     $this->mergeConfig();
 
@@ -1333,6 +1335,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function disableModule($name)
   {
     $this->wire->modules->setFlag((string)$name, Modules::flagsDisabled, true);
+  }
+
+  private function disableProcache(): void
+  {
+    if (!$this->wire->config->disableProcache) return;
+    $modules = $this->wire->modules;
+    if (!$modules->isInstalled('ProCache')) return;
+    $data = $modules->getConfig('ProCache');
+    if ($data['cacheOn']) {
+      $data['cacheOn'] = 0;
+      $modules->saveConfig('ProCache', $data);
+      $this->log('Disabled ProCache due to config setting');
+    }
   }
 
   protected function doMigrate($file)
