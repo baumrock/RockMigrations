@@ -444,7 +444,9 @@ class Deployment extends WireData
     foreach ($configs as $config) {
       if (!is_file($config)) continue;
       require_once $config;
-      if (!is_array($config)) {
+      try {
+        $config = (array)$config;
+      } catch (\Throwable $th) {
         throw new Exception("Config must expose a \$config array variable.");
       }
       // set config params
