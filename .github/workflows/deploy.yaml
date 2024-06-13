@@ -81,7 +81,7 @@ jobs:
         run: |
           PHP_VERSION=$(ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "php ${{ env.DEPLOY_FOLDER }}/site/modules/RockMigrations/get-php.php")
           echo "PHP_VERSION=$PHP_VERSION" >> $GITHUB_ENV
-          echo "PHP Version: $PHP_VERSION"
+          echo "PHP Command: $PHP_VERSION"
 
       - name: 🌟 Trigger RockMigrations Deployment
         run: |
