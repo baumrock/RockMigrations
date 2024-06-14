@@ -3143,6 +3143,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
 
     $ext = pathinfo($file, PATHINFO_EXTENSION);
+    if (!$ext) {
+      throw new WireException("Folder $file not found");
+    }
     require_once __DIR__ . "/vendor/autoload.php";
     if ($ext == 'css') {
       if (!$minFile) $minFile = substr($file, 0, -4) . ".min.css";
