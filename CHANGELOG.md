@@ -1,3 +1,18 @@
+## [4.5.0](https://github.com/baumrock/RockMigrations/compare/v4.4.0...v4.5.0) (2024-07-01)
+
+
+### Features
+
+* add disable procache via config setting ([1454de1](https://github.com/baumrock/RockMigrations/commit/1454de1ac29451fd5a7566ec479e70c50b4dcccc))
+* read config from php file ([00d6d8d](https://github.com/baumrock/RockMigrations/commit/00d6d8ddef55b67a889dc45f770ae40161c8a75a))
+* show php version in log ([8871426](https://github.com/baumrock/RockMigrations/commit/8871426426d30791e6d5eac16981432eb1ebc78a))
+* update deployment to get php version dynamically from the remote server :) ([d17f07f](https://github.com/baumrock/RockMigrations/commit/d17f07fcd151c64cc4b50fe0bedbebfce05f607d))
+
+
+### Bug Fixes
+
+* make sure config returns an array ([e37ea97](https://github.com/baumrock/RockMigrations/commit/e37ea97e3d31be05be73a19fe68784cd186e6946))
+
 ## [4.4.0](https://github.com/baumrock/RockMigrations/compare/v4.3.0...v4.4.0) (2024-06-03)
 
 
@@ -74,11 +89,4 @@
 ### Bug Fixes
 
 * remove ImageMurl tweak in favour of Latte Filter ([c706ece](https://github.com/baumrock/RockMigrations/commit/c706ecebb4966c19e0fd5d7daafba42525de366e))
-
-## [3.36.1](https://github.com/baumrock/RockMigrations/compare/v3.36.0...v3.36.1) (2024-02-05)
-
-
-### Bug Fixes
-
-* missing check for deleteOnSave in cache() ([a764c5a](https://github.com/baumrock/RockMigrations/commit/a764c5af1fc7a74a6b0196db0f34fb0f3c8adcdc))
 
