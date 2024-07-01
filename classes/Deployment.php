@@ -31,6 +31,7 @@ class Deployment extends WireData
   public function __construct($argv = null)
   {
     $this->paths = new WireData();
+    $this->loadConfig();
 
     // get branch from script arguments
     $this->branch = '';
@@ -273,6 +274,11 @@ class Deployment extends WireData
     $this->ok();
   }
 
+  public function die($msg)
+  {
+    die("$msg\n");
+  }
+
   public function dry($flag = true)
   {
     $this->dry = $flag;
@@ -423,6 +429,31 @@ class Deployment extends WireData
     ");
     $this->echo("Creating new release at {$this->paths->release}");
     $this->echo("Root folder name: " . $this->rootFolderName());
+  }
+
+  private function loadConfig(): void
+  {
+    // read php version to use from file rockshell-config.php
+    // you can either place this config one level above the "current" symlink
+    // or in /site/config-rockshell.php
+    // later files have priority and overwrite properties already set
+    $configs = [
+      __DIR__ . '/../../../../../config-rockshell.php',
+      __DIR__ . '/../../../config-rockshell.php',
+    ];
+    foreach ($configs as $config) {
+      if (!is_file($config)) continue;
+      require_once $config;
+      try {
+        $config = (array)$config;
+      } catch (\Throwable $th) {
+        throw new Exception("Config must expose a \$config array variable.");
+      }
+      // set config params
+      foreach ($config as $key => $val) {
+        if ($key === 'php') $this->php($val);
+      }
+    }
   }
 
   /**

@@ -16,13 +16,6 @@ on:
       SSH_HOST:
         type: string
         required: true
-      # sometimes the php CLI version is different than the webroot version
-      # in that case you can set the php path/command that is used to trigger
-      # migrate.php
-      PHP:
-        type: string
-        required: false
-        default: php
     secrets:
       CI_TOKEN:
         required: false
@@ -77,11 +70,19 @@ jobs:
           install -m 600 -D /dev/null ~/.ssh/id_rsa
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
       - name: 🚚 Deploy via RSYNC and Set Permissions
         run: |
           ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "mkdir -p ${{ env.DEPLOY_FOLDER }}"
           rsync -avz --exclude '.git' --chmod=D755,F644 ${{ env.SRC }}/ ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }}:${{ env.DEPLOY_FOLDER }}
 
+      - name: 🐘 Get PHP Version from Remote Server
+        id: get-php
+        run: |
+          PHP_VERSION=$(ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "php ${{ env.DEPLOY_FOLDER }}/site/modules/RockMigrations/get-php.php")
+          echo "PHP_VERSION=$PHP_VERSION" >> $GITHUB_ENV
+          echo "PHP Command: $PHP_VERSION"
+
       - name: 🌟 Trigger RockMigrations Deployment
         run: |
-          ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "${{ inputs.PHP }} ${{ env.DEPLOY_FOLDER }}/site/deploy.php ${{ env.BRANCH }}"
+          ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "$PHP_VERSION ${{ env.DEPLOY_FOLDER }}/site/deploy.php ${{ env.BRANCH }}"
