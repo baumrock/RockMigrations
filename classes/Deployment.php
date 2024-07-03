@@ -8,6 +8,8 @@ use ProcessWire\ProcessWire;
 use ProcessWire\WireData;
 use ProcessWire\WireDatabasePDO;
 
+use function ProcessWire\rockmigrations;
+
 chdir(__DIR__);
 chdir("../../../../");
 require_once "wire/core/ProcessWire.php";
@@ -71,6 +73,15 @@ class Deployment extends WireData
    */
   public function run($keep = null)
   {
+    if (defined('GET-PHP')) {
+      echo $this->php() . "\n";
+      return;
+    }
+    if (php_sapi_name() !== 'cli') {
+      bd($this);
+      return;
+    }
+
     $this->hello();
 
     $this->trigger("share", "before");
@@ -717,6 +728,7 @@ class Deployment extends WireData
   public function sql(string $query): void
   {
     if (php_sapi_name() !== 'cli') return;
+    if (defined('GET-PHP')) return;
     $db = $this->getDB();
     $db->prepare($query)->execute();
   }
