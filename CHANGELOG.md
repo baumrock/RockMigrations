@@ -1,3 +1,10 @@
+## [4.5.1](https://github.com/baumrock/RockMigrations/compare/v4.5.0...v4.5.1) (2024-07-03)
+
+
+### Bug Fixes
+
+* get-php not working without config ([e468ecc](https://github.com/baumrock/RockMigrations/commit/e468ecccc11021fef3bd52e55dc29e0a53d06d6f))
+
 ## [4.5.0](https://github.com/baumrock/RockMigrations/compare/v4.4.0...v4.5.0) (2024-07-01)
 
 
@@ -78,15 +85,4 @@
 * remove unused line ([da721f2](https://github.com/baumrock/RockMigrations/commit/da721f2100061b40790a28cf2524a917255b587a))
 * rockmigrations() causing error on deploy ([7f80154](https://github.com/baumrock/RockMigrations/commit/7f80154ea7ec72872cdf4eaa1696beeb0f1f2362))
 * vscode snippets not created ([b5e2592](https://github.com/baumrock/RockMigrations/commit/b5e25928ea17e073a71325cee7b253654dbdd8bb))
-
-## [4.0.0](https://github.com/baumrock/RockMigrations/compare/v3.36.1...v4.0.0) (2024-02-10)
-
-
-### ⚠ BREAKING CHANGES
-
-* remove ImageMurl tweak in favour of Latte Filter
-
-### Bug Fixes
-
-* remove ImageMurl tweak in favour of Latte Filter ([c706ece](https://github.com/baumrock/RockMigrations/commit/c706ecebb4966c19e0fd5d7daafba42525de366e))
 
