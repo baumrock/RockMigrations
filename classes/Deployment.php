@@ -54,6 +54,7 @@ class Deployment extends WireData
       '/site/assets/files',
       '/site/assets/logs',
       '/site/assets/backups/database',
+      '/site/assets/sessions',
     ];
 
     // setup default delete directories
@@ -64,7 +65,6 @@ class Deployment extends WireData
       '/site/assets/cache',
       '/site/assets/ProCache',
       '/site/assets/pwpc-*',
-      '/site/assets/sessions',
     ];
   }
 
