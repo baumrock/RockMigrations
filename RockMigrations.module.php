@@ -2048,7 +2048,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // set preview password for the session if one is provided
     if ($this->wire->input->get('preview', 'string') === $this->previewPassword) {
       $this->wire->session->previewPassword = $this->previewPassword;
-      $this->allowIP();
     }
 
     // only redirect guest users
@@ -2060,7 +2059,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // don't redirect if the session has the preview password
     $matches = $this->wire->session->previewPassword === $this->previewPassword;
-    if ($this->previewPassword && $matches) return;
+    if ($this->previewPassword && $matches) {
+      // this will allow requests from this ip
+      // and update the cache on every request
+      $this->allowIP();
+      return;
+    }
 
     // don't redirect if the IP is allowed
     if ($this->isAllowedIP()) return;
