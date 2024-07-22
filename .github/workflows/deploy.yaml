@@ -49,7 +49,10 @@ jobs:
           SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`
           echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
 
-          DEPLOY_NAME=release-$GITHUB_RUN_ID-$SHORT_SHA
+          CURRENT_DATE=`date +%Y%m%d%H%M%S`
+          echo "CURRENT_DATE=$CURRENT_DATE" >> $GITHUB_ENV
+
+          DEPLOY_NAME=release-$CURRENT_DATE-$SHORT_SHA
           echo "DEPLOY_NAME=$DEPLOY_NAME" >> $GITHUB_ENV
 
           PATH="${{inputs.PATH}}"
