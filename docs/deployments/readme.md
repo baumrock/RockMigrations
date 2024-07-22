@@ -61,7 +61,7 @@ The first thing we need to do is to create the PHP file that is triggered at the
 namespace RockMigrations;
 
 require_once __DIR__ . "/modules/RockMigrations/classes/Deployment.php";
-$deploy = new Deployment($argv);
+$deploy = new Deployment($argv ?? []);
 
 // custom settings go here
 // see docs about "Customising the Deployment"
@@ -161,7 +161,7 @@ on:
       - main
 
 jobs:
-  deploy-top-production:
+  deploy-to-production:
     uses: baumrock/RockMigrations/.github/workflows/deploy.yaml@main
     with:
       PATH: "/path/to/www.yoursite.com"
@@ -186,7 +186,7 @@ on:
       - main
 
 jobs:
-  deploy-top-production:
+  deploy-to-production:
     uses: baumrock/RockMigrations/.github/workflows/deploy.yaml@main
     with:
       PATH: "/path/to/www.yoursite.com"
