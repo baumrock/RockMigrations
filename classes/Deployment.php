@@ -73,10 +73,13 @@ class Deployment extends WireData
    */
   public function run($keep = null)
   {
+    // this is for the auto-detect php feature
     if (defined('GET-PHP')) {
       echo $this->php() . "\n";
       return;
     }
+    // only run in CLI environment!
+    // if we are not in a CLI we are debugging via tracydebugger
     if (php_sapi_name() !== 'cli') {
       bd($this);
       return;
