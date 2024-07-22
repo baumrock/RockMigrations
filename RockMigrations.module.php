@@ -515,6 +515,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Allow requests from this ip even if site is hidden from guests
+   * This is to support multi-domain setups where viewing a new domain
+   * would result in a redirect to the login-screen even though the preview
+   * password was present on the prior request.
+   */
+  private function allowIP(): void
+  {
+    $ip = $this->wire->session->getIP();
+    $key = "hidefromguests-allow-$ip";
+    $this->wire->cache->save($key, true, self::oneMinute * 30);
+  }
+
+  /**
    * Register autoloader for all classes in given folder
    * This will NOT trigger init() or ready()
    * You can also use $rm->initClasses() with setting autoload=true
@@ -2035,6 +2048,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // set preview password for the session if one is provided
     if ($this->wire->input->get('preview', 'string') === $this->previewPassword) {
       $this->wire->session->previewPassword = $this->previewPassword;
+      $this->allowIP();
     }
 
     // only redirect guest users
@@ -2047,6 +2061,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // don't redirect if the session has the preview password
     $matches = $this->wire->session->previewPassword === $this->previewPassword;
     if ($this->previewPassword && $matches) return;
+
+    // don't redirect if the IP is allowed
+    if ($this->isAllowedIP()) return;
 
     // don't redirect if we are on the login page
     $loginID = $this->wire->config->loginPageID;
@@ -2350,6 +2367,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
     if ($userLanguage) $user->language = $userLanguage;
     return $permission;
+  }
+
+  /**
+   * Is IP allowed to view sites hidden from guest access?
+   */
+  private function isAllowedIP(): bool
+  {
+    $ip = $this->wire->session->getIP();
+    $key = "hidefromguests-allow-$ip";
+    return !!$this->wire->cache->get($key);
   }
 
   /**
