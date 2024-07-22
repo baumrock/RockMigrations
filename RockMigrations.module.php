@@ -4271,6 +4271,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function setPagenameReplacements($data)
   {
     if (is_string($data)) {
+      $data = strtolower($data);
       $file = __DIR__ . "/replacements/$data.txt";
       if (!is_file($file)) {
         return $this->log("File $file not found");
