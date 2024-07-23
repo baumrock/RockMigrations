@@ -3726,6 +3726,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $onlyDebug = true,
   ) {
     // early exit?
+    if (!$this->wire->user) return;
     if ($onlySuperuser && !$this->wire->user->isSuperuser()) return;
     if ($onlyDebug && !$this->wire->config->debug) return;
 
