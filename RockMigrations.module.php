@@ -2293,6 +2293,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($module and is_array($opt->conf) and count($opt->conf)) {
       $this->setModuleConfig($module, $opt->conf);
     }
+
+    // sometimes we need another refresh to catch up all changes
+    $i = 0;
+    while ($i++ < 10 && !wire()->modules->isInstalled($name)) $this->refresh();
+
     return $module;
   }
 
