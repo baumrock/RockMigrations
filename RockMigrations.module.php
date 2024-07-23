@@ -3723,9 +3723,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $css = null,
     $minify = false,
     $keepCSS = true,
+    $onlyDebug = true,
   ) {
     // early exit?
     if ($onlySuperuser && !$this->wire->user->isSuperuser()) return;
+    if ($onlyDebug && !$this->wire->config->debug) return;
 
     $css = $css ?: substr($less, 0, -5) . ".css";
     $min = substr($css, 0, -4) . ".min.css";
