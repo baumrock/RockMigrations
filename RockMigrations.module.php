@@ -1023,6 +1023,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // it is quiet to prevent "template xx not found" logs
     $t = $this->getTemplate($name, true);
     if (!$t) {
+      $this->log("Create template $name");
+
       // create new fieldgroup
       $fg = $this->wire(new Fieldgroup());
       $fg->name = $name;
@@ -5248,7 +5250,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   private function triggerMigrate($object, $silent = false): void
   {
-    if (!$silent) $this->log("Migrate $object");
+    if (!$silent) $this->log('Migrate ' . $object->className());
     if (method_exists($object, "migrate")) $object->migrate();
     if (method_exists($object, "___migrate")) $object->migrate();
   }
