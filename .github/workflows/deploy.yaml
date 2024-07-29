@@ -18,7 +18,7 @@ on:
         required: true
       # by default RockMigrations will try to get the PHP version automatically
       # if this does not work for you you can set the php command manually
-      PHP:
+      PHP_VERSION:
         type: string
         required: false
         default: php
