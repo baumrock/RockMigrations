@@ -22,7 +22,6 @@ on:
       PHP_COMMAND:
         type: string
         required: false
-        default: php
     secrets:
       CI_TOKEN:
         required: false
