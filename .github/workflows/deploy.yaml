@@ -18,8 +18,8 @@ on:
         required: true
       # by default RockMigrations will try to get the PHP version automatically
       # if this does not work for you you can set the php command manually
-      # Example: PHP_VERSION: "/user/bin/php8.1-cli"
-      PHP_VERSION:
+      # Example: PHP_COMMAND: "/user/bin/php8.1-cli"
+      PHP_COMMAND:
         type: string
         required: false
         default: php
@@ -86,17 +86,17 @@ jobs:
           ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "mkdir -p ${{ env.DEPLOY_FOLDER }}"
           rsync -avz --exclude '.git' --chmod=D755,F644 ${{ env.SRC }}/ ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }}:${{ env.DEPLOY_FOLDER }}
 
-      - name: 🐘 Get PHP Version
+      - name: 🐘 Get PHP Command
         id: get-php
         run: |
-          if [ -z "${{ inputs.PHP_VERSION }}" ]; then
-            PHP_VERSION=$(ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "php ${{ env.DEPLOY_FOLDER }}/site/modules/RockMigrations/get-php.php")
+          if [ -z "${{ inputs.PHP_COMMAND }}" ]; then
+            PHP_COMMAND=$(ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "php ${{ env.DEPLOY_FOLDER }}/site/modules/RockMigrations/get-php.php")
           else
-            PHP_VERSION="${{ inputs.PHP_VERSION }}"
+            PHP_COMMAND="${{ inputs.PHP_COMMAND }}"
           fi
-          echo "PHP_VERSION=$PHP_VERSION" >> $GITHUB_ENV
-          echo "PHP Command: $PHP_VERSION"
+          echo "PHP_COMMAND=$PHP_COMMAND" >> $GITHUB_ENV
+          echo "PHP Command: $PHP_COMMAND"
 
       - name: 🌟 Trigger RockMigrations Deployment
         run: |
-          ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "$PHP_VERSION ${{ env.DEPLOY_FOLDER }}/site/deploy.php ${{ env.BRANCH }}"
+          ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "$PHP_COMMAND ${{ env.DEPLOY_FOLDER }}/site/deploy.php ${{ env.BRANCH }}"
