@@ -18,6 +18,7 @@ on:
         required: true
       # by default RockMigrations will try to get the PHP version automatically
       # if this does not work for you you can set the php command manually
+      # Example: PHP_VERSION: "/user/bin/php8.1-cli"
       PHP_VERSION:
         type: string
         required: false
