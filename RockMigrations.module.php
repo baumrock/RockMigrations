@@ -1984,6 +1984,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return false;
   }
 
+  public function getTemplateIds(array $names): array
+  {
+    $ids = [];
+    foreach ($names as $name) {
+      $ids[] = $this->getTemplate($name, true)->id;
+    }
+    return $ids;
+  }
+
   /**
    * Get trace log for field/template log
    *
@@ -3189,13 +3198,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       if (!$minFile) $minFile = substr($file, 0, -4) . ".min.css";
       if ($this->isNewer($minFile, $file)) return $minFile;
       $minify = new \MatthiasMullie\Minify\CSS($file);
-      $minify->minify($minFile);
+      try {
+        $minify->minify($minFile);
+      } catch (\Throwable $th) {
+      }
       $this->log("Minified $minFile");
     } elseif ($ext == 'js') {
       if (!$minFile) $minFile = substr($file, 0, -3) . ".min.js";
       if ($this->isNewer($minFile, $file)) return $minFile;
       $minify = new \MatthiasMullie\Minify\JS($file);
-      $minify->minify($minFile);
+      try {
+        $minify->minify($minFile);
+      } catch (\Throwable $th) {
+      }
       $this->log("Minified $minFile");
     } else {
       throw new WireException("Invalid Extension $ext");
