@@ -876,8 +876,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($title !== null) $p->title = $title;
     $p->name = $name;
     $p->status($status);
-    $p->setAndSave($data);
     $p->save();
+    $p->setAndSave($data);
 
     // enable all languages for this page
     if ($allLanguages) $this->enableAllLanguagesForPage($p);
