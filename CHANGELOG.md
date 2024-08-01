@@ -1,3 +1,23 @@
+## [5.1.0](https://github.com/baumrock/RockMigrations/compare/v5.0.1...v5.1.0) (2024-08-01)
+
+
+### Features
+
+* add auto-refresh on module install ([e0474fa](https://github.com/baumrock/RockMigrations/commit/e0474fa8a018272c5dfc7accf7b563d7cbed1b3b))
+* add getTemplateIds() method ([847f3f8](https://github.com/baumrock/RockMigrations/commit/847f3f86b66c027b0067ec564670a807ebb0cf8b))
+* add onlyDebug flag to saveCSS() ([012d3d2](https://github.com/baumrock/RockMigrations/commit/012d3d2adc46f73c9595dd2fe36e92c0c6aa09b3))
+* add option to manually set the php command in yaml ([5b6e9c0](https://github.com/baumrock/RockMigrations/commit/5b6e9c02aff6e62f26887b9dcda0a062fee4aafc))
+* allow guest views from IP additional to session ([0d0e5cd](https://github.com/baumrock/RockMigrations/commit/0d0e5cd31ec629243c2bdee2f6c0206fb626f318))
+
+
+### Bug Fixes
+
+* add early exit if user is not defined ([1ed8261](https://github.com/baumrock/RockMigrations/commit/1ed8261652e4553f1168033b33145db385aed3b8))
+* remove default value for php command ([36795a4](https://github.com/baumrock/RockMigrations/commit/36795a49be2b40b1b4d552abd404123453cb6912))
+* setAndSave must be after page has been saved once ([b16a937](https://github.com/baumrock/RockMigrations/commit/b16a93729544625771394b2d469cc646b4dee843))
+* update ip cache on every request ([e9db692](https://github.com/baumrock/RockMigrations/commit/e9db6927615fa9ccdce638aab6c3f172eb95322a))
+* wrong variable name ([3464198](https://github.com/baumrock/RockMigrations/commit/3464198c25c428a4eacb324b7bfe6199674eda30))
+
 ## [5.0.1](https://github.com/baumrock/RockMigrations/compare/v5.0.0...v5.0.1) (2024-07-22)
 
 
@@ -37,19 +57,4 @@
 ### Bug Fixes
 
 * make sure config returns an array ([e37ea97](https://github.com/baumrock/RockMigrations/commit/e37ea97e3d31be05be73a19fe68784cd186e6946))
-
-## [4.4.0](https://github.com/baumrock/RockMigrations/compare/v4.3.0...v4.4.0) (2024-06-03)
-
-
-### Features
-
-* add money snippet ([bdc0ea2](https://github.com/baumrock/RockMigrations/commit/bdc0ea28e69d2c1bff7c1d3ab67c8a2fd42b3cfa))
-* add snippet for RockGrid fields ([ada1cf9](https://github.com/baumrock/RockMigrations/commit/ada1cf948b33e962dba7d70e78fbb88b28fe0dba))
-* improve visibility of pagelist tweaks ([088a310](https://github.com/baumrock/RockMigrations/commit/088a310d83b8b43c5821f5a36983edb70ad9df15))
-
-
-### Bug Fixes
-
-* add expirenever for RM cache() ([871544b](https://github.com/baumrock/RockMigrations/commit/871544bd2a8391ad299bcf74ca9bd49318fc80de))
-* label empty in renderTable ([c800494](https://github.com/baumrock/RockMigrations/commit/c80049497641d246c247aa2583910ec066ce3a74))
 
