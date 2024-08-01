@@ -515,6 +515,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Allow requests from this ip even if site is hidden from guests
+   * This is to support multi-domain setups where viewing a new domain
+   * would result in a redirect to the login-screen even though the preview
+   * password was present on the prior request.
+   */
+  private function allowIP(): void
+  {
+    $ip = $this->wire->session->getIP();
+    $key = "hidefromguests-allow-$ip";
+    $this->wire->cache->save($key, true, self::oneMinute * 30);
+  }
+
+  /**
    * Register autoloader for all classes in given folder
    * This will NOT trigger init() or ready()
    * You can also use $rm->initClasses() with setting autoload=true
@@ -863,8 +876,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($title !== null) $p->title = $title;
     $p->name = $name;
     $p->status($status);
-    $p->setAndSave($data);
     $p->save();
+    $p->setAndSave($data);
 
     // enable all languages for this page
     if ($allLanguages) $this->enableAllLanguagesForPage($p);
@@ -1010,6 +1023,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // it is quiet to prevent "template xx not found" logs
     $t = $this->getTemplate($name, true);
     if (!$t) {
+      $this->log("Create template $name");
+
       // create new fieldgroup
       $fg = $this->wire(new Fieldgroup());
       $fg->name = $name;
@@ -1969,6 +1984,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return false;
   }
 
+  public function getTemplateIds(array $names): array
+  {
+    $ids = [];
+    foreach ($names as $name) {
+      $ids[] = $this->getTemplate($name, true)->id;
+    }
+    return $ids;
+  }
+
   /**
    * Get trace log for field/template log
    *
@@ -2046,7 +2070,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // don't redirect if the session has the preview password
     $matches = $this->wire->session->previewPassword === $this->previewPassword;
-    if ($this->previewPassword && $matches) return;
+    if ($this->previewPassword && $matches) {
+      // this will allow requests from this ip
+      // and update the cache on every request
+      $this->allowIP();
+      return;
+    }
+
+    // don't redirect if the IP is allowed
+    if ($this->isAllowedIP()) return;
 
     // don't redirect if we are on the login page
     $loginID = $this->wire->config->loginPageID;
@@ -2272,6 +2304,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($module and is_array($opt->conf) and count($opt->conf)) {
       $this->setModuleConfig($module, $opt->conf);
     }
+
+    // sometimes we need another refresh to catch up all changes
+    $i = 0;
+    while ($i++ < 10 && !wire()->modules->isInstalled($name)) $this->refresh();
+
     return $module;
   }
 
@@ -2350,6 +2387,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
     if ($userLanguage) $user->language = $userLanguage;
     return $permission;
+  }
+
+  /**
+   * Is IP allowed to view sites hidden from guest access?
+   */
+  private function isAllowedIP(): bool
+  {
+    $ip = $this->wire->session->getIP();
+    $key = "hidefromguests-allow-$ip";
+    return !!$this->wire->cache->get($key);
   }
 
   /**
@@ -3151,13 +3198,19 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       if (!$minFile) $minFile = substr($file, 0, -4) . ".min.css";
       if ($this->isNewer($minFile, $file)) return $minFile;
       $minify = new \MatthiasMullie\Minify\CSS($file);
-      $minify->minify($minFile);
+      try {
+        $minify->minify($minFile);
+      } catch (\Throwable $th) {
+      }
       $this->log("Minified $minFile");
     } elseif ($ext == 'js') {
       if (!$minFile) $minFile = substr($file, 0, -3) . ".min.js";
       if ($this->isNewer($minFile, $file)) return $minFile;
       $minify = new \MatthiasMullie\Minify\JS($file);
-      $minify->minify($minFile);
+      try {
+        $minify->minify($minFile);
+      } catch (\Throwable $th) {
+      }
       $this->log("Minified $minFile");
     } else {
       throw new WireException("Invalid Extension $ext");
@@ -3692,9 +3745,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $css = null,
     $minify = false,
     $keepCSS = true,
+    $onlyDebug = true,
   ) {
     // early exit?
+    if (!$this->wire->user) return;
     if ($onlySuperuser && !$this->wire->user->isSuperuser()) return;
+    if ($onlyDebug && !$this->wire->config->debug) return;
 
     $css = $css ?: substr($less, 0, -5) . ".css";
     $min = substr($css, 0, -4) . ".min.css";
@@ -4271,6 +4327,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function setPagenameReplacements($data)
   {
     if (is_string($data)) {
+      $data = strtolower($data);
       $file = __DIR__ . "/replacements/$data.txt";
       if (!is_file($file)) {
         return $this->log("File $file not found");
@@ -5208,7 +5265,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   private function triggerMigrate($object, $silent = false): void
   {
-    if (!$silent) $this->log("Migrate $object");
+    if (!$silent) $this->log('Migrate ' . $object->className());
     if (method_exists($object, "migrate")) $object->migrate();
     if (method_exists($object, "___migrate")) $object->migrate();
   }

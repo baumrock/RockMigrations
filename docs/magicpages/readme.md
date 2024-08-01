@@ -6,15 +6,19 @@ If you are not using custom page classes yet I highly recommend to start using t
 
 ## Usage
 
-Simply add the `use RockMigrations\MagicPage;` statement to your custom page class:
+Simply add the `use MagicPage;` statement to your custom page class:
 
 ```php
 <?php
 
 namespace ProcessWire;
 
+// if your IDE does not add this line
+// automatically you need to add it manually!
+use RockMigrations\MagicPage;
+
 class DemoPage extends Page {
-  use RockMigrations\MagicPage;
+  use MagicPage;
 }
 ```
 
