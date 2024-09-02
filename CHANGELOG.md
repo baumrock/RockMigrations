@@ -1,3 +1,11 @@
+## [5.2.0](https://github.com/baumrock/RockMigrations/compare/v5.1.0...v5.2.0) (2024-09-02)
+
+
+### Features
+
+* add snippet for rockicons field ([019053e](https://github.com/baumrock/RockMigrations/commit/019053eea8f99f9ff6febeaa69408e843760942c))
+* send preview password to JS for multisite ([a84b47a](https://github.com/baumrock/RockMigrations/commit/a84b47aba495d285379e1327f94b3e3e2c227224))
+
 ## [5.1.0](https://github.com/baumrock/RockMigrations/compare/v5.0.1...v5.1.0) (2024-08-01)
 
 
@@ -42,19 +50,4 @@
 ### Bug Fixes
 
 * get-php not working without config ([e468ecc](https://github.com/baumrock/RockMigrations/commit/e468ecccc11021fef3bd52e55dc29e0a53d06d6f))
-
-## [4.5.0](https://github.com/baumrock/RockMigrations/compare/v4.4.0...v4.5.0) (2024-07-01)
-
-
-### Features
-
-* add disable procache via config setting ([1454de1](https://github.com/baumrock/RockMigrations/commit/1454de1ac29451fd5a7566ec479e70c50b4dcccc))
-* read config from php file ([00d6d8d](https://github.com/baumrock/RockMigrations/commit/00d6d8ddef55b67a889dc45f770ae40161c8a75a))
-* show php version in log ([8871426](https://github.com/baumrock/RockMigrations/commit/8871426426d30791e6d5eac16981432eb1ebc78a))
-* update deployment to get php version dynamically from the remote server :) ([d17f07f](https://github.com/baumrock/RockMigrations/commit/d17f07fcd151c64cc4b50fe0bedbebfce05f607d))
-
-
-### Bug Fixes
-
-* make sure config returns an array ([e37ea97](https://github.com/baumrock/RockMigrations/commit/e37ea97e3d31be05be73a19fe68784cd186e6946))
 
