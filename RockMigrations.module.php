@@ -182,6 +182,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       if ($this->wire->languages) {
         $this->wire->config->js('rmUserLang', $this->wire->user->language->id);
       }
+
+      // send preview password to JS in backend
+      wire()->config->js('previewPassword', $this->previewPassword);
     }
   }
 
@@ -3147,9 +3150,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->migrationsDone();
   }
 
-  public function ___migrationsDone()
-  {
-  }
+  public function ___migrationsDone() {}
 
   /**
    * Migrate yaml file
