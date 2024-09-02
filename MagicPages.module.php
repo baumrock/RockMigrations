@@ -2,6 +2,7 @@
 
 namespace RockMigrations;
 
+use ProcessWire\Debug;
 use ProcessWire\HookEvent;
 use ProcessWire\Module;
 use ProcessWire\Page;
@@ -120,6 +121,9 @@ class MagicPages extends WireData implements Module
       $this->wire->addHookMethod(
         "Page(template=$tpl)::$methodname",
         function ($event) use ($fieldname) {
+          // show note to indicate that this will be removed some day
+          $this->log('Magic fieldmethods are deprecated! Use RockFrontend FieldMethod trait instead. ' . Debug::backtrace()[0]['file']);
+
           // get field value of original field
           $page = $event->object;
           $raw = $event->arguments(0);
