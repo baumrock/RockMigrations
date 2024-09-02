@@ -122,7 +122,7 @@ class MagicPages extends WireData implements Module
         "Page(template=$tpl)::$methodname",
         function ($event) use ($fieldname) {
           // show note to indicate that this will be removed some day
-          $this->log('Magic fieldmethods are deprecated! Use RockFrontend FieldMethod trait instead. ' . Debug::backtrace()[0]['file']);
+          $this->log('Magic fieldmethods are deprecated! See baumrock.com/rff ' . Debug::backtrace()[0]['file']);
 
           // get field value of original field
           $page = $event->object;
