@@ -4172,16 +4172,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * @return void
    */
-  public function setPageNameFromField($template, $fields = 'title')
+  public function setPageNameFromField($template, $fields = 'title', $condition = null)
   {
     if ($template instanceof Page) $template = $template->template;
     $template = $this->wire->templates->get((string)$template);
     if (!$template) return;
     $tpl = "template=$template";
-    $this->addHookAfter("Pages::saved($tpl,id>0)", function (HookEvent $event) use ($fields) {
+    $this->addHookAfter("Pages::saved($tpl,id>0)", function (HookEvent $event) use ($fields, $condition) {
       /** @var Page $page */
       $page = $event->arguments(0);
 
+      // if a condition is set, only do this if the condition is met
+      if ($condition) {
+        if (!$page->matches($condition)) return;
+      }
+
+      // only do this once
       if ($page->rmSetPageName) return;
       $page->rmSetPageName = true;
 
@@ -4210,9 +4216,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * @param mixed $object
    */
-  public function setPageNameFromTitle($template)
+  public function setPageNameFromTitle($template, $condition = null)
   {
-    return $this->setPageNameFromField($template, 'title');
+    return $this->setPageNameFromField($template, 'title', $condition);
   }
 
   /**
