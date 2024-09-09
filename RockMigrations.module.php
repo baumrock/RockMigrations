@@ -2270,6 +2270,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (is_string($options)) $options = ['url' => $options];
     if (!$options) $options = [];
 
+    // if module is not installed do a refresh
+    // this is necessary sometimes (don't know why)
+    if (!wire()->modules->isInstalled($name)) $this->refresh();
+
     $opt = $this->wire(new WireData());
     /** @var WireData $opt */
     $opt->setArray([
