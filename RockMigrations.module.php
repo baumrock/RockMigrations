@@ -63,6 +63,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /** @var WireData */
   public $fieldSuccessMessages;
 
+  private $indent = 0;
+
   /**
    * Flag that is set true when migrations are running
    * @var bool
@@ -2178,6 +2180,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $event->return = $pagefile->pagefiles->url . $variation_basename;
   }
 
+  public function indent(int $indent = 2): void
+  {
+    $this->indent = $indent;
+  }
+
   /**
    * DEPRECATED
    *
@@ -2272,7 +2279,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // if module is not installed do a refresh
     // this is necessary sometimes (don't know why)
-    if (!wire()->modules->isInstalled($name)) $this->refresh();
+    if (!wire()->modules->isInstalled($name)) {
+      $this->log("Install module $name");
+      $this->indent(2);
+      $this->refresh();
+    } else $this->log("Already installed $name");
 
     $opt = $this->wire(new WireData());
     /** @var WireData $opt */
@@ -2315,6 +2326,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // sometimes we need another refresh to catch up all changes
     $i = 0;
     while ($i++ < 10 && !wire()->modules->isInstalled($name)) $this->refresh();
+
+    $this->indent(0);
 
     return $module;
   }
@@ -2655,6 +2668,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // this makes it possible to log a Debug::backtrace for example
     // which can be handy for debugging
     $msg = $this->str($msg);
+    $msg = str_repeat(" ", $this->indent) . $msg;
 
     if ($this->isVerbose()) {
       try {
@@ -3294,7 +3308,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Get all pageclass files of given module
    */
-  private function pageClassFiles(Module $module): array
+  public function pageClassFiles(Module $module): array
   {
     if (!$module->pageClassPath) return [];
     return glob($module->pageClassPath . "*.php");
