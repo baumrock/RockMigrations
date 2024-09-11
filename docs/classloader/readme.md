@@ -67,7 +67,6 @@ As soon as your module creates pages you might want that these pages have a dedi
 - Create a folder "pageClasses" in your module.
 - Add all your pageclasses to that folder.
 - Add `$rm->watch($this);` to your module's `init()` method to watch your module for changes.
-- Add `$rm->migrateModule($this);` to your module's `___install()` method to make sure it will install properly.
 
 ### Folder Structure
 
@@ -163,15 +162,9 @@ Even though the "Users" class is loaded after the "Root" class this code will wo
 
 ### Installation
 
-If you module is not installed yet, the module will not be part of the watchlist and the pageclass templates will not be created. To make sure that all pageclass templates are created when the module is installed, you need to add `$rm->migrateModule($this);` to your module's `___install()` method:
+If you module is not installed yet, the module will not be part of the watchlist and the pageclass templates will not be created. To make sure that all pageclass templates are created when the module is installed, RockMigrations will attach a hook to `Modules::install()` that will automatically trigger the `migrateModule()` method of RockMigrations.
 
-```php
-  public function ___install(): void
-  {
-    $rm = rockmigrations();
-    $rm->migrateModule($this);
-  }
-```
+This makes sure that all templates of pageclasses are created directly after installation of your module and also it will trigger `migrate()` of every of your pageclasses.
 
 ## repeaterPageClasses
 

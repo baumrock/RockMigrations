@@ -150,6 +150,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     wire()->addHookBefore("InputfieldForm::render",      $this, "addRmHints");
     wire()->addHookAfter("Modules::refresh",             $this, "hookModulesRefresh");
     wire()->addHookAfter("Pages::saved",                 $this, "resetCachesOnSave");
+    wire()->addHookAfter("Modules::install",             $this, "hookModuleInstall");
 
     // core enhancements
     wire()->addHookProperty("Pagefile::isImage",  $this, "hookIsImage");
@@ -158,6 +159,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // other actions on init()
     $this->loadFilesOnDemand();
     $this->createSnippetfiles();
+  }
+
+  protected function hookModuleInstall(HookEvent $event): void
+  {
+    $module = wire()->modules->get($event->arguments(0));
+    if (!$this->pageClassFiles($module)) return;
+    $this->migrateModule($module);
   }
 
   public function ready()
@@ -3324,7 +3332,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Get all pageclass files of given module
    */
-  public function pageClassFiles(Module $module): array
+  public function pageClassFiles(Module|string $module): array
   {
     $path = $this->pageClassPath($module);
     if (!$path) return [];
@@ -3372,10 +3380,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Get path to page classes of given module
    */
-  public function pageClassPath(Module $module): string|false
+  public function pageClassPath(Module|string $module): string|false
   {
-    $dir = wire()->config->paths($module);
-    $path = $dir . 'pageClasses/';
+    $dir = wire()->config->paths->siteModules . $module;
+    $path = $dir . '/pageClasses/';
     if (is_dir($path)) return $path;
     return false;
   }
