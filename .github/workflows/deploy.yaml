@@ -22,6 +22,15 @@ on:
       PHP_COMMAND:
         type: string
         required: false
+
+      # php command to be used to execute get-php.php
+      # get-php needs PHP8+ so if the default php command of the operating
+      # system is not PHP8+ you need to set this variable to a php8+ command
+      # Example: GET_PHP_COMMAND: "/user/bin/php8.1-cli"
+      GET_PHP_COMMAND:
+        type: string
+        required: false
+        default: "php"
     secrets:
       CI_TOKEN:
         required: false
@@ -89,7 +98,7 @@ jobs:
         id: get-php
         run: |
           if [ -z "${{ inputs.PHP_COMMAND }}" ]; then
-            PHP_COMMAND=$(ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "php ${{ env.DEPLOY_FOLDER }}/site/modules/RockMigrations/get-php.php")
+            PHP_COMMAND=$(ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "${{ inputs.GET_PHP_COMMAND }} ${{ env.DEPLOY_FOLDER }}/site/modules/RockMigrations/get-php.php")
           else
             PHP_COMMAND="${{ inputs.PHP_COMMAND }}"
           fi
