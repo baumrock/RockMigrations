@@ -19,3 +19,9 @@ $config->filesOnDemand = 'https://your-live-site.com';
 So when ProcessWire tries to load /site/assets/files/1/foo.jpg it will grab it from https://your-live-site.com/site/assets/files/1/foo.jpg
 
 This is a lot more efficient than downloading the whole project, especially if the live site is large.
+
+## Warning
+
+Make sure to use this only on local development sites!
+
+This feature can slow down your local site if it tries to load files that don't exist on the remote, so use it wisely or turn it off if you don't need it.
