@@ -63,6 +63,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /** @var WireData */
   public $fieldSuccessMessages;
 
+  private $indent = 0;
+
   /**
    * Flag that is set true when migrations are running
    * @var bool
@@ -148,6 +150,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     wire()->addHookBefore("InputfieldForm::render",      $this, "addRmHints");
     wire()->addHookAfter("Modules::refresh",             $this, "hookModulesRefresh");
     wire()->addHookAfter("Pages::saved",                 $this, "resetCachesOnSave");
+    wire()->addHookAfter("Modules::install",             $this, "hookModuleInstall");
 
     // core enhancements
     wire()->addHookProperty("Pagefile::isImage",  $this, "hookIsImage");
@@ -156,6 +159,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // other actions on init()
     $this->loadFilesOnDemand();
     $this->createSnippetfiles();
+  }
+
+  protected function hookModuleInstall(HookEvent $event): void
+  {
+    $module = wire()->modules->get($event->arguments(0));
+    if (!$this->pageClassFiles($module)) return;
+    $this->migrateModule($module);
   }
 
   public function ready()
@@ -1068,15 +1078,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * This makes sure that for every classfile the corresponding template exists
    */
-  private function createTemplateFromClassfile(string $file, string $namespace)
-  {
+  private function createTemplateFromClassfile(
+    string $file,
+    string $namespace,
+  ) {
     $name = substr(basename($file), 0, -4);
     $classname = "\\$namespace\\$name";
     $tmp = new $classname();
 
     try {
-      if ($this->isCLI()) $this->log("Setup Template " . $tmp::tpl);
-
       // if the template already exists we exit early
       $tpl = $this->getTemplate($tmp::tpl, true);
       if ($tpl) return $tpl;
@@ -1086,7 +1096,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         'pageClass' => $classname,
         'tags' => $namespace,
         'fields' => ['title'],
-      ]);
+      ], false);
 
       return $tpl;
     } catch (\Throwable $th) {
@@ -2178,6 +2188,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $event->return = $pagefile->pagefiles->url . $variation_basename;
   }
 
+  public function indent(int $change = 2): void
+  {
+    $this->indent = $this->indent + $change;
+  }
+
   /**
    * DEPRECATED
    *
@@ -2270,6 +2285,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (is_string($options)) $options = ['url' => $options];
     if (!$options) $options = [];
 
+    // if module is not installed do a refresh
+    // this is necessary sometimes (don't know why)
+    $unindent = false;
+    if (!wire()->modules->isInstalled($name)) {
+      $this->log("Install module $name");
+      $unindent = true;
+      $this->indent(2);
+      $this->refresh();
+    } else $this->log("Already installed $name");
+
     $opt = $this->wire(new WireData());
     /** @var WireData $opt */
     $opt->setArray([
@@ -2311,6 +2336,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // sometimes we need another refresh to catch up all changes
     $i = 0;
     while ($i++ < 10 && !wire()->modules->isInstalled($name)) $this->refresh();
+
+    if ($unindent) $this->indent(-2);
 
     return $module;
   }
@@ -2651,6 +2678,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // this makes it possible to log a Debug::backtrace for example
     // which can be handy for debugging
     $msg = $this->str($msg);
+    $msg = str_repeat(" ", $this->indent) . $msg;
 
     if ($this->isVerbose()) {
       try {
@@ -2883,26 +2911,37 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Migrate a module and all its page classes
    */
-  private function migrateModule(Module $module): void
+  public function migrateModule(Module $module): void
   {
     $this->log("----- Migrate Module $module -----");
-    if ($module->pageClassPath) {
-      // if the module has a classloader attached we make sure that we migrate
-      // pageclasses before migrating the final module.
-      // that way we can define what happens in the module file - for example
-      // we could create several templates upfront and then in the module file
-      // we create pages that use those templates, which is only possible if
-      // those templates have been created before.
-      $this->log("Setup all PageClasses of this Module");
+    $path = $this->pageClassPath($module);
 
+    // if the module ships with custom pageclasses
+    // we first create all templates and in a second step
+    // we migrate all classes. this makes sure that if a migrate()
+    // of one pageclass references a template of another pageclass
+    // it will still work no matter which filenames the classes have.
+    if ($path) {
+      // the very first thing to do is to create all templates for pageclasses
+      $this->wire->classLoader->addNamespace($module->className(), $path);
       foreach ($this->pageClassFiles($module) as $file) {
         $this->createTemplateFromClassfile($file, $module->className());
       }
+    }
+
+    // we trigger migrate() of the module
+    // this happens before all pageclasses are migrated so that we can
+    // create fields used by multiple pageclasses in the migrate() method
+    // of the module.
+    $this->triggerMigrate($module);
+
+    // now that the module migrate() has been triggered we can migrate
+    // all pageclasses.
+    if ($path) {
       foreach ($this->pageClassFiles($module) as $file) {
         $this->migratePageClass($file, $module);
       }
     }
-    $this->triggerMigrate($module);
   }
 
   /**
@@ -3007,7 +3046,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     if (!$file->migrate) return;
     if (!$this->doMigrate($file)) {
-      $this->log("--- Skipping {$file->path} (no change)");
+      $this->log("  - Skipping {$file->path} (no change)");
       return;
     }
 
@@ -3026,7 +3065,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // if it is a module we call $module->migrate()
     if ($module = $file->module) {
+      $this->indent(2);
       $this->migrateModule($module);
+      $this->indent(-2);
       return;
     }
 
@@ -3041,7 +3082,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           $this->log("  => {$file->pageClass}::migrate()");
           $tmp->migrate();
         }
-      } else $this->log("--- Skip {$file->pageClass} (no change)");
+      } else $this->log("  - Skip {$file->pageClass} (no change)");
       return;
     }
 
@@ -3136,6 +3177,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     foreach ($list as $prio => $items) {
       if ($this->isCLI()) $this->log("");
+      $this->indent = 0;
       $this->log("### Migrate items with priority $prio ###");
 
       foreach ($items as $path) {
@@ -3290,10 +3332,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Get all pageclass files of given module
    */
-  private function pageClassFiles(Module $module): array
+  public function pageClassFiles(Module|string $module): array
   {
-    if (!$module->pageClassPath) return [];
-    return glob($module->pageClassPath . "*.php");
+    $path = $this->pageClassPath($module);
+    if (!$path) return [];
+    return glob($path . "*.php");
   }
 
   /**
@@ -3322,14 +3365,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($namespace !== $folder) return;
 
     // make PW autoload all files in given path
-    $module->pageClassPath = $path;
-    $this->wire->classLoader->addNamespace($namespace, $path);
+    $this->wire->classLoader->addNamespace(
+      $namespace,
+      $this->pageClassPath($module)
+    );
 
     // create templates for all files
     $files = $this->pageClassFiles($module);
     foreach ($files as $file) {
       $this->createTemplateFromClassfile($file, $namespace);
     }
+  }
+
+  /**
+   * Get path to page classes of given module
+   */
+  public function pageClassPath(Module|string $module): string|false
+  {
+    $dir = wire()->config->paths->siteModules . $module;
+    $path = $dir . '/pageClasses/';
+    if (is_dir($path)) return $path;
+    return false;
   }
 
   /**
@@ -4172,16 +4228,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * @return void
    */
-  public function setPageNameFromField($template, $fields = 'title')
+  public function setPageNameFromField($template, $fields = 'title', $condition = null)
   {
     if ($template instanceof Page) $template = $template->template;
     $template = $this->wire->templates->get((string)$template);
     if (!$template) return;
     $tpl = "template=$template";
-    $this->addHookAfter("Pages::saved($tpl,id>0)", function (HookEvent $event) use ($fields) {
+    $this->addHookAfter("Pages::saved($tpl,id>0)", function (HookEvent $event) use ($fields, $condition) {
       /** @var Page $page */
       $page = $event->arguments(0);
 
+      // if a condition is set, only do this if the condition is met
+      if ($condition) {
+        if (!$page->matches($condition)) return;
+      }
+
+      // only do this once
       if ($page->rmSetPageName) return;
       $page->rmSetPageName = true;
 
@@ -4210,9 +4272,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * @param mixed $object
    */
-  public function setPageNameFromTitle($template)
+  public function setPageNameFromTitle($template, $condition = null)
   {
-    return $this->setPageNameFromField($template, 'title');
+    return $this->setPageNameFromField($template, 'title', $condition);
   }
 
   /**
