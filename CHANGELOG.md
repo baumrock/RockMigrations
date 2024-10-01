@@ -1,3 +1,14 @@
+## [5.3.0](https://github.com/baumrock/RockMigrations/compare/v5.2.0...v5.3.0) (2024-10-01)
+
+
+### Features
+
+* add a condition for setPageNameFromField ([fc582b2](https://github.com/baumrock/RockMigrations/commit/fc582b2e23d97c6505ead3ff0dd70dc4befdcdaa))
+* add GET_PHP_COMMAND variable for deployments ([3bba845](https://github.com/baumrock/RockMigrations/commit/3bba8452ceefe42d66c0c72e7eee8741e9a80a79))
+* add indent() for better logs ([f611675](https://github.com/baumrock/RockMigrations/commit/f61167515dc391e92ebb74795bb1900bd75eefec))
+* add refresh() before installing new module ([476963f](https://github.com/baumrock/RockMigrations/commit/476963f2885c512a76ed7ada78ea7d44c297edd9))
+* trigger migrateModule() after module install ([4c09a51](https://github.com/baumrock/RockMigrations/commit/4c09a51540177175dfafad27f27def45c4d8a14d))
+
 ## [5.2.0](https://github.com/baumrock/RockMigrations/compare/v5.1.0...v5.2.0) (2024-09-02)
 
 
@@ -43,11 +54,4 @@
 ### Miscellaneous Chores
 
 * share sessions folder by default on deploy ([3b349e8](https://github.com/baumrock/RockMigrations/commit/3b349e8a68cf3e687cb0ccda7662752435f2941f))
-
-## [4.5.1](https://github.com/baumrock/RockMigrations/compare/v4.5.0...v4.5.1) (2024-07-03)
-
-
-### Bug Fixes
-
-* get-php not working without config ([e468ecc](https://github.com/baumrock/RockMigrations/commit/e468ecccc11021fef3bd52e55dc29e0a53d06d6f))
 
