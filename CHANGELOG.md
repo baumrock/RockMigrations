@@ -1,3 +1,11 @@
+## [5.4.0](https://github.com/baumrock/RockMigrations/compare/v5.3.0...v5.4.0) (2024-10-16)
+
+
+### Features
+
+* add exception handling for missing or invalid module names in hookModuleInstall ([62d9367](https://github.com/baumrock/RockMigrations/commit/62d9367dcc3768f67731e17c4c7f5f5c1ea5ce0e))
+* add new auto-release workflow ([812c9c9](https://github.com/baumrock/RockMigrations/commit/812c9c9b138bf45c050bb5efd4fcc01ae0ae8d96))
+
 ## [5.3.0](https://github.com/baumrock/RockMigrations/compare/v5.2.0...v5.3.0) (2024-10-01)
 
 
@@ -43,15 +51,4 @@
 ### Bug Fixes
 
 * use timestamp instead of deploy id ([c1f0119](https://github.com/baumrock/RockMigrations/commit/c1f011977d31c22112fd0020088070fb04b83cc8))
-
-## [5.0.0](https://github.com/baumrock/RockMigrations/compare/v4.5.1...v5.0.0) (2024-07-12)
-
-
-### ⚠ BREAKING CHANGES
-
-* share sessions folder by default on deploy
-
-### Miscellaneous Chores
-
-* share sessions folder by default on deploy ([3b349e8](https://github.com/baumrock/RockMigrations/commit/3b349e8a68cf3e687cb0ccda7662752435f2941f))
 
