@@ -162,11 +162,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   protected function hookModuleInstall(HookEvent $event): void
-  {
-    $module = wire()->modules->get($event->arguments(0));
-    if (!$this->pageClassFiles($module)) return;
-    $this->migrateModule($module);
-  }
+    {
+        $moduleName = $event->arguments(0);
+        if (!$moduleName) {
+            throw new WireException('Module name is missing.');
+        }
+
+        $module = wire()->modules->get($moduleName);
+        if (!$module) {
+            throw new WireException('Module not found: ' . $moduleName);
+        }
+
+        if (!$this->pageClassFiles($module)) {
+            return;
+        }
+    }
 
   public function ready()
   {
