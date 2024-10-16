@@ -1,3 +1,10 @@
+## [5.4.1](https://github.com/baumrock/RockMigrations/compare/v5.4.0...v5.4.1) (2024-10-16)
+
+
+### Bug Fixes
+
+* update deploy workflow to checkout@v4 ([5ff3cc2](https://github.com/baumrock/RockMigrations/commit/5ff3cc2890f46301742a5f3271476d97ae534c80))
+
 ## [5.4.0](https://github.com/baumrock/RockMigrations/compare/v5.3.0...v5.4.0) (2024-10-16)
 
 
@@ -44,11 +51,4 @@
 * setAndSave must be after page has been saved once ([b16a937](https://github.com/baumrock/RockMigrations/commit/b16a93729544625771394b2d469cc646b4dee843))
 * update ip cache on every request ([e9db692](https://github.com/baumrock/RockMigrations/commit/e9db6927615fa9ccdce638aab6c3f172eb95322a))
 * wrong variable name ([3464198](https://github.com/baumrock/RockMigrations/commit/3464198c25c428a4eacb324b7bfe6199674eda30))
-
-## [5.0.1](https://github.com/baumrock/RockMigrations/compare/v5.0.0...v5.0.1) (2024-07-22)
-
-
-### Bug Fixes
-
-* use timestamp instead of deploy id ([c1f0119](https://github.com/baumrock/RockMigrations/commit/c1f011977d31c22112fd0020088070fb04b83cc8))
 
