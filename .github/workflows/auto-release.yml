@@ -1,0 +1,35 @@
+name: Changelog and Release
+
+on:
+  workflow_call:
+    inputs:
+      email:
+        description: "Git user email for commits (optional)"
+        required: false
+        type: string
+    secrets:
+      token:
+        required: true
+
+jobs:
+  changelog-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Conventional Changelog Action
+        id: changelog
+        uses: TriPSs/conventional-changelog-action@v5
+        with:
+          preset: "conventionalcommits"
+          github-token: ${{ secrets.token }}
+          git-user-email: ${{ inputs.email || 'conventional.changelog.action@github.com' }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.token }}
+        with:
+          tag_name: ${{ steps.changelog.outputs.tag }}
+          name: ${{ steps.changelog.outputs.tag }}
+          body: ${{ steps.changelog.outputs.clean_changelog }}
