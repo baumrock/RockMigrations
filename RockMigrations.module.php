@@ -3198,7 +3198,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     $this->updateLastrun();
 
-    $list = $this->sortWatchlist();
+    $list = $this->sortedWatchlist();
     if ($this->isCLI() and $debug) {
       $this->log("##### SORTED WATCHLIST #####");
       $this->log($list);
@@ -3335,7 +3335,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $debug = false,
     callable $confirm = null,
   ): void {
-    $onceConfig = (new WireData())->setArray($this->getModuleConfig($this, 'once') ?: []);
+    $onceConfig = $this->getModuleConfig($this, 'once');
+    if (!is_array($onceConfig)) $onceConfig = [];
+    $onceConfig = (new WireData())->setArray($onceConfig);
 
     if (!$debug && $onceConfig->get($key)) return;
     try {
@@ -5131,21 +5133,32 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * This is very important to ensure that migrations always run in the
    * same order.
    */
-  private function sortWatchlist(): array
+  public function sortedWatchlist(): array
   {
     $list = [];
     foreach ($this->watchlist as $file) {
       if (!$file->migrate) continue;
+      // add # to make sure we can use float keys
       $key = "#" . $file->migrate;
       if (!array_key_exists($key, $list)) $list[$key] = [];
       $list[$key][] = $file->path;
     }
-    ksort($list);
+
+    // Use uksort with a custom comparison function
+    // this is to make sure 100 is before 50 which is not the case
+    // when using string comparison
+    uksort($list, function ($a, $b) {
+      $a = str_replace("#", "", $a);
+      $b = str_replace("#", "", $b);
+      return $b <=> $a; // Sort in descending order
+    });
+
+    // sublists are sorted alphabetically by path
     foreach ($list as $k => $sublist) {
       sort($sublist);
       $list[$k] = $sublist;
     }
-    return array_reverse($list);
+    return $list;
   }
 
   /**
@@ -6130,7 +6143,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return [
       'lastrun' => $lastrun,
       'watchlist' => $this->watchlist,
-      'sortWatchlist' => $this->sortWatchlist(),
+      'sortedWatchlist' => $this->sortedWatchlist(),
     ];
   }
 }
