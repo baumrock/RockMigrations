@@ -12,6 +12,7 @@ use RockMigrations\WatchFile;
 use RockPageBuilder\Block as RockPageBuilderBlock;
 use RockShell\Application;
 use Symfony\Component\Yaml\Yaml;
+use Tracy\Dumper;
 use TracyDebugger;
 
 /**
@@ -162,21 +163,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   protected function hookModuleInstall(HookEvent $event): void
-    {
-        $moduleName = $event->arguments(0);
-        if (!$moduleName) {
-            throw new WireException('Module name is missing.');
-        }
-
-        $module = wire()->modules->get($moduleName);
-        if (!$module) {
-            throw new WireException('Module not found: ' . $moduleName);
-        }
-
-        if (!$this->pageClassFiles($module)) {
-            return;
-        }
+  {
+    $moduleName = $event->arguments(0);
+    if (!$moduleName) {
+      throw new WireException('Module name is missing.');
     }
+
+    $module = wire()->modules->get($moduleName);
+    if (!$module) {
+      throw new WireException('Module not found: ' . $moduleName);
+    }
+
+    if (!$this->pageClassFiles($module)) {
+      return;
+    }
+  }
 
   public function ready()
   {
@@ -1423,6 +1424,24 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($downloaded !== false) return $downloaded;
     $this->log("Tried to download module from $url but failed");
     return false;
+  }
+
+  /**
+   * Helper to dump data in the backend
+   * Uses Tracy\Dumper if available, otherwise falls back to var_export
+   */
+  public function dump($data): string
+  {
+    try {
+      return Dumper::toHtml($data);
+    } catch (\Throwable $th) {
+      try {
+        return "<pre>" . nl2br(htmlspecialchars(var_export($data, true))) . "</pre>";
+      } catch (\Throwable $th) {
+        if (wire()->user->isSuperuser()) return $th->getMessage();
+        return "Error dumping data";
+      }
+    }
   }
 
   /**
