@@ -12,4 +12,5 @@ $1 => [
   ],
   'tags' => '',
   'columnWidth' => 100,
+  'icon' => 'cubes',
 ],
