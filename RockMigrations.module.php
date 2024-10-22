@@ -3335,8 +3335,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $debug = false,
     callable $confirm = null,
   ): void {
-    $key = "rm:once|$key";
-    if (!$debug && $this->wire->cache->get($key)) return;
+    $onceConfig = (new WireData())->setArray($this->getModuleConfig($this, 'once') ?: []);
+
+    if (!$debug && $onceConfig->get($key)) return;
     try {
       $this->log($key);
       $callback($this);
@@ -3352,7 +3353,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           return;
         }
       }
-      $this->wire->cache->save($key, $data);
+      $onceConfig->set($key, $data);
+      $this->setModuleConfig($this, [
+        'once' => $onceConfig->getArray(),
+      ]);
     } catch (\Throwable $th) {
       $this->log($th->getMessage());
     }
