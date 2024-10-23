@@ -213,3 +213,15 @@ const field = ProductPage::field_accessories;
 ```
 
 Since the ProductPage is auto-loaded by RockMigrations as well, the field name will be readily available without the need for additional require_once or similar commands.
+
+## Debugging
+
+For debugging it is essential to know the sort order of your watched files. This represents the execution order of your migrations.
+
+To see the order of your watched files you can use the `sortedWatchlist()` method of RockMigrations:
+
+```php
+bd(rockmigrations()->sortedWatchlist());
+```
+
+<img src=https://i.imgur.com/hyLoz8f.png class=blur height=250>
