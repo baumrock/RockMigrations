@@ -5155,7 +5155,23 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // sublists are sorted alphabetically by path
     foreach ($list as $k => $sublist) {
-      sort($sublist);
+      usort($sublist, function ($a, $b) {
+        // get first comparison result by comparing the first parts
+        // like /site/modules/RockCommerce
+        $aUrl = $this->toUrl($a);
+        $bUrl = $this->toUrl($b);
+        $aParts = array_slice(explode('/', $aUrl), 0, 4);
+        $bParts = array_slice(explode('/', $bUrl), 0, 4);
+        $aDir = implode('/', $aParts);
+        $bDir = implode('/', $bParts);
+        $first = strcmp($aDir, $bDir);
+
+        // get second part of comparison by comparing the second parts
+        // we add this as / 100 to the result
+        $second = strcmp($a, $b) / 100;
+
+        return $first + $second;
+      });
       $list[$k] = $sublist;
     }
 
@@ -5664,12 +5680,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     // we have priority 1
     // for files in /site/modules we set a new default 50
-    if (str_starts_with($url, '/site/modules/')) {
-      // count slashes to determine depth
-      $depth = substr_count($url, '/');
-      if ($depth === 4) return 51;
-      return 50;
-    }
+    if (str_starts_with($url, '/site/modules/')) return 50;
 
     return $priority;
   }
