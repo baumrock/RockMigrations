@@ -267,7 +267,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $field = $this->getField($field);
     if (!$field) return; // logging is done in getField()
     $template = $this->getTemplate($template);
-    if (!$template) return; // logging is done in getField()
+    if (!$template) return; // logging is done in getTemplate()
     if (!$afterfield and !$beforefield) {
       if ($template->fields->has($field)) return;
     }
