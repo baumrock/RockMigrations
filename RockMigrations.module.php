@@ -5158,6 +5158,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       sort($sublist);
       $list[$k] = $sublist;
     }
+
     return $list;
   }
 
@@ -5365,6 +5366,28 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $msg = "Publishing page $selector not allowed";
         if ($sudo) $msg .= " by $file";
         $this->error($msg);
+      }
+    );
+  }
+
+  /**
+   * Set watch priority for all files in given path (url)
+   *
+   * Usage:
+   * $rm->setWatchPriority('/site/modules/MyModule/', 60);
+   */
+  public function setWatchPriority(string $url, float $priority): void
+  {
+    // attach a hook that overrides the default hook priority for given url
+    $this->addHookAfter(
+      'watchPriority',
+      function (HookEvent $event) use ($url, $priority) {
+        // get url of watched files
+        $u = $event->arguments[0];
+        // if url does not start with given url return
+        if (!str_starts_with($u, $url)) return;
+        // otherwise set priority
+        $event->return = $priority;
       }
     );
   }
@@ -5610,13 +5633,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     $data = $this->wire(new WatchFile());
     /** @var WatchFile $data */
+    $url = $this->toUrl($path);
     $data->setArray([
       'path' => $path . $hash,
-      'url' => $this->toUrl($path), // for logs
+      'url' => $url, // for logs
       'module' => $module,
       'callback' => $callback,
       'pageClass' => $opt->pageClass,
-      'migrate' => (float)$migrate,
+      'migrate' => $this->watchPriority($url, $migrate),
       'trigger' => $opt->trigger,
       'trace' => "$tracefile:$traceline",
       'changed' => false,
@@ -5628,6 +5652,26 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // add item to watchlist
     // sorting of list will happen before migration of all items
     $this->watchlist->add($data);
+  }
+
+  public function ___watchPriority(string $url, $priority): float|false
+  {
+    if ($priority === false) return false;
+    $priority = (float)$priority;
+
+    // if priority is not 1 we return it as is
+    if ($priority !== (float)1) return $priority;
+
+    // we have priority 1
+    // for files in /site/modules we set a new default 50
+    if (str_starts_with($url, '/site/modules/')) {
+      // count slashes to determine depth
+      $depth = substr_count($url, '/');
+      if ($depth === 4) return 51;
+      return 50;
+    }
+
+    return $priority;
   }
 
   public function watchEnabled()
