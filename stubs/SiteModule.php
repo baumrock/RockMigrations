@@ -35,7 +35,7 @@ class Site extends WireData implements Module
 
     // migrate site module before other modules so that if we create global
     // fields we make sure we can use them in other modules
-    $rm->watch($this, 99);
+    $rm->watch($this, 100);
   }
 
   public function migrate()
