@@ -3455,7 +3455,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!is_array($onceConfig)) $onceConfig = [];
     $onceConfig = (new WireData())->setArray($onceConfig);
 
+    // already run and not in debug mode? early exit!
     if (!$debug && $onceConfig->get($key)) return;
+
+    // run migration
     try {
       $this->log($key);
       $callback($this);
