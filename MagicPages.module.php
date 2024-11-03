@@ -85,7 +85,7 @@ class MagicPages extends WireData implements Module
       $p = $this->wire->pages->newPage(['template' => $tpl]);
       if (!property_exists($p, "isMagicPage") || !$p->isMagicPage) {
         // cache is outdated, recreate it
-        $this->wire->cache->delete('magic-templates');
+        $this->resetCache();
         continue;
       }
       if (method_exists($p, 'init')) $p->init();
@@ -368,6 +368,11 @@ class MagicPages extends WireData implements Module
     $filePath = Paths::normalizeSeparators($reflector->getFileName());
     if ($tpl) $this->filePaths[$tpl] = $filePath;
     return $filePath;
+  }
+
+  public function resetCache(): void
+  {
+    $this->wire->cache->delete('magic-templates');
   }
 
   public function rockmigrations(): RockMigrations

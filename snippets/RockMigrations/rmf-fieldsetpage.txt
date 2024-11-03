@@ -2,17 +2,15 @@
 $1 => [
   'label' => 'FieldsetPage Label',
   'type' => 'FieldtypeFieldsetPage',
-  'repeaterFields' => [
-    'title',
+  'fields' => [
+    'title' => [
+      'label' => 'My Label',
+      'required' => 0,
+    ],
     'foo',
     'bar',
   ],
   'tags' => '',
   'columnWidth' => 100,
-  'fieldContexts' => [
-    'title' => [
-      'label' => 'My Label',
-      'required' => 0,
-    ],
-  ],
+  'icon' => 'cubes',
 ],
