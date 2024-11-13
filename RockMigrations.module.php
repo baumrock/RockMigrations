@@ -1839,8 +1839,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * Adds a prefix if the file is located in a module folder to avoid
    * name clashes with fields from other modules.
    *
-   * Example: Returns "rockcommerce_product_customfields" for file
-   * /site/modules/RockCommerce/RockMigrations/fields/product_customfields.php
+   * Example: Returns "rockcommerce_foo" for file
+   * /site/modules/RockCommerce/RockMigrations/fields/foo.php
    */
   private function getConfigFileName(string $file, $noPrefix = false): string
   {
