@@ -1,3 +1,20 @@
+## [6.0.0](https://github.com/baumrock/RockMigrations/compare/v5.5.0...v6.0.0) (2024-11-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* create constant trait instead of helper classes
+
+### Features
+
+* add renameField() method ([0b24426](https://github.com/baumrock/RockMigrations/commit/0b24426cf6170658449e40e80041b5c35cbb7b28))
+* create constant trait instead of helper classes ([e4ccc74](https://github.com/baumrock/RockMigrations/commit/e4ccc74e1041c70bdfeb935b36da3b36bed61b67))
+
+
+### Bug Fixes
+
+* don't show once in config table ([37baaaf](https://github.com/baumrock/RockMigrations/commit/37baaaf53b5ba4827480ecb78cba2be2f8368947))
+
 ## [5.5.0](https://github.com/baumrock/RockMigrations/compare/v5.4.1...v5.5.0) (2024-11-03)
 
 
@@ -37,12 +54,4 @@
 * add indent() for better logs ([f611675](https://github.com/baumrock/RockMigrations/commit/f61167515dc391e92ebb74795bb1900bd75eefec))
 * add refresh() before installing new module ([476963f](https://github.com/baumrock/RockMigrations/commit/476963f2885c512a76ed7ada78ea7d44c297edd9))
 * trigger migrateModule() after module install ([4c09a51](https://github.com/baumrock/RockMigrations/commit/4c09a51540177175dfafad27f27def45c4d8a14d))
-
-## [5.2.0](https://github.com/baumrock/RockMigrations/compare/v5.1.0...v5.2.0) (2024-09-02)
-
-
-### Features
-
-* add snippet for rockicons field ([019053e](https://github.com/baumrock/RockMigrations/commit/019053eea8f99f9ff6febeaa69408e843760942c))
-* send preview password to JS for multisite ([a84b47a](https://github.com/baumrock/RockMigrations/commit/a84b47aba495d285379e1327f94b3e3e2c227224))
 
