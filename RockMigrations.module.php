@@ -5972,6 +5972,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $rows++;
       if ($key == 'installMacros') continue;
       if ($key == 'profile') continue;
+      if ($key == 'once') continue;
 
       $db = $this->showConfigInfoDump($db);
       $forced = $this->showConfigInfoDump($this->configForced->get($key));
