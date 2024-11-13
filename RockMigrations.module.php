@@ -3784,6 +3784,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Rename a field
+   */
+  public function renameField($oldName, $newName, $quiet = false): void
+  {
+    $field = $this->getField($oldName, $quiet);
+    if (!$field) return;
+    $field->name = $newName;
+    $field->save();
+    $this->log("Renamed field $oldName to $newName");
+  }
+
+  /**
    * Rename given page
    * @return void
    */
