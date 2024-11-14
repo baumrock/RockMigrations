@@ -729,6 +729,71 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
   }
 
+  /**
+   * Thx Adrian
+   * https://github.com/adrianbj/ProcessAdminActions/blob/master/actions/CopyRepeaterItemsToOtherPage.action.php
+   *
+   * Usage of newFieldnames:
+   * [
+   *   'oldFieldName' => 'newFieldName',
+   * ]
+   */
+  public function copyRepeaterItems(
+    Page|string|int $sourcePage,
+    Field|string|int $sourceField,
+    Field|string|int $targetField,
+    Page|string|int $targetPage = null,
+    bool $resetTarget = false,
+    array $newFieldnames = [],
+  ): void {
+    $sourcePage = $this->getPage($sourcePage);
+    $sourcePage->of(false);
+    $targetPage = $targetPage ? $this->getPage($targetPage) : $sourcePage;
+    $targetPage->of(false);
+    $sourceField = $this->getField($sourceField);
+    $targetField = $this->getField($targetField);
+    $sourceItems = $sourcePage->get($sourceField->name);
+    $targetItems = $targetPage->get($targetField->name);
+
+    // reset target before copy?
+    if ($resetTarget) {
+      $targetItems->removeAll();
+      $targetPage->save($targetField->name);
+    }
+
+    // copy items
+    foreach ($sourceItems as $item) {
+      // create new item
+      $clone = $targetItems->getNew();
+      $clone->save();
+
+      // populate all fields
+      foreach ($sourceField->fields as $fieldname) {
+        $targetName = $fieldname;
+
+        // move content to the same field or to another one?
+        if (in_array($fieldname, array_keys($newFieldnames))) {
+          $targetName = $newFieldnames[$fieldname];
+        }
+
+        // set new value
+        $clone->set($targetName, $item->getUnformatted($fieldname));
+      }
+
+      // copy files?
+      if (PagefilesManager::hasFiles($item)) {
+        $clone->filesManager->init($clone);
+        $item->filesManager->copyFiles($clone->filesManager->path());
+      }
+
+      // save changes
+      $clone->save();
+    }
+
+    // save page
+    $targetPage->setAndSave($targetField->name, $targetItems);
+  }
+
   private function createConstantTraits(): void
   {
     // only do this if debug mode is enabled
@@ -3464,6 +3529,31 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$ref->id) return $this->log("Reference does not exist");
     if ($page->parent !== $ref->parent) return $this->log("Both pages must have the same parent");
     $this->wire->pages->sort($page, $ref->sort);
+  }
+
+  public function moveRepeaterItems(
+    Page|string|int $sourcePage,
+    Field|string|int $sourceField,
+    Field|string|int $targetField,
+    Page|string|int $targetPage = null,
+    bool $resetTarget = false,
+    array $newFieldnames = [],
+  ): void {
+    $this->copyRepeaterItems(
+      $sourcePage,
+      $sourceField,
+      $targetField,
+      $targetPage,
+      $resetTarget,
+      $newFieldnames,
+    );
+
+    // reset source field
+    $sourcePage = $this->getPage($sourcePage);
+    $sourceField = $this->getField($sourceField);
+    $oldItems = $sourcePage->getUnformatted($sourceField->name);
+    $oldItems->removeAll();
+    $sourcePage->setAndSave($sourceField->name, $oldItems);
   }
 
   /**
