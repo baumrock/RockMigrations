@@ -4479,6 +4479,32 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Set name of a page
+   * Can also set name of pages having the system flag
+   */
+  public function setPageName(
+    Page|string|int $page,
+    string $name,
+    $removeSystemFlag = false,
+  ): void {
+    $page = $this->getPage($page);
+    if (!$removeSystemFlag) {
+      $page->setAndSave('name', $name);
+      return;
+    }
+
+    // set new name and restore old status
+    $oldStatus = $page->status;
+    $page->addStatus(Page::statusSystemOverride);
+    $page->status = 1;
+    $page->name = $name;
+    $page->status = $oldStatus;
+
+    // save changes
+    $page->save();
+  }
+
+  /**
    * Set page name from field of template
    *
    * Usage:
