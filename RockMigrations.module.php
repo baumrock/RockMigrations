@@ -5593,8 +5593,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     if (!$this->watchEnabled()) return;
 
-    if ($migrate > 1000) throw new WireException("Migrate priority must not be higher than 1000: $migrate");
-
     // if what is an array we watch all files in the array
     if (is_array($what)) {
       foreach ($what as $file) $this->watch($file, $migrate, $options);
