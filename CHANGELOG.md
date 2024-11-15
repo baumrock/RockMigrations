@@ -1,3 +1,10 @@
+## [6.0.1](https://github.com/baumrock/RockMigrations/compare/v6.0.0...v6.0.1) (2024-11-15)
+
+
+### Bug Fixes
+
+* don't use text as default fieldtype ([46e74d7](https://github.com/baumrock/RockMigrations/commit/46e74d74150a25d567bf5aa09c5df8a4aabe5284))
+
 ## [6.0.0](https://github.com/baumrock/RockMigrations/compare/v5.5.0...v6.0.0) (2024-11-13)
 
 
@@ -43,15 +50,4 @@
 
 * add exception handling for missing or invalid module names in hookModuleInstall ([62d9367](https://github.com/baumrock/RockMigrations/commit/62d9367dcc3768f67731e17c4c7f5f5c1ea5ce0e))
 * add new auto-release workflow ([812c9c9](https://github.com/baumrock/RockMigrations/commit/812c9c9b138bf45c050bb5efd4fcc01ae0ae8d96))
-
-## [5.3.0](https://github.com/baumrock/RockMigrations/compare/v5.2.0...v5.3.0) (2024-10-01)
-
-
-### Features
-
-* add a condition for setPageNameFromField ([fc582b2](https://github.com/baumrock/RockMigrations/commit/fc582b2e23d97c6505ead3ff0dd70dc4befdcdaa))
-* add GET_PHP_COMMAND variable for deployments ([3bba845](https://github.com/baumrock/RockMigrations/commit/3bba8452ceefe42d66c0c72e7eee8741e9a80a79))
-* add indent() for better logs ([f611675](https://github.com/baumrock/RockMigrations/commit/f61167515dc391e92ebb74795bb1900bd75eefec))
-* add refresh() before installing new module ([476963f](https://github.com/baumrock/RockMigrations/commit/476963f2885c512a76ed7ada78ea7d44c297edd9))
-* trigger migrateModule() after module install ([4c09a51](https://github.com/baumrock/RockMigrations/commit/4c09a51540177175dfafad27f27def45c4d8a14d))
 
