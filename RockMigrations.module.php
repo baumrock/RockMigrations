@@ -3402,28 +3402,28 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $this->log($list);
     }
 
-    // first we migrate all config files
-    // in the first step we only create all fields/templates/etc
-    // in the second step we migrate the data
-    $this->log("### Migrate config files (priority #1000) ###");
-    $configFiles = $list['#1000'] ?? [];
-    $this->indent(2);
-    $this->log("--- create PHP constant traits ---");
-    $this->createConstantTraits();
-    $this->log("--- create objects ---");
-    foreach ($configFiles as $file) $this->runConfigFile($file, true);
-    $this->log("--- migrate data ---");
-    foreach ($configFiles as $file) $this->runConfigFile($file);
-    $this->indent(0);
-
     // now we migrate all other files
     foreach ($list as $prio => $items) {
-      // dont run config files again
-      if ($prio === '#1000') continue;
-
       if ($this->isCLI()) $this->log("");
-      $this->indent = 0;
       $this->log("### Migrate items with priority $prio ###");
+
+      // prio 1000 is reserved for config migrations
+      // in the first step we only create all fields/templates/etc
+      // in the second step we migrate the data
+      if ($prio === '#1000') {
+        $this->log("### Config File Migrations ###");
+        $this->indent(2);
+        $this->log("--- create PHP constant traits ---");
+        $this->createConstantTraits();
+        $this->log("--- create objects ---");
+        foreach ($items as $file) $this->runConfigFile($file, true);
+        $this->log("--- migrate data ---");
+        foreach ($items as $file) $this->runConfigFile($file);
+        $this->indent(-2);
+
+        // skip everything below
+        continue;
+      }
 
       foreach ($items as $path) {
         $file = $this->watchlist->get("path=$path");
