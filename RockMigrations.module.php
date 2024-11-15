@@ -768,7 +768,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $clone->save();
 
       // populate all fields
-      foreach ($sourceField->fields as $fieldname) {
+      foreach ($item->fields as $field) {
+        $fieldname = $field->name;
         $targetName = $fieldname;
 
         // move content to the same field or to another one?
