@@ -6267,7 +6267,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function createRepeaterMatrixField(string $name, array $options, bool $wipe = false)
   {
-    $items = array_key_exists('matrixItems', $options) ? $options['matrixItems'] : null;
+    $items = array_key_exists('matrixItems', $options) ? $options['matrixItems'] : [];
     if ($items) unset($options['matrixItems']);
     // create field
     $field = $this->createField($name, 'FieldtypeRepeaterMatrix', $options);
