@@ -835,6 +835,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       foreach ($files as $file) {
         $type = $this->getConfigFileType($file, true);
         $shortName = $this->getConfigFileName($file, true);
+        if (str_starts_with($shortName, '.')) continue;
         $longName = $this->getConfigFileName($file);
         $content .= "  const {$type}_$shortName = '$longName';\n";
       }
@@ -4081,6 +4082,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $url = $this->toUrl($file);
     $this->log($url);
 
+    // skip dotfiles
+    $shortName = $this->getConfigFileName($file, true);
+    if (str_starts_with($shortName, '.')) {
+      $this->log("Skipping dotfile $shortName");
+      return;
+    }
+
     $config = $this->getConfigFileArray($file);
     $name = $this->getConfigFileName($file);
     $type = $this->getConfigFileType($file);
@@ -4102,8 +4110,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $this->log("  Tag:  $tag");
       switch ($type) {
         case 'fields':
-          $this->createField($name, $config);
-          $this->setFieldData($name, ['tags' => $tag]);
+          // get fieldname either from config "name" property or from filename
+          $fieldname = array_key_exists('name', $config)
+            ? $config['name']
+            : $name;
+          $this->createField($fieldname, $config);
+          $this->setFieldData($fieldname, ['tags' => $tag]);
           break;
         case 'templates':
           $this->createTemplate($name, $config);
