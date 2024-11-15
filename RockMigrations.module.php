@@ -1824,8 +1824,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       return ['title' => $config];
     }
 
-    // empty fields config means regular text field
-    if ($type === 'fields' && !$config) $config = ['type' => 'text'];
+    // NOTE: do not use type=text as default if no array is returned
+    // because this will create a field with type=text and then in a second
+    // step it may throw an error that field type=text cannot be converted to ...
 
     if (is_array($config)) return $this->translateConfig($config);
     if (wire()->config->debug) throw new WireException("Not an array: $file");
