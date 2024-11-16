@@ -71,8 +71,10 @@ class Deployment extends WireData
   /**
    * Run default actions
    */
-  public function run($keep = null)
-  {
+  public function run(
+    $keep = null,
+    $migrate = true,
+  ) {
     // this is for the auto-detect php feature
     if (defined('GET-PHP')) {
       echo $this->php() . "\n";
@@ -107,9 +109,11 @@ class Deployment extends WireData
     $this->cleanupDB();
     $this->trigger("cleanupDB", "after");
 
-    $this->trigger("migrate", "before");
-    $this->migrate();
-    $this->trigger("migrate", "after");
+    if ($migrate) {
+      $this->trigger("migrate", "before");
+      $this->migrate();
+      $this->trigger("migrate", "after");
+    }
 
     $this->trigger("addRobots", "before");
     $this->addRobots();
