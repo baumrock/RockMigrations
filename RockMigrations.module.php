@@ -888,7 +888,27 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // create the new field
       $_name = $this->wire->sanitizer->fieldName($name);
       if ($_name !== $name) throw new WireException("Invalid fieldname ($name)!");
-      $field = $this->wire(new Field());
+
+    // field does not exist
+    if (!$field) {
+      // get type
+      $type = $this->getFieldtype($type);
+      if (!$type) return; // logging above
+
+      // create the new field
+      $_name = $this->wire->sanitizer->fieldName($name);
+      if ($_name !== $name) throw new WireException("Invalid fieldname ($name)!");
+
+      // get fieldClass as string if implemented for that FieldType
+      /** @var string $fieldClass */
+      $fieldClass = $type->getFieldClass();
+      $fieldClass = "ProcessWire\\$fieldClass";
+      if(class_exists($fieldClass)) {
+        // use the specific class to create new field if it exists
+        $field = $this->wire(new $fieldClass());
+      } else {
+        $field = $this->wire(new Field());
+      }
       $field->type = $type;
       $field->name = $_name;
       $field->label = $_name; // set label (mandatory since ~3.0.172)
