@@ -78,6 +78,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    **/
   private $lastrun;
 
+  private $lastRunLogfile;
+
   private $migrateAll = false;
 
   private $migrated = [];
@@ -119,6 +121,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     $config = $this->wire->config;
     $this->wire('rockmigrations', $this);
+    $this->lastRunLogfile = wire()->config->paths->logs . 'rockmigrations-lastrun.txt';
     $this->installModule('MagicPages');
     if ($config->debug) $this->setOutputLevel(self::outputLevelVerbose);
 
@@ -2913,17 +2916,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function log($msg, $throwException = true)
   {
-    $trace = $this->getTrace($msg);
-    $file = $trace['file'];
-    $line = $trace['line'];
-    $filename = pathinfo($file, PATHINFO_FILENAME);
-    $traceStr = "$filename:$line";
-
     // convert message to a string
     // this makes it possible to log a Debug::backtrace for example
     // which can be handy for debugging
     $msg = $this->str($msg);
     $msg = str_repeat(" ", $this->indent) . $msg;
+
+    // write raw message to log file
+    wire()->files->filePutContents($this->lastRunLogfile, $msg, FILE_APPEND);
+
+    // enrich message with trace information
+    $trace = $this->getTrace($msg);
+    $file = $trace['file'];
+    $line = $trace['line'];
+    $filename = pathinfo($file, PATHINFO_FILENAME);
+    $traceStr = "$filename:$line";
 
     if ($this->isVerbose()) {
       try {
@@ -3402,7 +3409,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->ismigrating = true;
 
     // logging
+    // reset logs
     $this->wire->log->delete($this->className);
+    if (is_file($this->lastRunLogfile)) wire()->files->unlink($this->lastRunLogfile);
+    // start new log
     if (!$cli) {
       $this->log('-------------------------------------');
       foreach ($changed as $file) $this->log("Detected change in $file");
