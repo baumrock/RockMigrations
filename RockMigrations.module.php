@@ -2144,8 +2144,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Get repeater template for given field
    */
-  public function getRepeaterTemplate(Field|string|int $field, $quiet = false): Template|false
-  {
+  public function getRepeaterTemplate(
+    Field|string|int $field,
+    $quiet = false,
+  ): Template|false {
     $field = $this->getField($field, $quiet);
     if ($field) return $field->type->getRepeaterTemplate($field);
     return false;
