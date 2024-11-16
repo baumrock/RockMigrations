@@ -1386,6 +1386,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     if (!$page = $this->getPage($page, $quiet)) return;
 
+    // nullpage? exit early
+    if (!$page->id) return;
+
     // temporarily disable filesOnDemand feature
     // this prevents PW from downloading files that are deleted from a local dev
     // system but only exist on the live system
