@@ -889,16 +889,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $_name = $this->wire->sanitizer->fieldName($name);
       if ($_name !== $name) throw new WireException("Invalid fieldname ($name)!");
 
-    // field does not exist
-    if (!$field) {
-      // get type
-      $type = $this->getFieldtype($type);
-      if (!$type) return; // logging above
-
-      // create the new field
-      $_name = $this->wire->sanitizer->fieldName($name);
-      if ($_name !== $name) throw new WireException("Invalid fieldname ($name)!");
-
       // get fieldClass as string if implemented for that FieldType
       /** @var string $fieldClass */
       $fieldClass = $type->getFieldClass();
