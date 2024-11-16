@@ -893,7 +893,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       /** @var string $fieldClass */
       $fieldClass = $type->getFieldClass();
       $fieldClass = "ProcessWire\\$fieldClass";
-      if(class_exists($fieldClass)) {
+      if (class_exists($fieldClass)) {
         // use the specific class to create new field if it exists
         $field = $this->wire(new $fieldClass());
       } else {
@@ -1232,6 +1232,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $classname = "\\$namespace\\$name";
     $tmp = new $classname();
 
+    // if $tmp::tpl is not defined we exit early
+    // this is to allow config migrations to create templates
+    if (!defined("{$classname}::tpl")) return;
+
     try {
       // if the template already exists we exit early
       $tpl = $this->getTemplate($tmp::tpl, true);
@@ -1246,7 +1250,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
       return $tpl;
     } catch (\Throwable $th) {
-      throw new WireException("Error setting up template - you must add the tpl constant to $classname");
+      throw new WireException("Error setting up template for class $classname");
     }
   }
 
