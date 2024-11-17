@@ -3179,8 +3179,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function migrateModule(Module $module): void
   {
-    $this->log("----- Migrate Module $module (DEPRECATED) -----");
-    $this->log("Please use Config Migrations instead!");
+    $this->log("----- Migrate Module $module -----");
     $path = $this->pageClassPath($module);
 
     // if the module ships with custom pageclasses
