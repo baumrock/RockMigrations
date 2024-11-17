@@ -803,6 +803,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // only do this if debug mode is enabled
     if (!wire()->config->debug) return;
 
+    $this->log("--- create PHP constant traits ---");
+
     // get files from watchlist
     $list = $this->sortedWatchlist();
 
@@ -1936,6 +1938,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$noPrefix) $prefix = $this->getConfigFileTag($file);
     if ($prefix) $prefix = strtolower($prefix) . "_";
     return $prefix . str_replace('.php', '', basename($file));
+  }
+
+  /**
+   * Get all config files in given path
+   * NOTE: This will return all files, even if the module is not installed!
+   */
+  public function getConfigFiles(string $path): array
+  {
+    return wire()->files->find($path, [
+      'recursive' => true,
+      'extensions' => ['php'],
+    ]);
   }
 
   private function getConfigFileTag(string $file): string
@@ -3165,7 +3179,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function migrateModule(Module $module): void
   {
-    $this->log("----- Migrate Module $module -----");
+    $this->log("----- Migrate Module $module (DEPRECATED) -----");
+    $this->log("Please use Config Migrations instead!");
     $path = $this->pageClassPath($module);
 
     // if the module ships with custom pageclasses
@@ -3440,18 +3455,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // in the first step we only create all fields/templates/etc
       // in the second step we migrate the data
       if ($prio === '#1000') {
-        $this->log("### Config File Migrations ###");
-        $this->indent(2);
-        $this->log("--- create PHP constant traits ---");
-        $this->createConstantTraits();
-        $this->log("--- create objects ---");
-        foreach ($items as $file) $this->runConfigFile($file, true);
-        $this->log("--- migrate data ---");
-        foreach ($items as $file) $this->runConfigFile($file);
-        $this->indent(-2);
-
-        // skip everything below
-        continue;
+        $this->runConfigMigrations($items);
+        continue; // skip everything below
       }
 
       foreach ($items as $path) {
@@ -4170,6 +4175,35 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           break;
       }
     }
+  }
+
+  /**
+   * Run config migrations of given files
+   *
+   * NOTE: This will always run migrations even when the module is not
+   * (yet) installed, so this method can be used on module installation to
+   * create all needed assets.
+   */
+  public function runConfigMigrations(array|string $items): void
+  {
+    // was a path provided?
+    if (is_string($items)) {
+      if (is_dir($items)) $items = $this->getConfigFiles($items);
+      elseif (is_file($items)) $items = [$items];
+      else {
+        $this->log("Invalid option for runConfigMigrations(): $items");
+        return;
+      }
+    }
+
+    $this->log("### Running Config Migrations ###");
+    $this->indent(2);
+    $this->createConstantTraits();
+    $this->log("--- first run: create assets ---");
+    foreach ($items as $file) $this->runConfigFile($file, true);
+    $this->log("--- second run: migrate data ---");
+    foreach ($items as $file) $this->runConfigFile($file);
+    $this->indent(-2);
   }
 
   /**
