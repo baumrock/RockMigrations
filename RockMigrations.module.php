@@ -104,9 +104,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->path = $this->wire->config->paths($this);
     $this->wire->classLoader->addNamespace("RockMigrations", __DIR__ . "/classes");
 
-    // load all constant-traits in /site/modules/*/
+    // load all constant-traits in /site/modules/*/ and subfolders
     $dir = wire()->config->paths->siteModules;
-    foreach (glob($dir . '*/RockMigrationsConstants.php') as $file) {
+    foreach (glob($dir . '**/*/RockMigrationsConstants.php') as $file) {
       require_once $file;
     }
 
@@ -827,7 +827,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // write constants trait for every item in $constants
     foreach ($constants as $tag => $files) {
       // built destination file path
-      $dst = wire()->config->paths->siteModules . "$tag/RockMigrationsConstants.php";
+      $dst = wire()->config->paths->siteModules . "$tag/RockMigrations/RockMigrationsConstants.php";
 
       // if file does not exist we don't create it
       if (!is_file($dst)) continue;
