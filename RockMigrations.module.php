@@ -839,7 +839,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $content .= "\ntrait RockMigrationsConstants\n{\n";
       foreach ($files as $file) {
         $type = $this->getConfigFileType($file, true);
-        $shortName = $this->getConfigFileName($file, true);
+        $shortName = $this->getConfigFileName($file, true, true);
         if (str_starts_with($shortName, '.')) continue;
         $longName = $this->getConfigFileName($file);
         $content .= "  const {$type}_$shortName = '$longName';\n";
@@ -1929,15 +1929,22 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * Adds a prefix if the file is located in a module folder to avoid
    * name clashes with fields from other modules.
    *
+   * @param string $file
+   * @param bool $noPrefix if true Do not add prefix
+   * @param bool $replaceHyphens  if true Replace hyphens with underscores for valid constant names
+   *
    * Example: Returns "rockcommerce_foo" for file
    * /site/modules/RockCommerce/RockMigrations/fields/foo.php
    */
-  private function getConfigFileName(string $file, $noPrefix = false): string
+  private function getConfigFileName(string $file, $noPrefix = false, $replaceHyphens = false): string
   {
     $prefix = '';
+    $basename = basename($file);
     if (!$noPrefix) $prefix = $this->getConfigFileTag($file);
     if ($prefix) $prefix = strtolower($prefix) . "_";
-    return $prefix . str_replace('.php', '', basename($file));
+    // hyphens are not allowed in constant names
+    if ($replaceHyphens) $basename = str_replace('-', '_', $basename);
+    return $prefix . str_replace('.php', '', $basename);
   }
 
   /**
