@@ -88,6 +88,8 @@ I decided to use PHP files rather than YAML or JSON, because in PHP files we get
 
 ### Class Constant Traits
 
+<div class='uk-alert'>This feature requires at least PHP8.2 to work.</div>
+
 As you might have noticed I don't like to type long field or template names as strings like `rockcommerce_mylongfieldname`. Instead I use class constants, which have two benefits: First, I can't make typos and second, I get autocompletion again.
 
 The idea is that all fields that are created from within a module are available as a class constant from that module. The easiest way to explain this is by example.
