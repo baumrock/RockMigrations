@@ -4191,8 +4191,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * (yet) installed, so this method can be used on module installation to
    * create all needed assets.
    */
-  public function runConfigMigrations(array|string $items): void
-  {
+  public function runConfigMigrations(
+    array|string $items,
+    bool $createTrait = true,
+  ): void {
     // was a path provided?
     if (is_string($items)) {
       if (is_dir($items)) $items = $this->getConfigFiles($items);
@@ -4205,7 +4207,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     $this->log("### Running Config Migrations ###");
     $this->indent(2);
-    $this->createConstantTraits();
+    if ($createTrait) $this->createConstantTraits();
     $this->log("--- first run: create assets ---");
     foreach ($items as $file) $this->runConfigFile($file, true);
     $this->log("--- second run: migrate data ---");
