@@ -7,4 +7,5 @@
 
   'localRootPath' => getenv("DDEV_APPROOT"),
   'numLogEntries' => 100, // for RockMigrations
+  // 'editor' => 'cursor://file/%file:%line',
 ];
