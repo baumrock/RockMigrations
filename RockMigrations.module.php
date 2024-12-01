@@ -78,6 +78,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    **/
   private $lastrun;
 
+  private $lastRunLogfile;
+
   private $migrateAll = false;
 
   private $migrated = [];
@@ -119,6 +121,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     $config = $this->wire->config;
     $this->wire('rockmigrations', $this);
+    $this->lastRunLogfile = wire()->config->paths->logs . 'rockmigrations-lastrun.txt';
     $this->installModule('MagicPages');
     if ($config->debug) $this->setOutputLevel(self::outputLevelVerbose);
 
@@ -729,10 +732,78 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
   }
 
+  /**
+   * Thx Adrian
+   * https://github.com/adrianbj/ProcessAdminActions/blob/master/actions/CopyRepeaterItemsToOtherPage.action.php
+   *
+   * Usage of newFieldnames:
+   * [
+   *   'oldFieldName' => 'newFieldName',
+   * ]
+   */
+  public function copyRepeaterItems(
+    Page|string|int $sourcePage,
+    Field|string|int $sourceField,
+    Field|string|int $targetField,
+    Page|string|int $targetPage = null,
+    bool $resetTarget = false,
+    array $newFieldnames = [],
+  ): void {
+    $sourcePage = $this->getPage($sourcePage);
+    $sourcePage->of(false);
+    $targetPage = $targetPage ? $this->getPage($targetPage) : $sourcePage;
+    $targetPage->of(false);
+    $sourceField = $this->getField($sourceField);
+    $targetField = $this->getField($targetField);
+    $sourceItems = $sourcePage->get($sourceField->name);
+    $targetItems = $targetPage->get($targetField->name);
+
+    // reset target before copy?
+    if ($resetTarget) {
+      $targetItems->removeAll();
+      $targetPage->save($targetField->name);
+    }
+
+    // copy items
+    foreach ($sourceItems as $item) {
+      // create new item
+      $clone = $targetItems->getNew();
+      $clone->save();
+
+      // populate all fields
+      foreach ($item->fields as $field) {
+        $fieldname = $field->name;
+        $targetName = $fieldname;
+
+        // move content to the same field or to another one?
+        if (in_array($fieldname, array_keys($newFieldnames))) {
+          $targetName = $newFieldnames[$fieldname];
+        }
+
+        // set new value
+        $clone->set($targetName, $item->getUnformatted($fieldname));
+      }
+
+      // copy files?
+      if (PagefilesManager::hasFiles($item)) {
+        $clone->filesManager->init($clone);
+        $item->filesManager->copyFiles($clone->filesManager->path());
+      }
+
+      // save changes
+      $clone->save();
+    }
+
+    // save page
+    $targetPage->setAndSave($targetField->name, $targetItems);
+  }
+
   private function createConstantTraits(): void
   {
     // only do this if debug mode is enabled
     if (!wire()->config->debug) return;
+
+    $this->log("--- create PHP constant traits ---");
 
     // get files from watchlist
     $list = $this->sortedWatchlist();
@@ -768,7 +839,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $content .= "\ntrait RockMigrationsConstants\n{\n";
       foreach ($files as $file) {
         $type = $this->getConfigFileType($file, true);
-        $shortName = $this->getConfigFileName($file, true);
+        $shortName = $this->getConfigFileName($file, true, true);
+        if (str_starts_with($shortName, '.')) continue;
         $longName = $this->getConfigFileName($file);
         $content .= "  const {$type}_$shortName = '$longName';\n";
       }
@@ -821,7 +893,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // create the new field
       $_name = $this->wire->sanitizer->fieldName($name);
       if ($_name !== $name) throw new WireException("Invalid fieldname ($name)!");
-      $field = $this->wire(new Field());
+
+      // get fieldClass as string if implemented for that FieldType
+      /** @var string $fieldClass */
+      $fieldClass = $type->getFieldClass();
+      $fieldClass = "ProcessWire\\$fieldClass";
+      if (class_exists($fieldClass)) {
+        // use the specific class to create new field if it exists
+        $field = $this->wire(new $fieldClass());
+      } else {
+        $field = $this->wire(new Field());
+      }
       $field->type = $type;
       $field->name = $_name;
       $field->label = $_name; // set label (mandatory since ~3.0.172)
@@ -1155,6 +1237,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $classname = "\\$namespace\\$name";
     $tmp = new $classname();
 
+    // if $tmp::tpl is not defined we exit early
+    // this is to allow config migrations to create templates
+    if (!defined("{$classname}::tpl")) return;
+
     try {
       // if the template already exists we exit early
       $tpl = $this->getTemplate($tmp::tpl, true);
@@ -1169,7 +1255,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
       return $tpl;
     } catch (\Throwable $th) {
-      throw new WireException("Error setting up template - you must add the tpl constant to $classname");
+      throw new WireException("Error setting up template for class $classname");
     }
   }
 
@@ -1318,6 +1404,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function deletePage($page, $quiet = false)
   {
     if (!$page = $this->getPage($page, $quiet)) return;
+
+    // nullpage? exit early
+    if (!$page->id) return;
 
     // temporarily disable filesOnDemand feature
     // this prevents PW from downloading files that are deleted from a local dev
@@ -1835,20 +1924,40 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Get the name of property to migrate from config file
-   *
    * Adds a prefix if the file is located in a module folder to avoid
    * name clashes with fields from other modules.
+   *
+   * @param string $file
+   * @param bool $noPrefix if true Do not add prefix
+   * @param bool $replaceHyphens  if true Replace hyphens with underscores for valid constant names
    *
    * Example: Returns "rockcommerce_foo" for file
    * /site/modules/RockCommerce/RockMigrations/fields/foo.php
    */
-  private function getConfigFileName(string $file, $noPrefix = false): string
-  {
+  private function getConfigFileName(
+    string $file,
+    $noPrefix = false,
+    $replaceHyphens = false,
+  ): string {
     $prefix = '';
+    $basename = basename($file);
     if (!$noPrefix) $prefix = $this->getConfigFileTag($file);
     if ($prefix) $prefix = strtolower($prefix) . "_";
-    return $prefix . str_replace('.php', '', basename($file));
+    // hyphens are not allowed in constant names
+    if ($replaceHyphens) $basename = str_replace('-', '_', $basename);
+    return $prefix . str_replace('.php', '', $basename);
+  }
+
+  /**
+   * Get all config files in given path
+   * NOTE: This will return all files, even if the module is not installed!
+   */
+  public function getConfigFiles(string $path): array
+  {
+    return wire()->files->find($path, [
+      'recursive' => true,
+      'extensions' => ['php'],
+    ]);
   }
 
   private function getConfigFileTag(string $file): string
@@ -2074,8 +2183,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   /**
    * Get repeater template for given field
    */
-  public function getRepeaterTemplate(Field|string|int $field, $quiet = false): Template|false
-  {
+  public function getRepeaterTemplate(
+    Field|string|int $field,
+    $quiet = false,
+  ): Template|false {
     $field = $this->getField($field, $quiet);
     if ($field) return $field->type->getRepeaterTemplate($field);
     return false;
@@ -2827,17 +2938,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function log($msg, $throwException = true)
   {
-    $trace = $this->getTrace($msg);
-    $file = $trace['file'];
-    $line = $trace['line'];
-    $filename = pathinfo($file, PATHINFO_FILENAME);
-    $traceStr = "$filename:$line";
-
     // convert message to a string
     // this makes it possible to log a Debug::backtrace for example
     // which can be handy for debugging
     $msg = $this->str($msg);
     $msg = str_repeat(" ", $this->indent) . $msg;
+
+    // write raw message to log file
+    wire()->files->filePutContents($this->lastRunLogfile, $msg, FILE_APPEND);
+
+    // enrich message with trace information
+    $trace = $this->getTrace($msg);
+    $file = $trace['file'];
+    $line = $trace['line'];
+    $filename = pathinfo($file, PATHINFO_FILENAME);
+    $traceStr = "$filename:$line";
 
     if ($this->isVerbose()) {
       try {
@@ -3316,7 +3431,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->ismigrating = true;
 
     // logging
+    // reset logs
     $this->wire->log->delete($this->className);
+    if (is_file($this->lastRunLogfile)) wire()->files->unlink($this->lastRunLogfile);
+    // start new log
     if (!$cli) {
       $this->log('-------------------------------------');
       foreach ($changed as $file) $this->log("Detected change in $file");
@@ -3335,28 +3453,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $this->log($list);
     }
 
-    // first we migrate all config files
-    // in the first step we only create all fields/templates/etc
-    // in the second step we migrate the data
-    $this->log("### Migrate config files (priority #1000) ###");
-    $configFiles = $list['#1000'] ?? [];
-    $this->indent(2);
-    $this->log("--- create PHP constant traits ---");
-    $this->createConstantTraits();
-    $this->log("--- create objects ---");
-    foreach ($configFiles as $file) $this->runConfigFile($file, true);
-    $this->log("--- migrate data ---");
-    foreach ($configFiles as $file) $this->runConfigFile($file);
-    $this->indent(0);
-
     // now we migrate all other files
     foreach ($list as $prio => $items) {
-      // dont run config files again
-      if ($prio === '#1000') continue;
-
       if ($this->isCLI()) $this->log("");
-      $this->indent = 0;
       $this->log("### Migrate items with priority $prio ###");
+
+      // prio 1000 is reserved for config migrations
+      // in the first step we only create all fields/templates/etc
+      // in the second step we migrate the data
+      if ($prio === '#1000') {
+        $this->runConfigMigrations($items);
+        continue; // skip everything below
+      }
 
       foreach ($items as $path) {
         $file = $this->watchlist->get("path=$path");
@@ -3465,6 +3573,31 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$ref->id) return $this->log("Reference does not exist");
     if ($page->parent !== $ref->parent) return $this->log("Both pages must have the same parent");
     $this->wire->pages->sort($page, $ref->sort);
+  }
+
+  public function moveRepeaterItems(
+    Page|string|int $sourcePage,
+    Field|string|int $sourceField,
+    Field|string|int $targetField,
+    Page|string|int $targetPage = null,
+    bool $resetTarget = false,
+    array $newFieldnames = [],
+  ): void {
+    $this->copyRepeaterItems(
+      $sourcePage,
+      $sourceField,
+      $targetField,
+      $targetPage,
+      $resetTarget,
+      $newFieldnames,
+    );
+
+    // reset source field
+    $sourcePage = $this->getPage($sourcePage);
+    $sourceField = $this->getField($sourceField);
+    $oldItems = $sourcePage->getUnformatted($sourceField->name);
+    $oldItems->removeAll();
+    $sourcePage->setAndSave($sourceField->name, $oldItems);
   }
 
   /**
@@ -3990,6 +4123,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $url = $this->toUrl($file);
     $this->log($url);
 
+    // skip dotfiles
+    $shortName = $this->getConfigFileName($file, true);
+    if (str_starts_with($shortName, '.')) {
+      $this->log("Skipping dotfile $shortName");
+      return;
+    }
+
     $config = $this->getConfigFileArray($file);
     $name = $this->getConfigFileName($file);
     $type = $this->getConfigFileType($file);
@@ -4011,8 +4151,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $this->log("  Tag:  $tag");
       switch ($type) {
         case 'fields':
-          $this->createField($name, $config);
-          $this->setFieldData($name, ['tags' => $tag]);
+          // get fieldname either from config "name" property or from filename
+          $fieldname = array_key_exists('name', $config)
+            ? $config['name']
+            : $name;
+          $this->createField($fieldname, $config);
+          $this->setFieldData($fieldname, ['tags' => $tag]);
           break;
         case 'templates':
           $this->createTemplate($name, $config);
@@ -4038,6 +4182,37 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           break;
       }
     }
+  }
+
+  /**
+   * Run config migrations of given files
+   *
+   * NOTE: This will always run migrations even when the module is not
+   * (yet) installed, so this method can be used on module installation to
+   * create all needed assets.
+   */
+  public function runConfigMigrations(
+    array|string $items,
+    bool $createTrait = true,
+  ): void {
+    // was a path provided?
+    if (is_string($items)) {
+      if (is_dir($items)) $items = $this->getConfigFiles($items);
+      elseif (is_file($items)) $items = [$items];
+      else {
+        $this->log("Invalid option for runConfigMigrations(): $items");
+        return;
+      }
+    }
+
+    $this->log("### Running Config Migrations ###");
+    $this->indent(2);
+    if ($createTrait) $this->createConstantTraits();
+    $this->log("--- first run: create assets ---");
+    foreach ($items as $file) $this->runConfigFile($file, true);
+    $this->log("--- second run: migrate data ---");
+    foreach ($items as $file) $this->runConfigFile($file);
+    $this->indent(-2);
   }
 
   /**
@@ -4477,6 +4652,32 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function setOutputLevel($level)
   {
     $this->outputLevel = $level;
+  }
+
+  /**
+   * Set name of a page
+   * Can also set name of pages having the system flag
+   */
+  public function setPageName(
+    Page|string|int $page,
+    string $name,
+    $removeSystemFlag = false,
+  ): void {
+    $page = $this->getPage($page);
+    if (!$removeSystemFlag) {
+      $page->setAndSave('name', $name);
+      return;
+    }
+
+    // set new name and restore old status
+    $oldStatus = $page->status;
+    $page->addStatus(Page::statusSystemOverride);
+    $page->status = 1;
+    $page->name = $name;
+    $page->status = $oldStatus;
+
+    // save changes
+    $page->save();
   }
 
   /**
@@ -5464,8 +5665,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     if (!$this->watchEnabled()) return;
 
-    if ($migrate > 1000) throw new WireException("Migrate priority must not be higher than 1000: $migrate");
-
     // if what is an array we watch all files in the array
     if (is_array($what)) {
       foreach ($what as $file) $this->watch($file, $migrate, $options);
@@ -6152,7 +6351,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function createRepeaterMatrixField(string $name, array $options, bool $wipe = false)
   {
-    $items = array_key_exists('matrixItems', $options) ? $options['matrixItems'] : null;
+    $items = array_key_exists('matrixItems', $options) ? $options['matrixItems'] : [];
     if ($items) unset($options['matrixItems']);
     // create field
     $field = $this->createField($name, 'FieldtypeRepeaterMatrix', $options);
