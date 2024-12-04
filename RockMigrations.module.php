@@ -4436,6 +4436,35 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Set the language value of the given field
+   *
+   * $rm->setFieldLanguageValue("/admin/therapy", 'title', [
+   *   'default' => 'Therapie',
+   *   'english' => 'Therapy',
+   * ]);
+   *
+   * @param Page|string $page
+   * @param Field|string $field
+   * @param array $data
+   * @return void
+   */
+  public function setFieldLanguageValue($page, $field, $data)
+  {
+    $page = wire()->pages->get((string)$page);
+    if (!$page->id) throw new WireException("Page not found!");
+    $page->of(false);
+    $field = wire()->getField($field);
+
+    // set field value for all provided languages
+    foreach ($data as $lang => $val) {
+      $lang = wire()->languages->get($lang);
+      if (!$lang->id) continue;
+      $page->{$field}->setLanguageValue($lang, $val);
+    }
+    $page->save();
+  }
+
+  /**
    * Set field order at given template
    *
    * The first field is always the reference for all other fields.
