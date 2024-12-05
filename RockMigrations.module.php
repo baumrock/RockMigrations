@@ -4452,14 +4452,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $page = wire()->pages->get((string)$page);
     if (!$page->id) throw new WireException("Page not found!");
-    $page->of(false);
-    $field = wire()->getField($field);
 
+    $field = $page->getField($field);
+    if (!$field) throw new WireException("Page does not have given field!");
+
+    $page->of(false);
+    
     // set field value for all provided languages
     foreach ($data as $lang => $val) {
       $lang = wire()->languages->get($lang);
       if (!$lang->id) continue;
-      $page->{$field}->setLanguageValue($lang, $val);
+      $page->setLanguageValue($lang, $field, $val);
     }
     $page->save();
   }
