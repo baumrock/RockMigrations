@@ -1,0 +1,6 @@
+// Add namespace
+<?php
+
+namespace ${1:ProcessWire};
+
+$0

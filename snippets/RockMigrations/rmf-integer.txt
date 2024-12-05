@@ -1,0 +1,6 @@
+// Add an integer field via RockMigrations
+$1 => [
+  'type' => 'integer',
+  'label' => '$3',
+  'icon' => 'list-ol',
+],

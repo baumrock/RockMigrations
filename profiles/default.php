@@ -76,4 +76,9 @@ $rm->installModule(
   "https://github.com/Toutouwai/PageListAutoExpand/archive/refs/heads/master.zip"
 );
 
+$rm->installModule(
+  "DelayedImageVariations",
+  "https://github.com/Toutouwai/DelayedImageVariations/archive/refs/heads/master.zip"
+);
+
 $rm->installSiteModule();

@@ -1,0 +1,16 @@
+// Add a fieldsetpage field via RockMigrations
+$1 => [
+  'label' => 'FieldsetPage Label',
+  'type' => 'FieldtypeFieldsetPage',
+  'fields' => [
+    'title' => [
+      'label' => 'My Label',
+      'required' => 0,
+    ],
+    'foo',
+    'bar',
+  ],
+  'tags' => '',
+  'columnWidth' => 100,
+  'icon' => 'cubes',
+],

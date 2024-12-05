@@ -1,0 +1,12 @@
+// Add a TinyMCE field via RockMigrations
+$1 => [
+  'type' => 'textarea',
+  'inputfieldClass' => 'InputfieldTinyMCE',
+  'contentType' => FieldtypeTextarea::contentTypeHTML,
+  'label' => '$3',
+  'rows' => ${4:5},
+  'icon' => '${5:align-left}',
+  'inlineMode' => true,
+  // 'rpb-nolabel' => true, // hide label in backend
+  'settingsFile' => '/site/modules/RockMigrations/TinyMCE/simple.json',
+],

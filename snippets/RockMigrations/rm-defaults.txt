@@ -1,0 +1,17 @@
+// Set some custom PW defaults
+\$rm->setPagenameReplacements('de');
+\$rm->setModuleConfig('AdminThemeUikit', [
+  // use consistent inputfield clicks
+  // see https://github.com/processwire/processwire/pull/169
+  'toggleBehavior' => 1,
+]);
+\$rm->setModuleConfig('ProcessPageList', [
+  'useTrash' => true, // show trash in tree for non superusers
+]);
+// install german language pack for the default language
+// this will install language support, download the ZIP and install it
+\$rm->setLanguageTranslations('DE');
+\$rm->installModule('LanguageSupportFields');
+\$rm->installModule('LanguageSupportPageNames');
+\$rm->installModule('LanguageTabs');
+\$rm->setFieldData('title', ['type' => 'textLanguage']);

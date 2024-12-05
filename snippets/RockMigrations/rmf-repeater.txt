@@ -1,0 +1,16 @@
+// Add a repeater field via RockMigrations
+$1 => [
+  'label' => '$2',
+  'type' => 'FieldtypeRepeater',
+  'fields' => [
+    'title',
+    'foo',
+    'bar',
+  ],
+  'repeaterTitle' => '#n: {title}',
+  'familyFriendly' => 1,
+  'repeaterDepth' => 0,
+  'tags' => '',
+  'repeaterAddLabel' => 'Add New Item',
+  'columnWidth' => 100,
+],

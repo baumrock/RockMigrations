@@ -1,0 +1,33 @@
+// Inputfield Module Boilerplate
+${0:// info snippet}
+class Inputfield${1:Foo} extends Inputfield${2:Textarea} {
+
+  public static function getModuleInfo() {
+    return [
+      'title' => '${1:Foo} Inputfield',
+      'version' => '0.0.1',
+      'summary' => '${4:Your module description}',
+      'icon' => '${5:smile-o}',
+      'requires' => [],
+      'installs' => [],
+    ];
+  }
+
+  /**
+  * Render the Inputfield
+  * @return string
+  */
+  public function ___render() {
+    return 'Inputfield RENDER';
+  }
+
+  /**
+  * Process the Inputfield's input
+  * @return \$this
+  */
+  public function ___processInput(\$input) {
+    \$this->message('process input!');
+    return false;
+  }
+
+}

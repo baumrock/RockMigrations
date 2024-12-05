@@ -1,0 +1,10 @@
+// rockshell config
+\$config->rockshell = [
+  // 'remotePHP' => 'keyhelp-php81',
+  'remotes' => [
+    'staging' => [
+      'ssh' => 'user@host.com',
+      'dir' => '/path/to/webroot/current',
+    ],
+  ],
+];

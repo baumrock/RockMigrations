@@ -1,81 +1,71 @@
-## [3.31.1](https://github.com/baumrock/RockMigrations/compare/v3.31.0...v3.31.1) (2023-10-09)
-
-
-### Bug Fixes
-
-* PHP Warning: Invalid argument supplied for foreach() in RockMigrations.module.php:3510 ([bb24d33](https://github.com/baumrock/RockMigrations/commit/bb24d330e77cb2baceec9479f029580fce8ce5a9))
-
-
-
-# [3.31.0](https://github.com/baumrock/RockMigrations/compare/v3.30.0...v3.31.0) (2023-10-05)
-
-
-### Bug Fixes
-
-* docblock ([af3572e](https://github.com/baumrock/RockMigrations/commit/af3572ef772076b82c5c6a79103e1d1792190f42))
-* remove project-specific $rm->echo() ([b242f56](https://github.com/baumrock/RockMigrations/commit/b242f563f6830e55ba295d56b68d94b8a723bb58))
-* remove unused line ([070c28c](https://github.com/baumrock/RockMigrations/commit/070c28cdf288d6fb025c0f73532e696cdaefa428))
+## [6.1.0](https://github.com/baumrock/RockMigrations/compare/v6.0.1...v6.1.0) (2024-12-01)
 
 
 ### Features
 
-* add tweak to set all languages of new pages active by default ([98f9855](https://github.com/baumrock/RockMigrations/commit/98f98552d62922a54f9d7180d61575cf8c147d4d))
-
-
-
-# [3.30.0](https://github.com/baumrock/RockMigrations/compare/v3.29.0...v3.30.0) (2023-09-11)
-
-
-### Features
-
-* add minify param in saveCSS() ([60f9167](https://github.com/baumrock/RockMigrations/commit/60f9167537b77612d367d9486228ff1df992c095))
-* cleanup caches table on deploy ([85c2458](https://github.com/baumrock/RockMigrations/commit/85c24588a9d0a0552485a008fe624429427db988))
-
-
-
-# [3.29.0](https://github.com/baumrock/RockMigrations/compare/v3.27.0...v3.29.0) (2023-08-11)
+* add copy/moveRepeaterItems() ([771fd47](https://github.com/baumrock/RockMigrations/commit/771fd471782fb94a2217c3100e540044a7842ea9))
+* add createTrait option in runConfigMigrations ([a34bb2a](https://github.com/baumrock/RockMigrations/commit/a34bb2abb424a5a198e41178c37bccd4112a9349))
+* add dedicated method runConfigMigrations() ([b0cbd8c](https://github.com/baumrock/RockMigrations/commit/b0cbd8cdf9514abc951f2c93e1d4fb9bd5d55ad6))
+* add last run logfile ([50869c9](https://github.com/baumrock/RockMigrations/commit/50869c9b32540c635fe5c533418476f6011fb9eb))
+* add option to prevent migrate from running ([2f3ccaa](https://github.com/baumrock/RockMigrations/commit/2f3ccaa98f69e50b9da4aeacfad95e0216a51586))
+* add setPageName() method ([e2c53b4](https://github.com/baumrock/RockMigrations/commit/e2c53b4853566bd96ef52a14ba853a6f12014b2a))
 
 
 ### Bug Fixes
 
-* catch 404 page not found error on deployment ([e67bebd](https://github.com/baumrock/RockMigrations/commit/e67bebd7382ae5b7a491b6f8c783c1d157524ff4))
-* jquery deprecation warning for window.load() ([c626d5b](https://github.com/baumrock/RockMigrations/commit/c626d5bfbc2a8b731524921479d08e653f550d7e))
-* pageListBadge showing when empty ([3644e6a](https://github.com/baumrock/RockMigrations/commit/3644e6a85263ba879c10fd2a208d47c589a9946d))
-* remove language tab fix ([4a1061b](https://github.com/baumrock/RockMigrations/commit/4a1061bcf1ba5ab64140e96ec204ceccacbe22b7))
-* renderTable not showing data and wrong asset path on windows ([24a9d9d](https://github.com/baumrock/RockMigrations/commit/24a9d9d5ab4f2e306f7e0b948692cf59da05e282))
-* renderTable not showing some values ([bce2df8](https://github.com/baumrock/RockMigrations/commit/bce2df88da20d894f9e4c719ff8e4355769128a0))
+* add early exit in createTemplateFromClassfile if tpl constant is not set ([fc8be28](https://github.com/baumrock/RockMigrations/commit/fc8be28b407decc0a0072fa1b9d0b2885d03bbd4))
+* allow priorities > 1000 ([a89fa4d](https://github.com/baumrock/RockMigrations/commit/a89fa4d633316598e9e26bd722fee6f4ceb1ae17))
+* custom fieldtype returns wrong class after creation ([3993f2f](https://github.com/baumrock/RockMigrations/commit/3993f2f31daa8d4d43e1df22f47751a138e3e58b))
+* do not migrate dotfiles ([7195a0f](https://github.com/baumrock/RockMigrations/commit/7195a0fa106ccbc0590c420cee2e5208db33fa30))
+* error when no matrixItems passed in $options ([fa76493](https://github.com/baumrock/RockMigrations/commit/fa76493353dc7a9c15fabc48f3f43ab72eed2312))
+* issue with iterating fields of repeater ([ad59425](https://github.com/baumrock/RockMigrations/commit/ad59425831c74e32034035afa9d2276f398cc2be))
+* prevent errors when page is nullpage in deletepage ([ccce68a](https://github.com/baumrock/RockMigrations/commit/ccce68a2d5f87ae7ad37007fa003c0bdaceba2f6))
+* run watchlist migrations in correct order ([47301fa](https://github.com/baumrock/RockMigrations/commit/47301fa724fde85aae04513d24fc9da28e223271))
+* support hyphens in template names ([9f07b3f](https://github.com/baumrock/RockMigrations/commit/9f07b3f114cb3970efe333e18395d507d6c82189))
+* wrong copy paste ([2633704](https://github.com/baumrock/RockMigrations/commit/26337043e785d5a6a2a5f0be236eeee85b3aeaa9))
 
-
-### Features
-
-* add checkbox to force livereload on module config pages ([a52a550](https://github.com/baumrock/RockMigrations/commit/a52a5504d48474502927e162d7412a4c9ff54eec))
-* add getFile() method ([ea94430](https://github.com/baumrock/RockMigrations/commit/ea94430431f141556dd2191bce4c56eaaa76ced8))
-* add homeTemplate() method ([cbd0c07](https://github.com/baumrock/RockMigrations/commit/cbd0c07e04adb20ee262ab6fef2f315723eb10d1))
-* add new pageClassLoader :) ([480b06c](https://github.com/baumrock/RockMigrations/commit/480b06cf52241f8ab3eaaa360a18f520d2080189))
-* add path helper method ([29e8740](https://github.com/baumrock/RockMigrations/commit/29e8740d8d013e2721555a9f3c3cd51997230ce2))
-* add redirect logger Tweak ([6003cf5](https://github.com/baumrock/RockMigrations/commit/6003cf593b878b80937fa9708f0172a8f9fcfed9))
-* add renderTable helper ([eb3ee9c](https://github.com/baumrock/RockMigrations/commit/eb3ee9cdc7f535dcf040f1ca8352eb91daf6ef46))
-* add support for template_ids ([14489ad](https://github.com/baumrock/RockMigrations/commit/14489add2c971c9e6b75bf23986d5338ab7e3343))
-* improve new pageClassLoader ([e99b80c](https://github.com/baumrock/RockMigrations/commit/e99b80c494e25331705767637d2ceaab152bab7e))
-
-
-
-# [3.27.0](https://github.com/baumrock/RockMigrations/compare/v3.26.1...v3.27.0) (2023-07-07)
+## [6.0.1](https://github.com/baumrock/RockMigrations/compare/v6.0.0...v6.0.1) (2024-11-15)
 
 
 ### Bug Fixes
 
-* createUser returning false PR[#24](https://github.com/baumrock/RockMigrations/issues/24) ([fb18156](https://github.com/baumrock/RockMigrations/commit/fb18156f929d549c3c160595b75bcd4b00f72162))
+* don't use text as default fieldtype ([46e74d7](https://github.com/baumrock/RockMigrations/commit/46e74d74150a25d567bf5aa09c5df8a4aabe5284))
+
+## [6.0.0](https://github.com/baumrock/RockMigrations/compare/v5.5.0...v6.0.0) (2024-11-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* create constant trait instead of helper classes
+
+### Features
+
+* add renameField() method ([0b24426](https://github.com/baumrock/RockMigrations/commit/0b24426cf6170658449e40e80041b5c35cbb7b28))
+* create constant trait instead of helper classes ([e4ccc74](https://github.com/baumrock/RockMigrations/commit/e4ccc74e1041c70bdfeb935b36da3b36bed61b67))
+
+
+### Bug Fixes
+
+* don't show once in config table ([37baaaf](https://github.com/baumrock/RockMigrations/commit/37baaaf53b5ba4827480ecb78cba2be2f8368947))
+
+## [5.5.0](https://github.com/baumrock/RockMigrations/compare/v5.4.1...v5.5.0) (2024-11-03)
 
 
 ### Features
 
-* add deployment hooks ([fcefd1f](https://github.com/baumrock/RockMigrations/commit/fcefd1ffdca1b6b3d0e01cace195961d5f96450d))
-* add PageListAutoExpand to default profile ([68af9f9](https://github.com/baumrock/RockMigrations/commit/68af9f98e2fdfd0cdf4ad4baf585ede91b6c72b4))
-* add rockhsell demo command ([cce0d06](https://github.com/baumrock/RockMigrations/commit/cce0d062d422a7e2b58815c61c5433eee0f65c71))
-* add support for getTplName() syntax ([c01630f](https://github.com/baumrock/RockMigrations/commit/c01630f0f71627d72c3fa1fbc1bfafa213902134))
-* add time constants ([17ab452](https://github.com/baumrock/RockMigrations/commit/17ab452a9d39cb0883b2ac447e77bd5aea11b3e2))
-* make github action fail on error in migration ([7499223](https://github.com/baumrock/RockMigrations/commit/7499223c9491c4155b3287efd69aff5554aec909))
+* add config migrations ([5ebea63](https://github.com/baumrock/RockMigrations/commit/5ebea6395a16643315011bedce80651786aa4b0b))
+* add dump() method ([4eb2e4e](https://github.com/baumrock/RockMigrations/commit/4eb2e4e49859512dc36953164ed5839a279789ce))
 
 
+### Bug Fixes
+
+* outdated syntax in fieldsetpage stub ([cae4802](https://github.com/baumrock/RockMigrations/commit/cae4802e8903ae1f49d4b6d1df333a6aac11c8d6))
+* save once() data in module config not in cache ([e24288e](https://github.com/baumrock/RockMigrations/commit/e24288e9ed251751848e7850add4815de32d54b4))
+
+## [5.4.1](https://github.com/baumrock/RockMigrations/compare/v5.4.0...v5.4.1) (2024-10-16)
+
+
+### Bug Fixes
+
+* update deploy workflow to checkout@v4 ([5ff3cc2](https://github.com/baumrock/RockMigrations/commit/5ff3cc2890f46301742a5f3271476d97ae534c80))
 

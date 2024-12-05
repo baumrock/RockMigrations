@@ -1,0 +1,15 @@
+// ProcessWire Textformatter Boilerplate
+${0:// info snippet}
+class TextformatterDemo extends Textformatter {
+  public static function getModuleInfo() {
+    return [
+      'title' => 'Demo',
+      'version' => '1.0.0',
+      'summary' => 'Demo Textformatter',
+    ];
+  }
+
+  public function format(&$str) {
+    $str = 'Demo Formatted: '.$str;
+  }
+}

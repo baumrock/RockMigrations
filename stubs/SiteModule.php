@@ -2,6 +2,13 @@
 
 namespace ProcessWire;
 
+// expose the site module as global site() function
+function site(): Site
+{
+  return wire()->modules->get('Site');
+}
+
+// module code
 class Site extends WireData implements Module
 {
 
@@ -15,7 +22,7 @@ class Site extends WireData implements Module
       'singular' => true,
       'icon' => 'bolt',
       'requires' => [
-        'RockMigrations>=2.0.10',
+        'RockMigrations>=3.34',
       ],
     ];
   }
@@ -28,12 +35,11 @@ class Site extends WireData implements Module
 
     // migrate site module before other modules so that if we create global
     // fields we make sure we can use them in other modules
-    $rm->watch($this, 99);
+    $rm->watch($this, 100);
   }
 
   public function migrate()
   {
-    /** @var RockMigrations $rm */
-    $rm = $this->wire->modules->get('RockMigrations');
+    $rm = rockmigrations();
   }
 }

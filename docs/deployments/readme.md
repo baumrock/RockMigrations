@@ -2,32 +2,22 @@
 
 You can use RockMigrations to create fully automated CI/CD pipelines for Github/Gitlab.
 
-## Introduction
+The idea is to replace a workflow that depends on several manual steps with an automated workflow where all you have to do manually is `git push`.
 
-The idea is to replace a workflow that depends on several manual steps with an automated workflow where all you have to do manually is `git push`:
+## Folder Structure
 
-<img src=flow.drawio.svg class=blur alt="Deployment Concept">
-
-This does not only have the benefit of eliminating one manual step on every deployment, you will also get a lot of magic from RockMigrations by default. For example RockMigrations will keep several old releases where you can simply revert to if anything should go wrong. RockMigrations will also create a database backup before deployment.
-
-If you did all those steps manually on every deployment they'd add up. And we know what would happen in reality: We'd just not do it and one day we'd find ourselves in trouble without a quick way out!
-
-**Save yourself from the hassle and use RockMigrations Deployment instead!**
-
-The resulting folder structure of a deployment will look like this (where the triple letters stand for a release hash from github):
+The resulting folder structure of a deployment will look like this (where xxx stands for a release hash from github):
 
 ```php
-current -> release-DDD   // symlink to latest release
-release-AAA---           // old releases
-release-BBB--
-release-CCC-
-release-DDD              // latest release
+current -> release-xxx   // symlink to latest release
+release-xxx---           // oldest release
+release-xxx--
+release-xxx-
+release-xxx              // latest release
 shared                   // shared folder
 ```
 
-- The `current` symlink will link to the latest release
-- Releases will be kept in the `release-*` folders
-- The `shared` folder will contain the persistent data shared across all releases (like `site/assets/files` and `site/config-local.php`).
+The `shared` folder will contain the persistent data shared across all releases (like `site/assets/files` and `site/config-local.php`).
 
 ## Workflow Log
 
@@ -71,7 +61,7 @@ The first thing we need to do is to create the PHP file that is triggered at the
 namespace RockMigrations;
 
 require_once __DIR__ . "/modules/RockMigrations/classes/Deployment.php";
-$deploy = new Deployment($argv);
+$deploy = new Deployment($argv ?? []);
 
 // custom settings go here
 // see docs about "Customising the Deployment"
@@ -88,10 +78,8 @@ Github needs to be able to copy files to your remote server. That's why we need 
 <div class="uk-alert uk-alert-warning">Note that we will create an SSH key with the custom name "id_rockmigrations" instead of the default "id_rsa" to ensure that we do not overwrite an existing key.</div>
 <div class="uk-alert uk-alert-danger">Don't use the "id_rsa" key for RockMigration Deployments!</div>
 
-To create the key use the following command and replace `[project]` with a unique and explanatory name:
-
 ```sh
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rockmigrations -C "rockmigrations-[project]"
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rockmigrations -C "rockmigrations-deployment"
 ```
 
 If you are using RockMigrations on multiple projects you can simply overwrite the key on the next deployment setup as you will only need it once during setup. You can also remove that key from your system after you have sucessfully setup your deployment.
@@ -110,7 +98,7 @@ Copy the content of keyscan to your git secret `KNOWN_HOSTS`
 ssh-keyscan your.server.com
 ```
 
-Add the public key to your remote user:
+Add the public key to your remote user (replace `user` and `your.server.com` with your custom values):
 
 ```sh
 ssh-copy-id -i ~/.ssh/id_rockmigrations user@your.server.com
@@ -173,7 +161,7 @@ on:
       - main
 
 jobs:
-  deploy-top-production:
+  deploy-to-production:
     uses: baumrock/RockMigrations/.github/workflows/deploy.yaml@main
     with:
       PATH: "/path/to/www.yoursite.com"
@@ -198,7 +186,7 @@ on:
       - main
 
 jobs:
-  deploy-top-production:
+  deploy-to-production:
     uses: baumrock/RockMigrations/.github/workflows/deploy.yaml@main
     with:
       PATH: "/path/to/www.yoursite.com"
@@ -294,6 +282,35 @@ You can also make it run in dry mode where no files will be copied and only the 
 $deploy->dry();
 $deploy->run();
 ```
+
+Or you can dump basic information with TracyDebugger. For example let's say you don't want to delete the sessions folder on every deploy. You can do so like this:
+
+```php
+// site/deploy.php
+<?php
+
+namespace RockMigrations;
+
+use function ProcessWire\rockmigrations;
+
+require_once __DIR__ . "/modules/RockMigrations/classes/Deployment.php";
+$deploy = new Deployment(@$argv);
+
+$deploy->nodelete("/site/assets/sessions");
+
+if (rockmigrations()->isCLI()) $deploy->run();
+else bd($deploy);
+```
+
+And then you can place this in `/site/ready.php`:
+
+```php
+if (rockmigrations()->isDDEV()) include "deploy.php";
+```
+
+Which will show debugging info like this:
+
+<img src=debug.png class=blur>
 
 ## Create Translations
 

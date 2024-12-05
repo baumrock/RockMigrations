@@ -1,0 +1,6 @@
+// Add info section to this file or Module
+/**
+ * @author Bernhard Baumrock, $CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR
+ * @license ${1:Licensed under MIT}
+ * @link https://www.baumrock.com
+ */

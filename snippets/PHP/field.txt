@@ -1,0 +1,2 @@
+// Add a new field constant declaration
+const field_$1$0 = self::prefix . "$1";

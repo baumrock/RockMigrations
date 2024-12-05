@@ -1,0 +1,15 @@
+// migrate() function for use in a RockPageBuilder block
+public function migrate()
+{
+  \$rm = \$this->rockmigrations();
+  \$rm->migrate([
+    'fields' => [$0],
+    'templates' => [
+      self::tpl => [
+        'fields' => [
+          'title',
+        ],
+      ],
+    ],
+  ]);
+}

@@ -8,6 +8,8 @@ use ProcessWire\ProcessWire;
 use ProcessWire\WireData;
 use ProcessWire\WireDatabasePDO;
 
+use function ProcessWire\rockmigrations;
+
 chdir(__DIR__);
 chdir("../../../../");
 require_once "wire/core/ProcessWire.php";
@@ -31,6 +33,7 @@ class Deployment extends WireData
   public function __construct($argv = null)
   {
     $this->paths = new WireData();
+    $this->loadConfig();
 
     // get branch from script arguments
     $this->branch = '';
@@ -51,6 +54,7 @@ class Deployment extends WireData
       '/site/assets/files',
       '/site/assets/logs',
       '/site/assets/backups/database',
+      '/site/assets/sessions',
     ];
 
     // setup default delete directories
@@ -61,15 +65,28 @@ class Deployment extends WireData
       '/site/assets/cache',
       '/site/assets/ProCache',
       '/site/assets/pwpc-*',
-      '/site/assets/sessions',
     ];
   }
 
   /**
    * Run default actions
    */
-  public function run($keep = null)
-  {
+  public function run(
+    $keep = null,
+    $migrate = true,
+  ) {
+    // this is for the auto-detect php feature
+    if (defined('GET-PHP')) {
+      echo $this->php() . "\n";
+      return;
+    }
+    // only run in CLI environment!
+    // if we are not in a CLI we are debugging via tracydebugger
+    if (php_sapi_name() !== 'cli') {
+      bd($this);
+      return;
+    }
+
     $this->hello();
 
     $this->trigger("share", "before");
@@ -92,22 +109,23 @@ class Deployment extends WireData
     $this->cleanupDB();
     $this->trigger("cleanupDB", "after");
 
-    $this->trigger("migrate", "before");
-    $this->migrate();
-    $this->trigger("migrate", "after");
+    if ($migrate) {
+      $this->trigger("migrate", "before");
+      $this->migrate();
+      $this->trigger("migrate", "after");
+    }
 
     $this->trigger("addRobots", "before");
     $this->addRobots();
     $this->trigger("addRobots", "after");
 
-    $this->trigger("finish", "before");
-    $this->finish();
-    $this->trigger("finish", "after");
-
-    // chown must be after finish to affect current symlink!
     $this->trigger("chown", "before");
     $this->chown();
     $this->trigger("chown", "after");
+
+    $this->trigger("finish", "before");
+    $this->finish();
+    $this->trigger("finish", "after");
 
     $this->trigger("healthcheck", "before");
     $this->healthcheck();
@@ -121,7 +139,7 @@ class Deployment extends WireData
     if (!$this->robots()) return;
     $this->section("Hide site from search engines via robots.txt");
     $release = $this->paths->release;
-    $src = __DIR__ . "/robots.txt";
+    $src = __DIR__ . "/../stubs/robots.txt";
     $this->exec("cp -f $src $release/robots.txt");
   }
 
@@ -181,22 +199,14 @@ class Deployment extends WireData
   public function cleanupDB()
   {
     if ($this->dry) return $this->echo("Dry run - skipping cleanupDB()...");
-    $pwroot = $this->paths->root . "/current";
     try {
       $this->section("Cleanup database cache");
-      if (!is_file($f = "$pwroot/wire/config.php")) throw new Exception("$f not found");
-      if (!is_file($f = "$pwroot/site/config.php")) throw new Exception("$f not found");
-      $config = ProcessWire::buildConfig($pwroot);
+      $this->sql("DELETE FROM `caches` WHERE `name` LIKE 'FileCompiler__%'");
 
-      if (!$config->dbHost) throw new Exception("No dbHost");
-      if (!$config->dbUser) throw new Exception("No dbUser");
-      if (!$config->dbName) throw new Exception("No dbName");
-      if (!$config->dbPass) throw new Exception("No dbPass");
-      if (!$config->dbPort) throw new Exception("No dbPort");
+      // reset autoload cache to make sure we don't run into issues
+      $this->sql("DELETE FROM `caches` WHERE `name` = 'autoload-classloader-classes'");
+      $this->sql("DELETE FROM `caches` WHERE `name` = 'autoload-repeater-pageclasses'");
 
-      $dsn = "mysql:dbname={$config->dbName};host={$config->dbHost};port={$config->dbPort}";
-      $db = new WireDatabasePDO($dsn, $config->dbUser, $config->dbPass);
-      $db->prepare("DELETE FROM `caches` WHERE `name` LIKE 'FileCompiler__%'")->execute();
       $this->ok();
     } catch (\Throwable $th) {
       $this->echo($th->getMessage());
@@ -282,6 +292,11 @@ class Deployment extends WireData
     $this->ok();
   }
 
+  public function die($msg)
+  {
+    die("$msg\n");
+  }
+
   public function dry($flag = true)
   {
     $this->dry = $flag;
@@ -349,6 +364,13 @@ class Deployment extends WireData
     return $out;
   }
 
+  public function exit($msg)
+  {
+    $this->echo("❌ $msg");
+    // dont use a string here otherwise the github action will not fail!
+    exit(1);
+  }
+
   /**
    * Finish deployment
    * This removes the tmp- prefix from the deployment folder
@@ -365,14 +387,41 @@ class Deployment extends WireData
       cd {$this->paths->root}
       ln -snf $newName current
     ");
+
+    // chown symlink?
+    if ($this->chown) {
+      $this->echo("Updating symlink permissions");
+      $root = $this->paths->root;
+      $owner = fileowner($root);
+      $group = filegroup($root);
+      $this->exec("chown $owner:$group $root/current", true);
+    }
+
     $this->deleteOldReleases($keep);
   }
 
-  public function exit($msg)
+  /**
+   * @return WireDatabasePDO|void
+   */
+  public function getDB()
   {
-    $this->echo("❌ $msg");
-    // dont use a string here otherwise the github action will not fail!
-    exit(1);
+    try {
+      $pwroot = $this->paths->root . "/current";
+      if (!is_file($f = "$pwroot/wire/config.php")) throw new Exception("$f not found");
+      if (!is_file($f = "$pwroot/site/config.php")) throw new Exception("$f not found");
+      $config = ProcessWire::buildConfig($pwroot);
+
+      if (!$config->dbHost) throw new Exception("No dbHost");
+      if (!$config->dbUser) throw new Exception("No dbUser");
+      if (!$config->dbName) throw new Exception("No dbName");
+      if (!$config->dbPass) throw new Exception("No dbPass");
+      if (!$config->dbPort) throw new Exception("No dbPort");
+
+      $dsn = "mysql:dbname={$config->dbName};host={$config->dbHost};port={$config->dbPort}";
+      return new WireDatabasePDO($dsn, $config->dbUser, $config->dbPass);
+    } catch (\Throwable $th) {
+      $this->echo($th->getMessage());
+    }
   }
 
   public function healthcheck()
@@ -400,6 +449,31 @@ class Deployment extends WireData
     $this->echo("Root folder name: " . $this->rootFolderName());
   }
 
+  private function loadConfig(): void
+  {
+    // read php version to use from file rockshell-config.php
+    // you can either place this config one level above the "current" symlink
+    // or in /site/config-rockshell.php
+    // later files have priority and overwrite properties already set
+    $configs = [
+      __DIR__ . '/../../../../../config-rockshell.php',
+      __DIR__ . '/../../../config-rockshell.php',
+    ];
+    foreach ($configs as $config) {
+      if (!is_file($config)) continue;
+      require_once $config;
+      try {
+        $config = (array)$config;
+      } catch (\Throwable $th) {
+        throw new Exception("Config must expose a \$config array variable.");
+      }
+      // set config params
+      foreach ($config as $key => $val) {
+        if ($key === 'php') $this->php($val);
+      }
+    }
+  }
+
   /**
    * Run RockMigrations
    */
@@ -418,6 +492,20 @@ class Deployment extends WireData
     }
     if (!$this->dry and !is_array($out)) return $this->exit("migrate.php failed");
     $this->ok();
+  }
+
+  /**
+   * Remove path from delete array
+   */
+  public function nodelete(string|array $path): void
+  {
+    if (is_array($path)) {
+      foreach ($path as $p) $this->undelete($p);
+      return;
+    }
+    if (($key = array_search($path, $this->delete)) !== false) {
+      unset($this->delete[$key]);
+    }
   }
 
   public function ok($msg = "Done")
@@ -531,9 +619,7 @@ class Deployment extends WireData
     $release = $this->paths->release;
     $shared = $this->paths->shared;
     $this->section("Securing file and folder permissions...");
-    $this->exec("      find $release -type d -exec chmod 755 {} \;
-      find $release -type f -exec chmod 644 {} \;
-      chmod 440 $release/site/config.php
+    $this->exec("chmod 440 $release/site/config.php
       chmod 440 $shared/site/config-local.php", true);
     $this->ok();
   }
@@ -646,6 +732,14 @@ class Deployment extends WireData
     }
   }
 
+  public function sql(string $query): void
+  {
+    if (php_sapi_name() !== 'cli') return;
+    if (defined('GET-PHP')) return;
+    $db = $this->getDB();
+    $db->prepare($query)->execute();
+  }
+
   /**
    * Execute before/after callback
    */
@@ -662,5 +756,13 @@ class Deployment extends WireData
   public function verbose()
   {
     $this->isVerbose = true;
+  }
+
+  public function __debugInfo()
+  {
+    return [
+      'share' => $this->share,
+      'delete' => $this->delete,
+    ];
   }
 }

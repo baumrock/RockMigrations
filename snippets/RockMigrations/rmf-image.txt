@@ -1,0 +1,13 @@
+// Add an image field via RockMigrations
+$1 => [
+  'type' => 'image',
+  'label' => '$2',
+  'maxFiles' => $4,
+  'descriptionRows' => $5,
+  'extensions' => '${6:jpg jpeg gif png svg}',
+  'maxSize' => ${7:3}, // max 3 megapixels
+  'okExtensions' => ['svg'],
+  'icon' => 'picture-o',
+  'outputFormat' => FieldtypeFile::outputFormatSingle,
+  'gridMode' => 'grid', // grid, left, list
+],

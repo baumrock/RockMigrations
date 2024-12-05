@@ -1,7 +1,7 @@
 See the video here:
 
-<a href="https://www.youtube.com/watch?v=eBOB8dZvRN4"><img src=thumb.png></a><br>
-<a href="https://www.youtube.com/watch?v=o6O859d3cFA"><img src=thumb2.png></a>
+<a href="https://www.youtube.com/watch?v=eBOB8dZvRN4"><img src=thumb.png width=400></a><br><br>
+<a href="https://www.youtube.com/watch?v=o6O859d3cFA"><img src=thumb2.png width=400></a>
 
 <br>
 
@@ -17,7 +17,8 @@ Check out the [WIKI for a Quickstart and Docs](https://github.com/baumrock/RockM
 
 ## Limitations
 
-RockMigrations might not support all external fields, especially not ProFields like RepeaterMatrix. Adding support has no priority for me because I'm not using them. If you need support for any field that is currently not supported please provide a PR or if you are interested in sponsoring that feature please contact me via PM in the forum.
+RockMigrations might not support all external fields, especially not ProFields. Adding support has no priority for me because I'm not using them. If you need support for any field that is currently not supported please provide a PR or if you are interested in sponsoring that feature please contact me via PM in the forum.
+Update: RepeaterMatrix support was added in v3.31.0.
 
 But not to forget: You can still use the regular PW API to create fields and manipulate all kinds of things the way you would do it if RockMigrations did not exist. It might just not be as convenient as when using the RockMigrations API.
 
@@ -355,3 +356,51 @@ $rm->migrate([
   ],
 ]);
 ```
+
+## Migration Strategies
+
+For larger projects, enhancing the maintainability of your migrations involves breaking them into smaller segments and dispersing them across your codebase. These segments can be linked to modules or custom PageClasses. All available options for achieving this are mentioned above in the sections about watching files.
+
+Here are some examples:
+
+1. **Module-based Migrations:**
+   When you are developing a module, you can consolidate all relevant migrations within a file named `YourModule.migrate.php`. These migrations will be automatically picked up.
+
+2. **Custom PageClass with Template-specific Migrations:**
+   It is highly recommended to use custom PageClasses. Within these custom PageClasses, you can include template-specific migrations using MagicPages. Here's an example:
+
+   ```php
+   <?php
+
+   namespace ProcessWire;
+
+   use RockMigrations\MagicPage;
+
+   class BasicPagePage extends Page
+   {
+     use MagicPage;
+
+     public function migrate()
+     {
+       $rm = $this->rockmigrations();
+       $rm->migrate([
+         'fields' => [
+          // create the required fields here, if they don't exist already
+         ],
+         'templates' => [
+           'basic-page' => [
+             'fields' => [
+               'title',
+               'text',
+             ],
+             'childTemplates' => [
+               'basic-page',
+             ],
+             'sortfield' => 'title',
+           ],
+         ],
+       ]);
+     }
+   }
+   ```
+   Please note that you must create the template separately from the custom PageClass. PageClasses will only be triggered once their associated template exists. You could do that inside your `/site/migrate.php`.

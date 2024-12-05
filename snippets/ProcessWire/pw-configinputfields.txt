@@ -1,0 +1,8 @@
+// Add config inputfields to module
+/**
+  * Config inputfields
+  * @param InputfieldWrapper \$inputfields
+  */
+public function getModuleConfigInputfields(\$inputfields) {
+  return \$inputfields;
+}

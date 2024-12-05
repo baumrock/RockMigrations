@@ -3,5 +3,7 @@
   "toolbar": "bold",
   "quickbars_selection_toolbar": "bold",
   "quickbars_insert_toolbar": "bold",
-  "toolbar_sticky": true
+  "toolbar_sticky": true,
+  "plugins": "paste",
+  "paste_as_text": true
 }

@@ -22,18 +22,33 @@ class PageListShowTemplate extends Tweak
       "</head>",
       "<style>
       .PageListTemplate{
-        color:#afafaf;
+        opacity:0.8;
         margin-left:5px;
         font-size:0.7rem;
       }
       </style></head>",
       $event->return
     );
+    $event->return = str_replace(
+      "</body>",
+      "<script>
+      $(document).ajaxComplete(function() {
+        $('.Inputfield .PageListTemplate').remove();
+      });
+      </script>
+      </body>",
+      $event->return
+    );
   }
 
   public function hookPageLabel(HookEvent $event)
   {
+    // don't add hook in the menu navigation
+    $options = $event->arguments(1);
+    if ($options && is_array($options) && array_key_exists('noTags', $options) && $options['noTags']) return;
+
+    // regular page list
     $page = $event->arguments('page');
-    $event->return .= "<span class='PageListTemplate'>[{$page->template}]</span>";
+    $event->return .= "<span class='PageListTemplate' title='Shift-Click to copy' uk-tooltip>[{$page->template}]</span>";
   }
 }
