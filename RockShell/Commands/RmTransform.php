@@ -4,11 +4,11 @@ namespace RockMigrations;
 
 use RockShell\Command;
 
-class RmDeploy extends Command
+class RmTransform extends Command
 {
   public function config()
   {
-    $this->setDescription("Setup the initial folder structure for RM deployments");
+    $this->setDescription("Transform the projects folder structure to RockMigrations deployments");
   }
 
   public function handle()
