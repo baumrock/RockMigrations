@@ -1,3 +1,18 @@
+## [6.2.0](https://github.com/baumrock/RockMigrations/compare/v6.1.0...v6.2.0) (2024-12-09)
+
+
+### Features
+
+* add missing method setFieldLanguageValue() ([e5ad13a](https://github.com/baumrock/RockMigrations/commit/e5ad13a95d6cd2e71d34d44bb2d27f015e8d9d2f))
+* improve PR from ivan to use internal refresh method ([da0b08b](https://github.com/baumrock/RockMigrations/commit/da0b08b9cc65ee5573a5041971fe6ec575130b98))
+
+
+### Bug Fixes
+
+* installModule() does not actually install the module when run the 1st time, but only downloads it [#29](https://github.com/baumrock/RockMigrations/issues/29) ([78cf409](https://github.com/baumrock/RockMigrations/commit/78cf4098f1d1a5542261c4280e4e7408288f03b4))
+* make setFieldLanguageValue() get the field from the page object and set language value correctly ([86eb045](https://github.com/baumrock/RockMigrations/commit/86eb045c72bec49a795b764b5a9d64d9821d3250))
+* rename deploy command ([5a41e0a](https://github.com/baumrock/RockMigrations/commit/5a41e0a81fd59dee33adceaf87da352dbe02bd60))
+
 ## [6.1.0](https://github.com/baumrock/RockMigrations/compare/v6.0.1...v6.1.0) (2024-12-01)
 
 
@@ -61,11 +76,4 @@
 
 * outdated syntax in fieldsetpage stub ([cae4802](https://github.com/baumrock/RockMigrations/commit/cae4802e8903ae1f49d4b6d1df333a6aac11c8d6))
 * save once() data in module config not in cache ([e24288e](https://github.com/baumrock/RockMigrations/commit/e24288e9ed251751848e7850add4815de32d54b4))
-
-## [5.4.1](https://github.com/baumrock/RockMigrations/compare/v5.4.0...v5.4.1) (2024-10-16)
-
-
-### Bug Fixes
-
-* update deploy workflow to checkout@v4 ([5ff3cc2](https://github.com/baumrock/RockMigrations/commit/5ff3cc2890f46301742a5f3271476d97ae534c80))
 
