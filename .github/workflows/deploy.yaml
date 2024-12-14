@@ -107,4 +107,4 @@ jobs:
 
       - name: 🌟 Trigger RockMigrations Deployment
         run: |
-          ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "$PHP_COMMAND ${{ env.DEPLOY_FOLDER }}/site/deploy.php ${{ env.BRANCH }}"
+          ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p22 "$PHP_COMMAND ${{ env.DEPLOY_FOLDER }}/site/modules/RockMigrations/deploy.php ${{ env.BRANCH }}"
