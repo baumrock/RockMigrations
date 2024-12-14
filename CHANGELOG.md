@@ -1,3 +1,11 @@
+## [6.3.0](https://github.com/baumrock/RockMigrations/compare/v6.2.0...v6.3.0) (2024-12-14)
+
+
+### Features
+
+* add default deploy.php ([3d8942c](https://github.com/baumrock/RockMigrations/commit/3d8942c6ef2261d2697c4281495dbb4a92f01ce3))
+* pass deployment through deploy.php in RM folder ([96aa3cd](https://github.com/baumrock/RockMigrations/commit/96aa3cd7edbab98e438e3c9af6f0fe8ab49fb35e))
+
 ## [6.2.0](https://github.com/baumrock/RockMigrations/compare/v6.1.0...v6.2.0) (2024-12-09)
 
 
@@ -62,18 +70,4 @@
 ### Bug Fixes
 
 * don't show once in config table ([37baaaf](https://github.com/baumrock/RockMigrations/commit/37baaaf53b5ba4827480ecb78cba2be2f8368947))
-
-## [5.5.0](https://github.com/baumrock/RockMigrations/compare/v5.4.1...v5.5.0) (2024-11-03)
-
-
-### Features
-
-* add config migrations ([5ebea63](https://github.com/baumrock/RockMigrations/commit/5ebea6395a16643315011bedce80651786aa4b0b))
-* add dump() method ([4eb2e4e](https://github.com/baumrock/RockMigrations/commit/4eb2e4e49859512dc36953164ed5839a279789ce))
-
-
-### Bug Fixes
-
-* outdated syntax in fieldsetpage stub ([cae4802](https://github.com/baumrock/RockMigrations/commit/cae4802e8903ae1f49d4b6d1df333a6aac11c8d6))
-* save once() data in module config not in cache ([e24288e](https://github.com/baumrock/RockMigrations/commit/e24288e9ed251751848e7850add4815de32d54b4))
 
