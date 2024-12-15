@@ -1,3 +1,10 @@
+## [6.4.0](https://github.com/baumrock/RockMigrations/compare/v6.3.0...v6.4.0) (2024-12-15)
+
+
+### Features
+
+* add support for constants helper in site-config-migrations ([b18bce8](https://github.com/baumrock/RockMigrations/commit/b18bce8b0ec4efce4dc7589c952920825f942f30))
+
 ## [6.3.0](https://github.com/baumrock/RockMigrations/compare/v6.2.0...v6.3.0) (2024-12-14)
 
 
@@ -53,21 +60,4 @@
 ### Bug Fixes
 
 * don't use text as default fieldtype ([46e74d7](https://github.com/baumrock/RockMigrations/commit/46e74d74150a25d567bf5aa09c5df8a4aabe5284))
-
-## [6.0.0](https://github.com/baumrock/RockMigrations/compare/v5.5.0...v6.0.0) (2024-11-13)
-
-
-### ⚠ BREAKING CHANGES
-
-* create constant trait instead of helper classes
-
-### Features
-
-* add renameField() method ([0b24426](https://github.com/baumrock/RockMigrations/commit/0b24426cf6170658449e40e80041b5c35cbb7b28))
-* create constant trait instead of helper classes ([e4ccc74](https://github.com/baumrock/RockMigrations/commit/e4ccc74e1041c70bdfeb935b36da3b36bed61b67))
-
-
-### Bug Fixes
-
-* don't show once in config table ([37baaaf](https://github.com/baumrock/RockMigrations/commit/37baaaf53b5ba4827480ecb78cba2be2f8368947))
 
