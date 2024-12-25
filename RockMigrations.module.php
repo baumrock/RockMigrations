@@ -560,7 +560,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $ip = $this->wire->session->getIP();
     $key = "hidefromguests-allow-$ip";
-    $this->wire->cache->save($key, true, self::oneMinute * 30);
+    $this->wire->cache->save($key, $ip, self::oneMinute * 30);
   }
 
   /**
@@ -6186,6 +6186,30 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'showIf' => 'hideFromGuests=1',
     ]);
 
+    // reset hidefromguest ips
+    $resetIPs = wire()->input->post('allowedIPs');
+    if (!is_array($resetIPs)) $resetIPs = [];
+    foreach ($resetIPs as $ip) {
+      wire()->cache->delete("hidefromguests-allow-$ip");
+    }
+
+    // show allowed ips checkboxes
+    $allowedIPs = wire()->cache->get('hidefromguests-allow-*');
+    if (is_array($allowedIPs) && count($allowedIPs)) {
+      /** @var InputfieldCheckboxes $f */
+      $f = wire()->modules->get('InputfieldCheckboxes');
+      $f->name = 'allowedIPs';
+      $f->label = 'Allowed IPs (Hide from Guests)';
+      $f->icon = 'check';
+      $f->description = 'This list shows all IPs that are allowed to view the frontend for 30min.';
+      foreach ($allowedIPs as $ip) {
+        $f->addOption($ip, $ip);
+      }
+      $f->showIf = 'hideFromGuests=1';
+      $f->notes = 'You can remove an IP by checking the box and saving the config.';
+      $inputfields->add($f);
+    }
+
     $this->wrapFields($inputfields, [
       'disabled' => ['columnWidth' => 100],
       'addXdebugLauncher' => ['columnWidth' => 50],
@@ -6195,6 +6219,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'colorBar' => ['columnWidth' => 50],
       'hideFromGuests' => ['columnWidth' => 50],
       'previewPassword' => ['columnWidth' => 100],
+      'allowedIPs' => ['columnWidth' => 100],
     ], [
       'label' => 'RockMigrations Options',
       'icon' => 'cogs',
