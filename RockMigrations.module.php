@@ -3570,7 +3570,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $minify->minify($minFile);
       } catch (\Throwable $th) {
       }
-      $this->log("Minified $minFile");
     } else {
       throw new WireException("Invalid Extension $ext");
     }
