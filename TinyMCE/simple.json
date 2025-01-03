@@ -1,5 +1,4 @@
 {
-  "inline": true,
   "menubar": false,
   "plugins": "anchor link lists pwlink quickbars paste",
   "paste_as_text": true,
