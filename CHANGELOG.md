@@ -1,3 +1,16 @@
+## [6.5.0](https://github.com/baumrock/RockMigrations/compare/v6.4.0...v6.5.0) (2025-01-03)
+
+
+### Features
+
+* list allowed ips (hide from guests) on the module settings screen ([11a93eb](https://github.com/baumrock/RockMigrations/commit/11a93eb7f0f4800aa846378d763502c10a1f0ddd))
+
+
+### Bug Fixes
+
+* remove inline mode from tinymce settings file ([d67d1e4](https://github.com/baumrock/RockMigrations/commit/d67d1e43ed754901c8856761d0bd5c7c3a85ba97))
+* remove log (causing warning) ([127610b](https://github.com/baumrock/RockMigrations/commit/127610b5dff9717d2239053ba1d7304e4a4f8e4d))
+
 ## [6.4.0](https://github.com/baumrock/RockMigrations/compare/v6.3.0...v6.4.0) (2024-12-15)
 
 
@@ -53,11 +66,4 @@
 * run watchlist migrations in correct order ([47301fa](https://github.com/baumrock/RockMigrations/commit/47301fa724fde85aae04513d24fc9da28e223271))
 * support hyphens in template names ([9f07b3f](https://github.com/baumrock/RockMigrations/commit/9f07b3f114cb3970efe333e18395d507d6c82189))
 * wrong copy paste ([2633704](https://github.com/baumrock/RockMigrations/commit/26337043e785d5a6a2a5f0be236eeee85b3aeaa9))
-
-## [6.0.1](https://github.com/baumrock/RockMigrations/compare/v6.0.0...v6.0.1) (2024-11-15)
-
-
-### Bug Fixes
-
-* don't use text as default fieldtype ([46e74d7](https://github.com/baumrock/RockMigrations/commit/46e74d74150a25d567bf5aa09c5df8a4aabe5284))
 
