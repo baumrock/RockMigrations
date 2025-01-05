@@ -158,6 +158,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     wire()->addHookBefore("InputfieldForm::render",      $this, "showEditInfo");
     wire()->addHookBefore("InputfieldForm::render",      $this, "showCopyCode");
     wire()->addHookBefore("Modules::uninstall",          $this, "unwatchBeforeUninstall");
+    wire()->addHookBefore("Modules::install",            $this, "beforeModuleInstall");
     wire()->addHookAfter("Modules::install",             $this, "migrateAfterModuleInstall");
     wire()->addHookAfter("Page(template=admin)::render", $this, "addColorBar");
     wire()->addHookBefore("InputfieldForm::render",      $this, "addRmHints");
@@ -654,6 +655,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function basename($file)
   {
     return basename($this->filePath($file));
+  }
+
+  protected function beforeModuleInstall(HookEvent $event): void
+  {
+    $moduleName = $event->arguments(0);
+    $moduleDir = dirname(wire()->modules->getModuleFile($moduleName));
+    $migrationsDir = $moduleDir . '/RockMigrations';
+    if (is_dir($migrationsDir)) $this->runConfigMigrations($migrationsDir);
   }
 
   /**
