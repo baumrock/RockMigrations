@@ -6,6 +6,8 @@ These kind of circular dependencies can be solved by using config migrations, wh
 
 ## Using Config Migrations
 
+> There is a [RockMigrations demo module](https://github.com/baumrock/ConfigMigrationsDemo) that shows how to use config migrations.
+
 All you have to do to use config migrations is to create a PHP file in one of the supported directories:
 
 - `site/RockMigrations/[type]/[name].php`
