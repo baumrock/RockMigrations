@@ -155,10 +155,10 @@ Module specific migrations need an additional step, because we want the constant
 MyModule::field_myfield
 ```
 
-- Create the file `site/modules/MyModule/RockMigrations/RockMigrationsConstants.php`
+- Create the file `site/modules/MyModule/RockMigrationsConstants.php` (Note: In the root folder of the module, not in the RockMigrations folder!)
 - Do a modules refresh
 
-RockMigrations should now have created a trait file like this in `/site/modules/MyModule/RockMigrations/RockMigrationsConstants.php`:
+RockMigrations should now have created a trait file like this in `/site/modules/MyModule/RockMigrationsConstants.php`:
 
 ```php
 <?php

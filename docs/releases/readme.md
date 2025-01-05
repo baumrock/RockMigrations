@@ -21,7 +21,7 @@ jobs:
     # with:
     #   email: "foo@example.com"
     secrets:
-      token: ${{ secrets.GITHUB_TOKEN }}
+      token: ${{ secrets.CI_TOKEN }}
 ```
 
 This will use the https://www.conventionalcommits.org/en/v1.0.0/ specification for your commits.
