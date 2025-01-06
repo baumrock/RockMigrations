@@ -3569,6 +3569,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       try {
         $minify->minify($minFile);
       } catch (\Throwable $th) {
+        if (wire()->config->debug) $this->log($th->getMessage());
       }
       $this->log("Minified $minFile");
     } elseif ($ext == 'js') {
@@ -3578,7 +3579,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       try {
         $minify->minify($minFile);
       } catch (\Throwable $th) {
+        if (wire()->config->debug) $this->log($th->getMessage());
       }
+    } else if ($ext == 'less') {
+      // less files will be converted to css with default settings
+      // if you want to customise that you can use saveCSS() in your code
+      $css = $this->saveCSS($file);
+      return $this->minify($css, $minFile);
     } else {
       throw new WireException("Invalid Extension $ext");
     }
