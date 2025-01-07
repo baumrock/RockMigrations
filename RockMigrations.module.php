@@ -4165,6 +4165,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   private function runConfigFile(string $file, $firstRun = false): void
   {
+    // skip all files that are directly in the /RockMigrations folder
+    // these files are hook-files like beforeData.php or afterAssets.php
+    $type = $this->getConfigFileType($file);
+    if ($type === false) return;
+
     $url = $this->toUrl($file);
     $this->log($url);
 
@@ -4177,7 +4182,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     $config = $this->getConfigFileArray($file);
     $name = $this->getConfigFileName($file);
-    $type = $this->getConfigFileType($file);
 
     // don't run migrations directly in RockMigrations folder
     // this is the case for constants traits
@@ -4200,7 +4204,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           $fieldname = array_key_exists('name', $config)
             ? $config['name']
             : $name;
-          $this->createField($fieldname, $config);
+          $this->createField($fieldname, $config['type']);
           $this->setFieldData($fieldname, ['tags' => $tag]);
           break;
         case 'templates':
@@ -4230,6 +4234,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Run config hook files like /RockMigrations/beforeAssets.php
+   * Refer to the config migrations documentation for more info!
+   */
+  private function runConfigHooks(string $type, array $items): void
+  {
+    $items = array_filter($items, fn($file) => str_ends_with($file, "/RockMigrations/$type.php"));
+    $cnt = count($items);
+    $this->log("--- config migration hook: $type ($cnt files) ---");
+    foreach ($items as $file) {
+      $this->log($this->toUrl($file));
+      require $file;
+    }
+  }
+
+  /**
    * Run config migrations of given files
    *
    * NOTE: This will always run migrations even when the module is not
@@ -4253,10 +4272,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->log("### Running Config Migrations ###");
     $this->indent(2);
     if ($createTrait) $this->createConstantTraits();
+    $this->runConfigHooks('beforeAssets', $items);
     $this->log("--- first run: create assets ---");
     foreach ($items as $file) $this->runConfigFile($file, true);
+    $this->runConfigHooks('afterAssets', $items);
+    $this->runConfigHooks('beforeData', $items);
     $this->log("--- second run: migrate data ---");
     foreach ($items as $file) $this->runConfigFile($file);
+    $this->runConfigHooks('afterData', $items);
     $this->indent(-2);
   }
 

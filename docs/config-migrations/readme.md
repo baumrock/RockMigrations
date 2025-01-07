@@ -19,6 +19,12 @@ Where `[type]` is one of `fields`, `templates`, `roles`, `permissions` and `[nam
 
 RockMigrations can create class constant traits/classes for you that make working with your assets a breeze. This feature is NOT enabled by default, so be sure to check out the instructions about them at the end of this page!
 
+## Config Migration Hooks
+
+RockMigrations provides a powerful hooks system that allows you to execute code at specific points during the migration process. This is particularly useful for handling dependencies and circular references.
+
+For detailed information about config migration hooks, see the [Config Migration Hooks Documentation](../config-migrations-hooks/).
+
 ## Example Migration Files
 
 ### Field
