@@ -77,7 +77,7 @@ Created /var/www/html/site/RockMigrationsConstants.php
 /site/RockMigrations/fields/foo.php
   Name: foo
   Tag:
-/site/RockMigrations/fields/bar.php
+/site/RockMigrations/templates/bar.php
   Name: bar
   Tag:
 --- config migration hook: afterAssets (0 files) ---
