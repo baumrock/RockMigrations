@@ -826,13 +826,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $const = [];
     $constants = [];
     foreach ($configFiles as $file) {
+      $type = $this->getConfigFileType($file);
+
+      // no type means it's a config migrations hook file
+      // in the root of the /RockMigrations folder
+      if (!$type) continue;
       $tag = $this->getConfigFileTag($file);
 
       // skip files that have no tag (not part of a module)
       // these files are located in /site/RockMigrations/*
-      if (!$tag) {
-        $const[] = $file;
-      } else {
+      if (!$tag) $const[] = $file;
+      else {
         if (!array_key_exists($tag, $constants)) $constants[$tag] = [];
         $constants[$tag][] = $file;
       }
