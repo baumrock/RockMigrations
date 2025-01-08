@@ -1,25 +1,31 @@
-# Deployments Fastlane
+# Deployments
 
-<div class='uk-alert uk-alert-warning'>This guide is a fastlane guide without explanations. If you are new to Github Actions or RockMigrations you might want to read the dedicated guides first.</div>
+Imagine this: You've just made some critical updates to your ProcessWire site. Maybe it's an urgent bug fix or an exciting new feature your client has been waiting for. But now comes the stressful part - deploying those changes to production.
 
-## GOAL
+We've all been there:
+- Manually uploading files and hoping we didn't miss anything
+- Wrestling with file permissions after each upload
+- Trying to keep track of which files need to be excluded
+- Wondering if we remembered to update the database
+- And that moment of fear when we finally hit refresh on the production site
 
-I understand that this topic might look overwhelming. But I promise you that it will open up a whole new world of possibilities for you:
+What if I told you there's a better way? A way to deploy your ProcessWire sites with just a single git push, knowing that everything - files, database, permissions - will be handled automatically and correctly every single time?
 
-- Deploy with a simple `git push`
-- Deploy to multiple environments (production, staging)
-- Get the latest content as easy as `rockshell db:pull`
-- Work on a PW project in a team
+In this guide, I'll show you how to set up professional deployments using RockMigrations and GitHub Actions. By the end, you'll have a robust deployment pipeline that:
+- Makes deployments as simple as pushing to Git
+- Automatically handles file permissions
+- Manages your database migrations
+- Works perfectly for both solo developers and teams
+- And most importantly - gives you peace of mind with every single deployment
 
-To name just a few things. Let's get started!
+Let's transform your deployment process from a source of stress into a competitive advantage!
 
-## Agenda
+## Outline
 
 Setting up Deployment with RockMigrations is a 3 step process:
-
-1. Connect to the server
-2. Deploy Manually
-3. Deploy via Github Actions
+1. Setting up passwordless authentication using SSH
+2. Deploy Manually (ensures everything works)
+3. Deploy via Github Actions (to save you time and hassle)
 
 ## Prerequisites
 
@@ -29,83 +35,143 @@ When following this guide you will need:
   - I recommend starting with the blank profile
   - RockMigrations installed
   - RockShell installed
-  - Split config.php
-- A server that allows SSH connections
+- A server that allows
+  - SSH connections
+  - Symlinks
 - A Github account
 
-### Split config.php
+## Passwordless Authentication (SSH)
 
-We need different config files for different environments. For that we will split the `config.php` file into two files:
+We need two different SSH keys for our setup:
 
-- `config.php` will hold all global settings
-- `config-local.php` will hold environment specific settings.
+1. A personal key for development
+   - Used by you for all your projects
+   - Stays on your computer
+   - Never shared with others
+   - Example: `~/.ssh/id_bernhard`
 
-<div class='uk-alert uk-alert-warning'>Make sure to add `config-local.php` to the `.gitignore` file!</div>
+2. A project key for deployments
+   - Specific to this project
+   - Stored in the Github repository
+   - Used by Github Actions
+   - Shared with team members
+   - Example: `~/.ssh/id_github`
 
-## Connect to the server
+> Pro-Tip: I'm using a generic name `id_github` for the project-key on every project. I simply overwrite it for each project, because then I do not bloat the `.ssh` folder with too many keys that are never used (because they are moved to the Github repo and only used by the Github runner).
 
-### Create the SSH key
+### Create Personal SSH Key
 
-Create a project-specific SSH key pair called `id_github` that will be used for connecting to the server:
+First, create your personal key if you don't have one yet:
+
+`label: LOCAL`
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -C "your@email.com"
+```
+
+### Create Project SSH Key
+
+Then create a project-specific key for automated deployments:
 
 `label: LOCAL`
 ```bash
 ssh-keygen -t ed25519 -f ~/.ssh/id_rockmigrations -C "RM Deployment Key"
 ```
 
-You will see the key's random image if it was created successfully.
+### Add Keys to Server
 
-### Add the SSH key to the server
-
-First, let's copy the public key to the clipboard:
+Add both public keys to your server's authorized_keys file. To get the public key, use the following commands on your local machine:
 
 `label: LOCAL`
 ```bash
+cat ~/.ssh/id_ed25519.pub
 cat ~/.ssh/id_rockmigrations.pub
 ```
 
-Next, we copy the public key to the remote server:
+Then add the keys to your server's `~/.ssh/authorized_keys` file, for example using nano:
 
 `label: REMOTE`
 ```bash
 nano ~/.ssh/authorized_keys
 ```
 
-Paste the public key to the end of the file and save it:
+Then add this to the end of the file:
 
-`label: REMOTE`
 ```bash
-# DEMOPROJECT deployment key
-ssh-ed25519 XXXX RM Deployment Key
+# Bernhard's Personal Key
+ssh-ed25519 XXXX your@email.com
+# Github Deployment Key
+ssh-ed25519 YYYY RM Deployment Key
 ```
 
-### Check connection
+### Test Connection
+
+Test both connections to make sure they work:
 
 `label: LOCAL`
 ```bash
-ssh -i ~/.ssh/id_rockmigrations DEMOUSER@DEMOSERVER
+# Test personal key
+ssh -i ~/.ssh/id_ed25519 user@server
+
+# Test project key
+ssh -i ~/.ssh/id_rockmigrations user@server
 ```
 
-<div class='uk-alert uk-alert-warning'>Make sure this works before you continue!</div>
+<div class='uk-alert uk-alert-warning'>Make sure both connections work before you continue, otherwise you will be in trouble later!</div>
 
 ## Deploy Manually
 
+### Split config.php
+
+Our remote instance of ProcessWire needs different database credentials than our local development instance. Some are using `if ... else ...` in `config.php` relying on the hostname or such, but this is prone to errors! Don't do that!
+
+You don't believe me? Well, think about me when you first try to use ProcessWire bootstrapped from the command line. You don't have a hostname there, so your config will not work! I told you!
+
+So let's avoid this by using different config files for different environments. It's easy! Just split the config file into two files:
+
+- `config.php` will hold all settings that are the same for all environments
+- `config-local.php` will hold environment specific settings
+
+And then add this line at the bottom of `config.php`:
+
+```php
+// Split Config Pattern
+// See https://processwire.com/talk/topic/18719--
+require __DIR__ . "/config-local.php";
+```
+
+<div class='uk-alert uk-alert-warning'>Make sure to add `config-local.php` to the `.gitignore` file!</div>
+
+### Dump Database
+
+To make it easy to restore the database later on the remote server we create a dump now:
+
+`label: LOCAL`
+```bash
+rockshell db:dump
+```
+
+This will store the dump in `/site/assets/backups/database/db.sql`.
+
 ### Setup Server (Vhost + DB)
 
-Use your webhosting panel to setup a vhost and database for your project!
+Use your webhosting panel to setup a vhost and database for your project! Once that is done we can start the deployment process.
 
 ### Copy files (rsync)
+
+Let's first copy files from our local machine to the remote server:
 
 `label: LOCAL`
 ```bash
 # !!!!! MAKE SURE YOU ARE IN THE PROJECT ROOT !!!!!
 cd /path/to/your/project
 
+# copy content of current folder to remote server
 # you can add additional excludes as needed
 rsync -avz -e "ssh -i ~/.ssh/id_rockmigrations" \
   --exclude='.ddev' \
   --exclude='.git' \
   --exclude='.vscode' \
+  --exclude='.github' \
   ./ DEMOUSER@DEMOSERVER:/path/to/your/documentroot/
 ```
 
@@ -127,17 +193,21 @@ Now visit the website in your browser. Check the result:
 
 ### Create & Import the Database
 
-First, create the database via your webhosting panel.
-
-Then, import the database via your webhosting panel or use the following command:
+Now that we have copied all files to the server we need to set up the database. Most hosting providers offer a GUI for that. If you want to import the dump from the before uploaded files you can use the following command:
 
 `label: REMOTE`
 ```bash
-cd /path/to/your/documentroot/
-mysql your_database_name < site/assets/backups/database/db.sql
+mysql your_db_name < /path/to/your/dump.sql
 ```
 
 ### Update config.php
+
+Before adding the database credentials, let's talk about security. When developing locally, it's common to use simple credentials like `ddevadmin/ddevadmin`. If you just restore your local database to the production server, these credentials would work there too - which is a serious security risk!
+
+To prevent this, we'll change the `userAuthSalt` on the production server. This salt is used to hash passwords, so changing it will invalidate all existing password hashes. This means:
+1. Nobody can use your local development credentials on the production site
+2. You'll need to reset passwords for all users on the production site
+3. Your local development site remains unchanged
 
 Create a new userAuthSalt (change the length at the end to your liking):
 
@@ -160,46 +230,118 @@ $config->userAuthSalt = 'IHeIVPuu9LARrXG4L/6nfslYzCRoFIbFdkiwy5JWbTGVqkTV8ClBmw=
 
 ### Check website
 
+You should now be able to open your website in your browser, but you should not be able to log in!
+
 <div class='uk-alert uk-alert-warning'>Make sure your website works before you continue!</div>
 
 ### Reset User + Password
 
-We changed the userAuthSalt, so no user can log in anymore. Using RockShell you can reset the namem and password of any user easily:
+Using RockShell it is super fast and easy to reset a user's password:
 
 `label: REMOTE`
 ```bash
 php RockShell/rock user:reset
 ```
 
-Now you should be able to login to your website on the remote server.
+After that you should be able to login to your website on the remote server.
 
 ## Deploy via Github Actions
 
+Github Actions is a service that allows you to automate your development workflow. In this case we want to automate the deployment of our website to the remote server. We will use Github Actions to copy the files from the Github repository to the remote server and then trigger the RockMigrations deployment and migration scripts.
+
 ### Prepare the server
 
-Transform folder structure using RockShell:
+For automated deployments, we need a more sophisticated folder structure that allows us to:
+- Keep multiple versions of our site
+- Roll back to previous versions if needed
+- Share files between versions (like uploads)
+- Switch between versions without downtime
+
+We'll create this structure:
+```
+/path/to/your/site/
+  ├── current -> release-1      # Symlink to current release
+  ├── release-2-                # Previous release
+  ├── release-1                 # Current release
+  └── shared/                   # Shared files (uploads, logs, etc)
+      ├── site/assets/files/
+      └── site/config-local.php
+```
+
+RockShell will help us set this up with a single command:
 
 `label: REMOTE`
 ```bash
-./RockShell rm:transform
+php RockShell/rock rm:transform
 ```
 
 ### Update your vhost / document root
 
-If you now open your website you will get a 404 error! Update the document root in your webhosting panel from this:
+After running this command your website will show a 404 error. This is expected! We need to update the document root in your webhosting panel to point to the `current` folder:
 
-- from `/path/to/your/documentroot/`
-- to `/path/to/your/documentroot/current/`
+```
+OLD: /path/to/your/documentroot
+NEW: /path/to/your/documentroot/current
+```
 
-Your site should now work again!
+This change ensures that your web server always serves the currently active release. After updating the document root your site should work again.
+
+### Configure GitHub Repository
+
+For security reasons, sensitive information like SSH keys and server details are stored as GitHub Secrets and Variables. Here's what you need to set up:
+
+#### Required Secrets
+
+These values are encrypted and only visible to GitHub Actions:
+
+**1. SSH_KEY** - The private key for server access
+
+`label: LOCAL`
+```bash
+# Copy the entire private key, including BEGIN and END lines
+cat ~/.ssh/id_rockmigrations
+```
+
+**2. CI_TOKEN** - Personal Access Token (PAT)
+
+- Create a new token at GitHub.com → Settings ...
+- Required for accessing private repositories during deployment
+- Minimum required permissions: `repo` and `workflow`
+
+**3. KNOWN_HOSTS** - Server SSH fingerprint
+
+```bash
+# Get your server's SSH fingerprint
+ssh-keyscan your-server.com
+```
+
+#### Required Variables
+
+These values are visible in logs:
+
+**1. SSH_HOST** - Your server's hostname
+
+- Example: `example.baumrock.com`
+- Use the domain name or IP address
+
+**2. SSH_USER** - Server username
+
+- Example: `deploy`
+- The user that owns your website files
+
+**3. DEPLOY_PATH** - Path to your website
+
+- Example: `/var/www/example.com`
+- Do NOT include `/current` or trailing slash
 
 ### Add Github Actions Workflow
 
-Add this to your local project, but DO NOT PUSH IT YET!
+Next, we'll create the workflow file that tells GitHub how to deploy our site. Create this file in your local project:
 
-I like to name that file `main.yaml` as it is the workflow for the `main` branch, but you can name it anything you want.
+`.github/workflows/main.yaml`
 
-`label: LOCAL .github/workflows/main.yaml`
+I recommend using `main.yaml` as the filename since it will handle deployments for the main branch, making it easy to add more workflows later (like `staging.yaml` for your staging environment).
+
 ```yaml
 name: Deploy
 
@@ -226,74 +368,32 @@ jobs:
       KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
 ```
 
-### Update Repository
+### Test the Deployment
 
-To make the workflow work, we need to add the following secrets and variables to your Github repository:
+Now you can safely push your changes:
+1. Commit the workflow file
+2. Push to GitHub
+3. Go to Actions tab in your repository
+4. Monitor the deployment progress
 
-Secrets:
+If you see any errors, check the workflow logs for details about what went wrong.
 
-- SSH_KEY
-- CI_TOKEN
-- KNOWN_HOSTS
+### RockShell + FilesOnDemand
 
-Variables:
+Let's set up your local development environment to work with production data:
 
-- SSH_HOST
-- SSH_USER
-- DEPLOY_PATH
+1. **Database Synchronization**: First, we'll configure RockShell so you can pull the production database to your local machine with a simple `db:pull` command. This gives you real content to work with during development.
 
-**SSH_KEY**
+2. **Missing Files**: After pulling the database, you'll notice that while the database contains references to uploaded files, these files don't exist on your local machine yet. Downloading all files would be slow and waste disk space.
 
-Copy the private key to Github:
+3. **FilesOnDemand**: This is where FilesOnDemand comes in - it automatically downloads files from your production site only when they're actually needed. Your local environment stays lean, but you still see all the images and files.
 
-`label: LOCAL`
-```bash
-cat ~/.ssh/id_rockmigrations
-```
+Add this to your local `site/config-local.php`:
 
-**CI_TOKEN**
-
-Copy your PAT token to Github so that the runner can access your private repositories.
-
-**KNOWN_HOSTS**
-
-Copy the server fingerprint to Github:
-
-`label: LOCAL`
-```bash
-ssh-keyscan YOURSERVER
-```
-
-**SSH_HOST**
-
-Copy the server hostname to Github, for example `example.baumrock.com`.
-
-**SSH_USER**
-
-Copy the username to Github, for example `youruser`.
-
-**DEPLOY_PATH**
-
-Copy the production path to Github, for example:
-
-`/path/to/your/documentroot`
-
-NOTE: Do NOT add the /current folder to the path! It will be added automatically. Also do not add a trailing slash.
-
-### Check deployment
-
-Push changes and monitor Github Actions workflow for any errors.
-
-### Update DEV config
-
-`label: LOCAL /site/config-local.php`
 ```php
-# enable filesOnDemand feature
-$config->filesOnDemand = 'https://your-live.site/';
-
 # add rockshell config (to use db:pull)
 $config->rockshell = [
-  // 'remotePHP' => 'php81',
+  // 'remotePHP' => 'php81',  # uncomment if your server needs a specific PHP version
   'remotes' => [
     'production' => [
       'ssh' => 'DEMOUSER@DEMOSERVER',
@@ -301,6 +401,14 @@ $config->rockshell = [
     ],
   ],
 ];
+
+# enable filesOnDemand feature
+$config->filesOnDemand = 'https://your-live.site/';
 ```
+
+After this setup you can:
+- Pull the production database with `rockshell db:pull production`
+- See all images and files from production immediately
+- Files are downloaded only when you actually view them
 
 > Congrats! You are now ready to rock your deployments like never before!
