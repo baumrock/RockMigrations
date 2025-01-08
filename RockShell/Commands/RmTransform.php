@@ -16,7 +16,7 @@ class RmTransform extends Command
     // load root path via PHP
     // don't load $config via wire() because it will try to create some
     // new cache files on shutdown which will show warnings in the console
-    $src = rtrim($this->app->root, "/");
+    $src = rtrim($this->app->rootPath(), "/");
 
     if (!$this->confirm("This will create a new folder structure in $src - continue?")) {
       return self::SUCCESS;
