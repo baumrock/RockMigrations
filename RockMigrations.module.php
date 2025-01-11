@@ -158,6 +158,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     wire()->addHookBefore("InputfieldForm::render",      $this, "showEditInfo");
     wire()->addHookBefore("InputfieldForm::render",      $this, "showCopyCode");
     wire()->addHookBefore("Modules::uninstall",          $this, "unwatchBeforeUninstall");
+    wire()->addHookBefore("Modules::install",            $this, "beforeModuleInstall");
     wire()->addHookAfter("Modules::install",             $this, "migrateAfterModuleInstall");
     wire()->addHookAfter("Page(template=admin)::render", $this, "addColorBar");
     wire()->addHookBefore("InputfieldForm::render",      $this, "addRmHints");
@@ -656,6 +657,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return basename($this->filePath($file));
   }
 
+  protected function beforeModuleInstall(HookEvent $event): void
+  {
+    $moduleName = $event->arguments(0);
+    $moduleDir = dirname(wire()->modules->getModuleFile($moduleName));
+    $migrationsDir = $moduleDir . '/RockMigrations';
+    if (is_dir($migrationsDir)) $this->runConfigMigrations($migrationsDir);
+  }
+
   /**
    * Get data from cache that is automatically recreated on Modules::refresh
    *
@@ -817,13 +826,17 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $const = [];
     $constants = [];
     foreach ($configFiles as $file) {
+      $type = $this->getConfigFileType($file);
+
+      // no type means it's a config migrations hook file
+      // in the root of the /RockMigrations folder
+      if (!$type) continue;
       $tag = $this->getConfigFileTag($file);
 
       // skip files that have no tag (not part of a module)
       // these files are located in /site/RockMigrations/*
-      if (!$tag) {
-        $const[] = $file;
-      } else {
+      if (!$tag) $const[] = $file;
+      else {
         if (!array_key_exists($tag, $constants)) $constants[$tag] = [];
         $constants[$tag][] = $file;
       }
@@ -3560,6 +3573,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       try {
         $minify->minify($minFile);
       } catch (\Throwable $th) {
+        if (wire()->config->debug) $this->log($th->getMessage());
       }
       $this->log("Minified $minFile");
     } elseif ($ext == 'js') {
@@ -3569,7 +3583,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       try {
         $minify->minify($minFile);
       } catch (\Throwable $th) {
+        if (wire()->config->debug) $this->log($th->getMessage());
       }
+    } else if ($ext == 'less') {
+      // less files will be converted to css with default settings
+      // if you want to customise that you can use saveCSS() in your code
+      $css = $this->saveCSS($file);
+      return $this->minify($css, $minFile);
     } else {
       throw new WireException("Invalid Extension $ext");
     }
@@ -4149,6 +4169,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   private function runConfigFile(string $file, $firstRun = false): void
   {
+    // skip all files that are directly in the /RockMigrations folder
+    // these files are hook-files like beforeData.php or afterAssets.php
+    $type = $this->getConfigFileType($file);
+    if ($type === false) return;
+
     $url = $this->toUrl($file);
     $this->log($url);
 
@@ -4161,7 +4186,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     $config = $this->getConfigFileArray($file);
     $name = $this->getConfigFileName($file);
-    $type = $this->getConfigFileType($file);
 
     // don't run migrations directly in RockMigrations folder
     // this is the case for constants traits
@@ -4184,7 +4208,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           $fieldname = array_key_exists('name', $config)
             ? $config['name']
             : $name;
-          $this->createField($fieldname, $config);
+          $this->createField($fieldname, $config['type']);
           $this->setFieldData($fieldname, ['tags' => $tag]);
           break;
         case 'templates':
@@ -4214,6 +4238,21 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
+   * Run config hook files like /RockMigrations/beforeAssets.php
+   * Refer to the config migrations documentation for more info!
+   */
+  private function runConfigHooks(string $type, array $items): void
+  {
+    $items = array_filter($items, fn($file) => str_ends_with($file, "/RockMigrations/$type.php"));
+    $cnt = count($items);
+    $this->log("--- config migration hook: $type ($cnt files) ---");
+    foreach ($items as $file) {
+      $this->log($this->toUrl($file));
+      require $file;
+    }
+  }
+
+  /**
    * Run config migrations of given files
    *
    * NOTE: This will always run migrations even when the module is not
@@ -4237,10 +4276,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $this->log("### Running Config Migrations ###");
     $this->indent(2);
     if ($createTrait) $this->createConstantTraits();
+    $this->runConfigHooks('beforeAssets', $items);
     $this->log("--- first run: create assets ---");
     foreach ($items as $file) $this->runConfigFile($file, true);
+    $this->runConfigHooks('afterAssets', $items);
+    $this->runConfigHooks('beforeData', $items);
     $this->log("--- second run: migrate data ---");
     foreach ($items as $file) $this->runConfigFile($file);
+    $this->runConfigHooks('afterData', $items);
     $this->indent(-2);
   }
 

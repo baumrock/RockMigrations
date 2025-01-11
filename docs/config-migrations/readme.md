@@ -6,6 +6,8 @@ These kind of circular dependencies can be solved by using config migrations, wh
 
 ## Using Config Migrations
 
+> There is a [RockMigrations demo module](https://github.com/baumrock/ConfigMigrationsDemo) that shows how to use config migrations.
+
 All you have to do to use config migrations is to create a PHP file in one of the supported directories:
 
 - `site/RockMigrations/[type]/[name].php`
@@ -16,6 +18,12 @@ Where `[type]` is one of `fields`, `templates`, `roles`, `permissions` and `[nam
 ## Class Constant Helpers
 
 RockMigrations can create class constant traits/classes for you that make working with your assets a breeze. This feature is NOT enabled by default, so be sure to check out the instructions about them at the end of this page!
+
+## Config Migration Hooks
+
+RockMigrations provides a powerful hooks system that allows you to execute code at specific points during the migration process. This is particularly useful for handling dependencies and circular references.
+
+For detailed information about config migration hooks, see the [Config Migration Hooks Documentation](../config-migrations-hooks/).
 
 ## Example Migration Files
 
@@ -153,10 +161,10 @@ Module specific migrations need an additional step, because we want the constant
 MyModule::field_myfield
 ```
 
-- Create the file `site/modules/MyModule/RockMigrations/RockMigrationsConstants.php`
+- Create the file `site/modules/MyModule/RockMigrationsConstants.php` (Note: In the root folder of the module, not in the RockMigrations folder!)
 - Do a modules refresh
 
-RockMigrations should now have created a trait file like this in `/site/modules/MyModule/RockMigrations/RockMigrationsConstants.php`:
+RockMigrations should now have created a trait file like this in `/site/modules/MyModule/RockMigrationsConstants.php`:
 
 ```php
 <?php
