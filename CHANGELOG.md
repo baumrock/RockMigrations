@@ -1,3 +1,18 @@
+## [6.6.0](https://github.com/baumrock/RockMigrations/compare/v6.5.0...v6.6.0) (2025-01-11)
+
+
+### Features
+
+* add config migration hooks ❤️ ([d70b271](https://github.com/baumrock/RockMigrations/commit/d70b271b1dc52d8fb03b3ba76b07838bceaadae9))
+* add support to directly minify a less file with $rm->minify(...) ([2257788](https://github.com/baumrock/RockMigrations/commit/225778806898669b6b7c7bb839311ed0ba9b306d))
+* auto run config migrations on module install ([a13a8fc](https://github.com/baumrock/RockMigrations/commit/a13a8fc4759085d2724705d40798e5e36a055707))
+
+
+### Bug Fixes
+
+* access rootPath() not root ([7c84b6f](https://github.com/baumrock/RockMigrations/commit/7c84b6f5bad82e64988551a77503b490a2099022))
+* make sure hookfiles get not written into constants files ([5741d98](https://github.com/baumrock/RockMigrations/commit/5741d98cedfab80233024a3f568f34daf8460312))
+
 ## [6.5.0](https://github.com/baumrock/RockMigrations/compare/v6.4.0...v6.5.0) (2025-01-03)
 
 
@@ -40,30 +55,4 @@
 * installModule() does not actually install the module when run the 1st time, but only downloads it [#29](https://github.com/baumrock/RockMigrations/issues/29) ([78cf409](https://github.com/baumrock/RockMigrations/commit/78cf4098f1d1a5542261c4280e4e7408288f03b4))
 * make setFieldLanguageValue() get the field from the page object and set language value correctly ([86eb045](https://github.com/baumrock/RockMigrations/commit/86eb045c72bec49a795b764b5a9d64d9821d3250))
 * rename deploy command ([5a41e0a](https://github.com/baumrock/RockMigrations/commit/5a41e0a81fd59dee33adceaf87da352dbe02bd60))
-
-## [6.1.0](https://github.com/baumrock/RockMigrations/compare/v6.0.1...v6.1.0) (2024-12-01)
-
-
-### Features
-
-* add copy/moveRepeaterItems() ([771fd47](https://github.com/baumrock/RockMigrations/commit/771fd471782fb94a2217c3100e540044a7842ea9))
-* add createTrait option in runConfigMigrations ([a34bb2a](https://github.com/baumrock/RockMigrations/commit/a34bb2abb424a5a198e41178c37bccd4112a9349))
-* add dedicated method runConfigMigrations() ([b0cbd8c](https://github.com/baumrock/RockMigrations/commit/b0cbd8cdf9514abc951f2c93e1d4fb9bd5d55ad6))
-* add last run logfile ([50869c9](https://github.com/baumrock/RockMigrations/commit/50869c9b32540c635fe5c533418476f6011fb9eb))
-* add option to prevent migrate from running ([2f3ccaa](https://github.com/baumrock/RockMigrations/commit/2f3ccaa98f69e50b9da4aeacfad95e0216a51586))
-* add setPageName() method ([e2c53b4](https://github.com/baumrock/RockMigrations/commit/e2c53b4853566bd96ef52a14ba853a6f12014b2a))
-
-
-### Bug Fixes
-
-* add early exit in createTemplateFromClassfile if tpl constant is not set ([fc8be28](https://github.com/baumrock/RockMigrations/commit/fc8be28b407decc0a0072fa1b9d0b2885d03bbd4))
-* allow priorities > 1000 ([a89fa4d](https://github.com/baumrock/RockMigrations/commit/a89fa4d633316598e9e26bd722fee6f4ceb1ae17))
-* custom fieldtype returns wrong class after creation ([3993f2f](https://github.com/baumrock/RockMigrations/commit/3993f2f31daa8d4d43e1df22f47751a138e3e58b))
-* do not migrate dotfiles ([7195a0f](https://github.com/baumrock/RockMigrations/commit/7195a0fa106ccbc0590c420cee2e5208db33fa30))
-* error when no matrixItems passed in $options ([fa76493](https://github.com/baumrock/RockMigrations/commit/fa76493353dc7a9c15fabc48f3f43ab72eed2312))
-* issue with iterating fields of repeater ([ad59425](https://github.com/baumrock/RockMigrations/commit/ad59425831c74e32034035afa9d2276f398cc2be))
-* prevent errors when page is nullpage in deletepage ([ccce68a](https://github.com/baumrock/RockMigrations/commit/ccce68a2d5f87ae7ad37007fa003c0bdaceba2f6))
-* run watchlist migrations in correct order ([47301fa](https://github.com/baumrock/RockMigrations/commit/47301fa724fde85aae04513d24fc9da28e223271))
-* support hyphens in template names ([9f07b3f](https://github.com/baumrock/RockMigrations/commit/9f07b3f114cb3970efe333e18395d507d6c82189))
-* wrong copy paste ([2633704](https://github.com/baumrock/RockMigrations/commit/26337043e785d5a6a2a5f0be236eeee85b3aeaa9))
 
