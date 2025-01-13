@@ -1,4 +1,0 @@
-// Add the closing fieldset
-return [
-  'type' => 'FieldsetClose',
-];
