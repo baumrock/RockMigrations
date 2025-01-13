@@ -1,6 +1,6 @@
 // Add a TinyMCE field via RockMigrations
 return [
-  'type' => 'textarea',
+  'type' => 'textarea', // use textarea*Language to create a multi-lang field
   'inputfieldClass' => 'InputfieldTinyMCE',
   'contentType' => FieldtypeTextarea::contentTypeHTML,
   'label' => '$1',
