@@ -1,3 +1,17 @@
+## [6.7.0](https://github.com/baumrock/RockMigrations/compare/v6.6.0...v6.7.0) (2025-01-13)
+
+
+### Features
+
+* add configMigrations() method to temporarily enable/disable config migrations ([10702f3](https://github.com/baumrock/RockMigrations/commit/10702f3f05919424c0544782f7f4d2f8d36a7454))
+* add inputfield options to page field snippet ([617d271](https://github.com/baumrock/RockMigrations/commit/617d27167ee55b406500f7aeca33a6a7862c4824))
+* update all snippets to use config migrations syntax ([46f2fce](https://github.com/baumrock/RockMigrations/commit/46f2fcec7c79e4898fb93c25c26ed57c29b1283e))
+
+
+### Bug Fixes
+
+* remove unnecessary fieldset-close snippet ([8acf49e](https://github.com/baumrock/RockMigrations/commit/8acf49e852862ecde4c4dd59deeb948d47636f90))
+
 ## [6.6.0](https://github.com/baumrock/RockMigrations/compare/v6.5.0...v6.6.0) (2025-01-11)
 
 
@@ -40,19 +54,4 @@
 
 * add default deploy.php ([3d8942c](https://github.com/baumrock/RockMigrations/commit/3d8942c6ef2261d2697c4281495dbb4a92f01ce3))
 * pass deployment through deploy.php in RM folder ([96aa3cd](https://github.com/baumrock/RockMigrations/commit/96aa3cd7edbab98e438e3c9af6f0fe8ab49fb35e))
-
-## [6.2.0](https://github.com/baumrock/RockMigrations/compare/v6.1.0...v6.2.0) (2024-12-09)
-
-
-### Features
-
-* add missing method setFieldLanguageValue() ([e5ad13a](https://github.com/baumrock/RockMigrations/commit/e5ad13a95d6cd2e71d34d44bb2d27f015e8d9d2f))
-* improve PR from ivan to use internal refresh method ([da0b08b](https://github.com/baumrock/RockMigrations/commit/da0b08b9cc65ee5573a5041971fe6ec575130b98))
-
-
-### Bug Fixes
-
-* installModule() does not actually install the module when run the 1st time, but only downloads it [#29](https://github.com/baumrock/RockMigrations/issues/29) ([78cf409](https://github.com/baumrock/RockMigrations/commit/78cf4098f1d1a5542261c4280e4e7408288f03b4))
-* make setFieldLanguageValue() get the field from the page object and set language value correctly ([86eb045](https://github.com/baumrock/RockMigrations/commit/86eb045c72bec49a795b764b5a9d64d9821d3250))
-* rename deploy command ([5a41e0a](https://github.com/baumrock/RockMigrations/commit/5a41e0a81fd59dee33adceaf87da352dbe02bd60))
 
