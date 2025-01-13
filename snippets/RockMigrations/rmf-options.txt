@@ -1,11 +1,11 @@
 // Add a options field via RockMigrations
-$1 => [
+return [
   'type' => 'options',
-  'label' => '$2',
+  'label' => '$1',
   'icon' => 'cubes',
   'options' => [
     1 => 'ONE|This is option one',
     2 => 'TWO',
     3 => 'THREE',
   ],
-],
+];

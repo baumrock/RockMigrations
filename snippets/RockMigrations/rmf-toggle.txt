@@ -1,9 +1,9 @@
 // rmf-toggle
-$1 => [
+return [
   'type' => 'toggle',
-  'label' => '$2',
+  'label' => '$1',
   'formatType' => 0, // integer 0/1
   'labelType' => 0, // yes/no
   'inputfieldClass' => 0, // toggle buttons
   'defaultOption' => 'yes',
-],
+];

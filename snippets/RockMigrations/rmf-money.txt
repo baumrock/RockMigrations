@@ -1,6 +1,6 @@
 // Add a RockMoney field via RockMigrations
-$1 => [
+return [
   'type' => 'RockMoney',
-  'label' => '$2',
+  'label' => '$1',
   'icon' => 'money',
-],
+];

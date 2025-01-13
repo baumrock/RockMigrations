@@ -1,7 +1,7 @@
 // Add a textarea field via RockMigrations
-$1 => [
-  'type' => 'textarea',
-  'label' => '$3',
-  'rows' => ${4:5},
-  'icon' => '${5:align-left}',
-],
+return [
+  'type' => 'textarea', // use textarea*Language to create a multi-lang field
+  'label' => '$1',
+  'rows' => ${2:5},
+  'icon' => '${3:align-left}',
+];

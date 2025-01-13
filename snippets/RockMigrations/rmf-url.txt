@@ -1,9 +1,9 @@
 // rmf-url
-$1 => [
+return [
   'type' => 'URL',
-  'label' => '$3',
+  'label' => '$1',
   'icon' => 'link',
   'textformatters' => [
     'TextformatterEntities',
   ],
-],
+];

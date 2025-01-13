@@ -1,5 +1,5 @@
 // Add a fieldsetpage field via RockMigrations
-$1 => [
+return [
   'label' => 'FieldsetPage Label',
   'type' => 'FieldtypeFieldsetPage',
   'fields' => [
@@ -13,4 +13,4 @@ $1 => [
   'tags' => '',
   'columnWidth' => 100,
   'icon' => 'cubes',
-],
+];

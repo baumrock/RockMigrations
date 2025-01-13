@@ -1,9 +1,9 @@
 // Add a text field via RockMigrations
-$1 => [
-  'type' => 'text',
-  'label' => '$3',
+return [
+  'type' => 'text', // use text*Language to create a multi-lang field
+  'label' => '$1',
   'icon' => 'align-left',
   'textformatters' => [
     'TextformatterEntities',
   ],
-],
+];

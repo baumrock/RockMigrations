@@ -659,6 +659,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   protected function beforeModuleInstall(HookEvent $event): void
   {
+    if (wire()->config->noConfigMigrations) return;
     $moduleName = $event->arguments(0);
     $moduleDir = dirname(wire()->modules->getModuleFile($moduleName));
     $migrationsDir = $moduleDir . '/RockMigrations';
@@ -741,6 +742,20 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     foreach ($fields as $name => $width) {
       if ($f = $form->get($name)) $f->columnWidth($width);
     }
+  }
+
+  /**
+   * Enable/disable config migrations temporarily
+   *
+   * This is helpful when installing dependencies causes an endless loop. To
+   * fix this you can call configMigrations(false) before installing the
+   * dependency and configMigrations(true) after installing the dependency.
+   *
+   * @return void
+   */
+  public function configMigrations(bool $enable): void
+  {
+    wire()->config->noConfigMigrations = !$enable;
   }
 
   /**
