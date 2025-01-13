@@ -1,7 +1,7 @@
 // Add an image field via RockMigrations
-$1 => [
+return [
   'type' => 'datetime',
-  'label' => '$2',
+  'label' => '$1',
   'dateOutputFormat' => 'd.m.Y H:i',
   'inputType' => 'text',
   'dateSelectFormat' => 'yMd',
@@ -9,4 +9,4 @@ $1 => [
   'dateInputFormat' => 'j.n.y',
   'timeInputFormat' => 'H:i',
   'defaultToday' => 1,
-],
+];

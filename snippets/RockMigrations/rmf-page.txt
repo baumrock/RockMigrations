@@ -1,9 +1,9 @@
 // Add a page field via RockMigrations
-$1 => [
+return [
   'type' => 'page',
-  'label' => '$2',
-  'derefAsPage' => ${4:FieldtypePage::derefAsPageOrFalse},
-  'inputfield' => ${5:'InputfieldPageListSelect'},
-  'findPagesSelector' => '${6:id>0,template!=admin}',
-  'labelFieldName' => ${7:'title'},
-],
+  'label' => '$1',
+  'derefAsPage' => ${2:FieldtypePage::derefAsPageOrFalse},
+  'inputfield' => ${3:'InputfieldPageListSelect'},
+  'findPagesSelector' => '${4:id>0,template!=admin}',
+  'labelFieldName' => ${5:'title'},
+];

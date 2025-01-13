@@ -1,7 +1,7 @@
 // Add a RockGrid field via RockMigrations
-$1 => [
+return [
   'type' => 'RockGrid',
-  'label' => '$3',
-  'grid' => '$4',
-  'icon' => '${5:table}',
-],
+  'label' => '$1',
+  'grid' => '$2',
+  'icon' => '${3:table}',
+];

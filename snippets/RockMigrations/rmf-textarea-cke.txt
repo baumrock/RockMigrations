@@ -1,7 +1,7 @@
 // Add a CKEditor field via RockMigrations
-$1 => [
+return [
   'type' => 'textarea',
-  'label' => '$3',
+  'label' => '$1',
   'inputfieldClass' => 'InputfieldCKEditor',
   'contentType' => FieldtypeTextarea::contentTypeHTML,
   'rows' => 5,
@@ -34,4 +34,4 @@ $1 => [
   'inlineMode' => true,
   // RockPageBuilder no label shortcut
   // 'rpb-nolabel' => true,
-],
+];

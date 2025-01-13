@@ -1,9 +1,9 @@
 // Add a text field via RockMigrations
-$1 => [
+return [
   'type' => 'text',
-  'label' => '$3',
+  'label' => '$1',
   'icon' => 'align-left',
   'textformatters' => [
     'TextformatterEntities',
   ],
-],
+];
