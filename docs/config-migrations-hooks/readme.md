@@ -88,3 +88,24 @@ Created /var/www/html/site/RockMigrationsConstants.php
 /site/RockMigrations/templates/bar.php
 --- config migration hook: afterData (0 files) ---
 ```
+
+## Dependencies
+
+Another example where hooks are necessary are module dependencies. For example, in RockInvoice we need to install the Fieldtype and Inputfield modules before we can create fields of that type:
+
+`label: beforeAssets.php`
+```php
+<?php
+
+namespace ProcessWire;
+
+$rm = rockmigrations();
+
+// install fieldtype + inputfield modules
+$rm->configMigrations(false);
+wire()->modules->install('FieldtypeRockInvoiceitems');
+wire()->modules->install('InputfieldRockInvoiceitems');
+$rm->configMigrations(true);
+```
+
+Please note that it is important to disable config migrations temporarily before installing the modules. This is to prevent an endless loop when installing a module that depends on the modules you're installing.
