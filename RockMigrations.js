@@ -10,8 +10,18 @@
       else if (name == "field_label") name = "label";
       else if (name == "asmSelect0") return;
 
-      // add comment?
       let comment = "";
+
+      // special cases
+      if (name == "sortfield_reverse") {
+        comment = "Use this syntax instead:'sortfield' => '-[property]'";
+        $(el).attr("title", comment);
+        $(el).attr("rockmigrations-code", comment);
+        UIkit.tooltip(el);
+        return;
+      }
+
+      // add comment?
       if (el.type == "radio") comment = $(el).parent().text();
       else if (el.type == "select-one")
         comment = $(el).find("option:selected").text();
