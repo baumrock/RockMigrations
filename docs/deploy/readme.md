@@ -48,7 +48,8 @@ We need two different SSH keys for our setup:
    - Used by you for all your projects
    - Stays on your computer
    - Never shared with others
-   - Example: `~/.ssh/id_bernhard`
+   - In a Team? Create one for each member!
+   - Example: `~/.ssh/id_bernhard` or `~/.ssh/id_susan`
 
 2. A project key for deployments
    - Specific to this project
@@ -56,6 +57,15 @@ We need two different SSH keys for our setup:
    - Used by Github Actions
    - Shared with team members
    - Example: `~/.ssh/id_github`
+
+### SSH Quickstart
+
+SSH uses key pairs for secure authentication:
+
+- **Private Key**: Your secret key - never share it. In the real world this would be the key that you use to open a door.
+- **Public Key**: Can be shared and installed on servers. In the real world this would be the lock in the door that only grants access to certain people (keys).
+
+That means we define on the server who can access by adding public keys to it and we create a private key for everybody who needs to access the server. In our case this is every team member and also the Github Actions runner.
 
 > Pro-Tip: I'm using a generic name `id_github` for the project-key on every project. I simply overwrite it for each project, because then I do not bloat the `.ssh` folder with too many keys that are never used (because they are moved to the Github repo and only used by the Github runner).
 
