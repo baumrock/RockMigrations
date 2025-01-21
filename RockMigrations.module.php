@@ -4195,7 +4195,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // skip dotfiles
     $shortName = $this->getConfigFileName($file, true);
     if (str_starts_with($shortName, '.')) {
-      $this->log("Skipping dotfile $shortName");
+      $this->log("  Skipping dotfile $shortName");
       return;
     }
 
