@@ -1889,7 +1889,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         $data['fields'] = $data['fieldContexts'];
         unset($data['fieldContexts']);
         unset($data['repeaterFields']);
-        unset($data['template_ids']); // BUG: Exports as 'template_ids=0' that prevents repeater using correct template/fieldgroup
+        unset($data['template_id']);
+        unset($data['template_ids']);
       } elseif ($item->type instanceof FieldtypeOptions) {
         $options = [];
         foreach ($item->type->manager->getOptions($item) as $opt) {
