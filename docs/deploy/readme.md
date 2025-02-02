@@ -1,5 +1,7 @@
 # Deployments
 
+<a href=https://youtu.be/4wS7xWUtFes><img src=https://i.imgur.com/aiGGwd6.png></a>
+
 Imagine this: You've just made some critical updates to your ProcessWire site. Maybe it's an urgent bug fix or an exciting new feature your client has been waiting for. But now comes the stressful part - deploying those changes to production.
 
 We've all been there:
