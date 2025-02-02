@@ -1,3 +1,10 @@
+## [6.7.1](https://github.com/baumrock/RockMigrations/compare/v6.7.0...v6.7.1) (2025-02-02)
+
+
+### Bug Fixes
+
+* prevent template_id=0 in field code of repeater items ([8f9bd47](https://github.com/baumrock/RockMigrations/commit/8f9bd471dcc4e9f47d0949af3be3cc4586567abd))
+
 ## [6.7.0](https://github.com/baumrock/RockMigrations/compare/v6.6.0...v6.7.0) (2025-01-13)
 
 
@@ -46,12 +53,4 @@
 ### Features
 
 * add support for constants helper in site-config-migrations ([b18bce8](https://github.com/baumrock/RockMigrations/commit/b18bce8b0ec4efce4dc7589c952920825f942f30))
-
-## [6.3.0](https://github.com/baumrock/RockMigrations/compare/v6.2.0...v6.3.0) (2024-12-14)
-
-
-### Features
-
-* add default deploy.php ([3d8942c](https://github.com/baumrock/RockMigrations/commit/3d8942c6ef2261d2697c4281495dbb4a92f01ce3))
-* pass deployment through deploy.php in RM folder ([96aa3cd](https://github.com/baumrock/RockMigrations/commit/96aa3cd7edbab98e438e3c9af6f0fe8ab49fb35e))
 
