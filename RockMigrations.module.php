@@ -873,6 +873,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           if (str_starts_with($shortName, '.')) continue;
           $longName = $this->getConfigFileName($file);
           $content .= "  const {$type}_$shortName = '$longName';\n";
+
+          // if it is a fieldset we add the _END constant as well
+          $field = wire()->fields->get($longName);
+          if ($field && $field->type instanceof FieldtypeFieldsetOpen) {
+            $content .= "  const {$type}_{$shortName}_END = '{$longName}_END';\n";
+          }
         }
         $content .= "}\n";
 
