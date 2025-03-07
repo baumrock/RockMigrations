@@ -1,6 +1,7 @@
 // Add a options field via RockMigrations
 return [
   'type' => 'options',
+  // 'inputfieldClass' => 'InputfieldRadios',
   'label' => '$1',
   'icon' => 'cubes',
   'options' => [
