@@ -103,6 +103,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     parent::__construct();
     $this->path = $this->wire->config->paths($this);
     $this->wire->classLoader->addNamespace("RockMigrations", __DIR__ . "/classes");
+    $this->lastRunLogfile = wire()->config->paths->logs . 'rockmigrations-lastrun.txt';
 
     // load all constant-traits in /site/modules/*/
     $file = wire()->config->paths->site . "RockMigrationsConstants.php";
@@ -123,7 +124,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     $config = $this->wire->config;
     $this->wire('rockmigrations', $this);
-    $this->lastRunLogfile = wire()->config->paths->logs . 'rockmigrations-lastrun.txt';
     $this->installModule('MagicPages');
     if ($config->debug) $this->setOutputLevel(self::outputLevelVerbose);
 
@@ -873,6 +873,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           if (str_starts_with($shortName, '.')) continue;
           $longName = $this->getConfigFileName($file);
           $content .= "  const {$type}_$shortName = '$longName';\n";
+
+          // if it is a fieldset we add the _END constant as well
+          $field = wire()->fields->get($longName);
+          if ($field && $field->type instanceof FieldtypeFieldsetOpen) {
+            $content .= "  const {$type}_{$shortName}_END = '{$longName}_END';\n";
+          }
         }
         $content .= "}\n";
 
