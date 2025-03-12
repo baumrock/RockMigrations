@@ -1,3 +1,15 @@
+## [6.8.0](https://github.com/baumrock/RockMigrations/compare/v6.7.1...v6.8.0) (2025-03-12)
+
+
+### Features
+
+* add _END constant for fieldsetopen automatically ([2c51632](https://github.com/baumrock/RockMigrations/commit/2c51632f12adb7620af485e94daea6692cbcac85))
+
+
+### Bug Fixes
+
+* lastrunlogfile is null (issue Error when upgrading from v6.0.1 to 6.1.0 or higher [#75](https://github.com/baumrock/RockMigrations/issues/75)) ([a6fe22d](https://github.com/baumrock/RockMigrations/commit/a6fe22d45c33fbb908050c0b1bbedd536c9065c4))
+
 ## [6.7.1](https://github.com/baumrock/RockMigrations/compare/v6.7.0...v6.7.1) (2025-02-02)
 
 
@@ -46,11 +58,4 @@
 
 * remove inline mode from tinymce settings file ([d67d1e4](https://github.com/baumrock/RockMigrations/commit/d67d1e43ed754901c8856761d0bd5c7c3a85ba97))
 * remove log (causing warning) ([127610b](https://github.com/baumrock/RockMigrations/commit/127610b5dff9717d2239053ba1d7304e4a4f8e4d))
-
-## [6.4.0](https://github.com/baumrock/RockMigrations/compare/v6.3.0...v6.4.0) (2024-12-15)
-
-
-### Features
-
-* add support for constants helper in site-config-migrations ([b18bce8](https://github.com/baumrock/RockMigrations/commit/b18bce8b0ec4efce4dc7589c952920825f942f30))
 
