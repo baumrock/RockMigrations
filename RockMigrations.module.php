@@ -6324,7 +6324,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
     $path = $this->wire->config->paths->assets . "RockMigrations/profiles";
     $f->notes = "You can place your own profiles in $path";
-    $f->collapsed = Inputfield::collapsedNo;
+    $f->collapsed = Inputfield::collapsedYes;
     $inputfields->add($f);
 
     $this->console(); // run console code
@@ -6337,9 +6337,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'value' => $this->wire->files->render($this->path . "profileeditor.php", [
         'code' => $this->getConsoleCode(),
       ]),
+      'collapsed' => Inputfield::collapsedYes,
+    ]);
+    $inputfields->add([
+      'type' => 'markup',
+      'name' => 'deprecation-note',
+      'label' => 'DEPRECATION NOTICE',
+      'value' => '2025-03-15: I have not used this feature for years, so I will remove it unless many contact me to keep it. If you need it, please contact me and let me know how you use this feature.',
+      'icon' => 'exclamation-triangle',
     ]);
 
     $this->wrapFields($inputfields, [
+      'deprecation-note',
       'profile',
       'console',
     ], [
