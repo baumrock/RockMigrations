@@ -1,3 +1,10 @@
+## [6.8.1](https://github.com/baumrock/RockMigrations/compare/v6.8.0...v6.8.1) (2025-03-17)
+
+
+### Bug Fixes
+
+* remove auto-install process module to fix upgrade issue ([63e382b](https://github.com/baumrock/RockMigrations/commit/63e382b54650ce4ee5e74ff46155c0caec862647))
+
 ## [6.8.0](https://github.com/baumrock/RockMigrations/compare/v6.7.1...v6.8.0) (2025-03-12)
 
 
@@ -45,17 +52,4 @@
 
 * access rootPath() not root ([7c84b6f](https://github.com/baumrock/RockMigrations/commit/7c84b6f5bad82e64988551a77503b490a2099022))
 * make sure hookfiles get not written into constants files ([5741d98](https://github.com/baumrock/RockMigrations/commit/5741d98cedfab80233024a3f568f34daf8460312))
-
-## [6.5.0](https://github.com/baumrock/RockMigrations/compare/v6.4.0...v6.5.0) (2025-01-03)
-
-
-### Features
-
-* list allowed ips (hide from guests) on the module settings screen ([11a93eb](https://github.com/baumrock/RockMigrations/commit/11a93eb7f0f4800aa846378d763502c10a1f0ddd))
-
-
-### Bug Fixes
-
-* remove inline mode from tinymce settings file ([d67d1e4](https://github.com/baumrock/RockMigrations/commit/d67d1e43ed754901c8856761d0bd5c7c3a85ba97))
-* remove log (causing warning) ([127610b](https://github.com/baumrock/RockMigrations/commit/127610b5dff9717d2239053ba1d7304e4a4f8e4d))
 
