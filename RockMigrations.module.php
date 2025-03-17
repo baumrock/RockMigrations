@@ -4163,18 +4163,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $user = $this->wire->user;
     $this->sudo();
-
-    // install process module if it is not installed
-    $this->once(
-      "11.02.2024: Install RockMigrations Process Module",
-      function (RockMigrations $rm) {
-        $rm->installModule("ProcessRockMigrations");
-      },
-      confirm: function () {
-        return $this->wire->modules->isInstalled("ProcessRockMigrations");
-      },
-    );
-
     $this->migrateWatchfiles(true);
     $this->wire->users->setCurrentUser($user);
   }
@@ -6185,7 +6173,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           <li><a class=uk-text-bold href=https://www.baumrock.com/modules/$name/docs>Read the docs</a> and level up your coding game! 🚀💻😎</li>
           <li><a class=uk-text-bold href=https://www.baumrock.com/rock-monthly>Sign up now for our monthly newsletter</a> and receive the latest updates and exclusive offers right to your inbox! 🚀💻📫</li>
           <li><a class=uk-text-bold href=https://github.com/baumrock/$name>Show some love by starring the project</a> and keep me motivated to build more awesome stuff for you! 🌟💻😊</li>
-          <li><a class=uk-text-bold href=https://paypal.me/baumrockcom>Support my work with a donation</a>, and together, we'll keep rocking the coding world! 💖💻💰</li>
         </ul>",
     ]);
 
@@ -6325,7 +6312,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
     $path = $this->wire->config->paths->assets . "RockMigrations/profiles";
     $f->notes = "You can place your own profiles in $path";
-    $f->collapsed = Inputfield::collapsedNo;
+    $f->collapsed = Inputfield::collapsedYes;
     $inputfields->add($f);
 
     $this->console(); // run console code
@@ -6338,9 +6325,18 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'value' => $this->wire->files->render($this->path . "profileeditor.php", [
         'code' => $this->getConsoleCode(),
       ]),
+      'collapsed' => Inputfield::collapsedYes,
+    ]);
+    $inputfields->add([
+      'type' => 'markup',
+      'name' => 'deprecation-note',
+      'label' => 'DEPRECATION NOTICE',
+      'value' => '2025-03-15: I have not used this feature for years, so I will remove it unless many contact me to keep it. If you need it, please contact me and let me know how you use this feature.',
+      'icon' => 'exclamation-triangle',
     ]);
 
     $this->wrapFields($inputfields, [
+      'deprecation-note',
       'profile',
       'console',
     ], [
