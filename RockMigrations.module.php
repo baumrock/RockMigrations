@@ -4163,18 +4163,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $user = $this->wire->user;
     $this->sudo();
-
-    // install process module if it is not installed
-    $this->once(
-      "11.02.2024: Install RockMigrations Process Module",
-      function (RockMigrations $rm) {
-        $rm->installModule("ProcessRockMigrations");
-      },
-      confirm: function () {
-        return $this->wire->modules->isInstalled("ProcessRockMigrations");
-      },
-    );
-
     $this->migrateWatchfiles(true);
     $this->wire->users->setCurrentUser($user);
   }
