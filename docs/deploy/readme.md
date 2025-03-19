@@ -300,7 +300,11 @@ This change ensures that your web server always serves the currently active rele
 
 ### Configure GitHub Repository
 
-For security reasons, sensitive information like SSH keys and server details are stored as GitHub Secrets and Variables. Here's what you need to set up:
+For security reasons, sensitive information like SSH keys and server details are stored as GitHub Secrets and Variables.
+
+At the time of writing, these secrets can be found under Repository > Settings > "Secrets and variables" > Actions. But Github changes their UI from time to time, so please refer to the docs if that is not the case.
+
+Here's what you need to set up:
 
 #### Required Secrets
 
