@@ -124,7 +124,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     $config = $this->wire->config;
     $this->wire('rockmigrations', $this);
-    $this->installModule('MagicPages');
+    if (!wire()->modules->isInstalled('MagicPages')) $this->installModule('MagicPages');
     if ($config->debug) $this->setOutputLevel(self::outputLevelVerbose);
 
     // for development
@@ -3447,13 +3447,25 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     $debug = $this->wire->config->debug;
 
-    if (!$this->isCLI() and $this->wire->config->noMigrate) {
-      $this->log("Migrations disabled via \$config->noMigrate");
+    // no files in watchlist? early exit
+    if (!$this->watchlist->count()) {
+      $disabled = "disabled=" . $this->disabled;
+      if ($debug) $this->log(date('Y-m-d H:i:s') . " No files in watchlist ($disabled)");
       return;
     }
-    if (!$this->isCLI() and $this->disabled) {
-      $this->log("Migrations disabled via module settings");
-      return;
+
+    // if disabled via noMigrate flag or module settings log info and early exit
+    // only do this if debug mode is on to prevent the log from being spammed
+    // on production sites on every request (see https://shorturl.at/E8A59)
+    if ($debug && !$this->isCLI()) {
+      if ($this->wire->config->noMigrate) {
+        $this->log(date('Y-m-d H:i:s') . " Migrations disabled via \$config->noMigrate");
+        return;
+      }
+      if ($this->disabled) {
+        $this->log(date('Y-m-d H:i:s') . " Migrations disabled via module settings");
+        return;
+      }
     }
 
     // prevent auto-migrate when CLI mode is enabled or when $rm->noMigrate()
@@ -3501,7 +3513,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (is_file($this->lastRunLogfile)) wire()->files->unlink($this->lastRunLogfile);
     // start new log
     if (!$cli) {
-      $this->log('-------------------------------------');
+      $this->log('---------- ' . date('Y-m-d H:i:s') . ' ----------');
       foreach ($changed as $file) $this->log("Detected change in $file");
       $this->log('Running migrations from watchfiles ...');
     }
@@ -5910,6 +5922,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   public function watchEnabled()
   {
+    // if migrations are disabled we also disable adding files to the watchlist
+    // this is to be more efficient on every single request
+    if ($this->disabled) return false;
+
     if (!$this->wire->user) return false;
     if ($this->wire->user->isSuperuser()) return true;
     if ($this->wire->config->forceWatch) return true;
