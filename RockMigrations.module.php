@@ -5922,10 +5922,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   public function watchEnabled()
   {
-    // if migrations are disabled we also disable adding files to the watchlist
-    // this is to be more efficient on every single request
     if ($this->disabled) return false;
-
     if (!$this->wire->user) return false;
     if ($this->wire->user->isSuperuser()) return true;
     if ($this->wire->config->forceWatch) return true;
