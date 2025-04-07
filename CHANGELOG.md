@@ -1,3 +1,10 @@
+## [6.8.2](https://github.com/baumrock/RockMigrations/compare/v6.8.1...v6.8.2) (2025-04-07)
+
+
+### Bug Fixes
+
+* improve logging and prevent adding files to watchlist if migrations are disabled ([429ce68](https://github.com/baumrock/RockMigrations/commit/429ce68f3418aeedee108d80949fc14a224561a5))
+
 ## [6.8.1](https://github.com/baumrock/RockMigrations/compare/v6.8.0...v6.8.1) (2025-03-17)
 
 
@@ -37,19 +44,4 @@
 ### Bug Fixes
 
 * remove unnecessary fieldset-close snippet ([8acf49e](https://github.com/baumrock/RockMigrations/commit/8acf49e852862ecde4c4dd59deeb948d47636f90))
-
-## [6.6.0](https://github.com/baumrock/RockMigrations/compare/v6.5.0...v6.6.0) (2025-01-11)
-
-
-### Features
-
-* add config migration hooks ❤️ ([d70b271](https://github.com/baumrock/RockMigrations/commit/d70b271b1dc52d8fb03b3ba76b07838bceaadae9))
-* add support to directly minify a less file with $rm->minify(...) ([2257788](https://github.com/baumrock/RockMigrations/commit/225778806898669b6b7c7bb839311ed0ba9b306d))
-* auto run config migrations on module install ([a13a8fc](https://github.com/baumrock/RockMigrations/commit/a13a8fc4759085d2724705d40798e5e36a055707))
-
-
-### Bug Fixes
-
-* access rootPath() not root ([7c84b6f](https://github.com/baumrock/RockMigrations/commit/7c84b6f5bad82e64988551a77503b490a2099022))
-* make sure hookfiles get not written into constants files ([5741d98](https://github.com/baumrock/RockMigrations/commit/5741d98cedfab80233024a3f568f34daf8460312))
 
