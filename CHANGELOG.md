@@ -1,3 +1,10 @@
+## [6.8.3](https://github.com/baumrock/RockMigrations/compare/v6.8.2...v6.8.3) (2025-05-01)
+
+
+### Bug Fixes
+
+* fieldset close field not created for module migrations ([cc617ad](https://github.com/baumrock/RockMigrations/commit/cc617ad65cbe4f1fcc7a7600638ff01710238178))
+
 ## [6.8.2](https://github.com/baumrock/RockMigrations/compare/v6.8.1...v6.8.2) (2025-04-07)
 
 
@@ -30,18 +37,4 @@
 ### Bug Fixes
 
 * prevent template_id=0 in field code of repeater items ([8f9bd47](https://github.com/baumrock/RockMigrations/commit/8f9bd471dcc4e9f47d0949af3be3cc4586567abd))
-
-## [6.7.0](https://github.com/baumrock/RockMigrations/compare/v6.6.0...v6.7.0) (2025-01-13)
-
-
-### Features
-
-* add configMigrations() method to temporarily enable/disable config migrations ([10702f3](https://github.com/baumrock/RockMigrations/commit/10702f3f05919424c0544782f7f4d2f8d36a7454))
-* add inputfield options to page field snippet ([617d271](https://github.com/baumrock/RockMigrations/commit/617d27167ee55b406500f7aeca33a6a7862c4824))
-* update all snippets to use config migrations syntax ([46f2fce](https://github.com/baumrock/RockMigrations/commit/46f2fcec7c79e4898fb93c25c26ed57c29b1283e))
-
-
-### Bug Fixes
-
-* remove unnecessary fieldset-close snippet ([8acf49e](https://github.com/baumrock/RockMigrations/commit/8acf49e852862ecde4c4dd59deeb948d47636f90))
 
