@@ -3746,13 +3746,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * Usage:
    * Call $rm->pageClassLoader($this) in your module's init() method and place
-   * all page classes inside the /classes folder and use the same namespace
+   * all page classes inside the /pageClasses folder and use the same namespace
    * as the module's classname.
    *
    * Example "MyModule"
    * /site/modules/MyModule/MyModule.module.php
-   * /site/modules/MyModule/classes/Foo.php --> namespace MyModule
-   * /site/modules/MyModule/classes/Bar.php --> namespace MyModule
+   * /site/modules/MyModule/pageClasses/Foo.php --> namespace MyModule
+   * /site/modules/MyModule/pageClasses/Bar.php --> namespace MyModule
    */
   public function pageClassLoader(Module $module, $folder = "classes"): void
   {
