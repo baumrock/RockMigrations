@@ -4067,7 +4067,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'tooltips' => false,
       'tableclass' => "uk-table-striped",
       'nl2br' => false,
-      'labelNode' => 'span',
+      'labelNode' => 'strong',
     ]);
     $opt->setArray($options);
 
