@@ -4068,6 +4068,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'tableclass' => "uk-table-striped",
       'nl2br' => false,
       'labelNode' => 'strong',
+      'tdStyle' => 'padding-top: 5px;',
     ]);
     $opt->setArray($options);
 
@@ -4095,7 +4096,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $t = $opt->tooltips ? "title='$k' uk-tooltip" : "";
       $val = $opt->nl2br ? nl2br($v) : $v;
       $out .= "<tr>
-          <td class='uk-width-expand'>
+          <td class='uk-width-expand' style='{$opt->tdStyle}'>
             <{$opt->labelNode} class='uk-text-small uk-text-muted' $t>$label</{$opt->labelNode}><br>
             $val
           </td>
