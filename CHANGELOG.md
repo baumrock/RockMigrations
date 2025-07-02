@@ -1,3 +1,16 @@
+## [6.9.0](https://github.com/baumrock/RockMigrations/compare/v6.8.3...v6.9.0) (2025-07-02)
+
+
+### Features
+
+* add option for renderTable labels ([d534ff1](https://github.com/baumrock/RockMigrations/commit/d534ff14d884c6f1f20b3fbff65f9b5a19bd6477))
+* add tdStyle option to rendertable ([96732dd](https://github.com/baumrock/RockMigrations/commit/96732dd589c1950ce1ff8cca15a260b4b32b4706))
+
+
+### Bug Fixes
+
+* remove old migrate syntax as config migrations are recommended now ([3196c20](https://github.com/baumrock/RockMigrations/commit/3196c20e6e2c2725a3054312aaae74b6e1904598))
+
 ## [6.8.3](https://github.com/baumrock/RockMigrations/compare/v6.8.2...v6.8.3) (2025-05-01)
 
 
@@ -30,11 +43,4 @@
 ### Bug Fixes
 
 * lastrunlogfile is null (issue Error when upgrading from v6.0.1 to 6.1.0 or higher [#75](https://github.com/baumrock/RockMigrations/issues/75)) ([a6fe22d](https://github.com/baumrock/RockMigrations/commit/a6fe22d45c33fbb908050c0b1bbedd536c9065c4))
-
-## [6.7.1](https://github.com/baumrock/RockMigrations/compare/v6.7.0...v6.7.1) (2025-02-02)
-
-
-### Bug Fixes
-
-* prevent template_id=0 in field code of repeater items ([8f9bd47](https://github.com/baumrock/RockMigrations/commit/8f9bd471dcc4e9f47d0949af3be3cc4586567abd))
 
