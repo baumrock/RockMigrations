@@ -3746,13 +3746,13 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    *
    * Usage:
    * Call $rm->pageClassLoader($this) in your module's init() method and place
-   * all page classes inside the /classes folder and use the same namespace
+   * all page classes inside the /pageClasses folder and use the same namespace
    * as the module's classname.
    *
    * Example "MyModule"
    * /site/modules/MyModule/MyModule.module.php
-   * /site/modules/MyModule/classes/Foo.php --> namespace MyModule
-   * /site/modules/MyModule/classes/Bar.php --> namespace MyModule
+   * /site/modules/MyModule/pageClasses/Foo.php --> namespace MyModule
+   * /site/modules/MyModule/pageClasses/Bar.php --> namespace MyModule
    */
   public function pageClassLoader(Module $module, $folder = "classes"): void
   {
@@ -4067,6 +4067,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'tooltips' => false,
       'tableclass' => "uk-table-striped",
       'nl2br' => false,
+      'labelNode' => 'strong',
+      'tdStyle' => 'padding-top: 5px;',
     ]);
     $opt->setArray($options);
 
@@ -4094,8 +4096,8 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       $t = $opt->tooltips ? "title='$k' uk-tooltip" : "";
       $val = $opt->nl2br ? nl2br($v) : $v;
       $out .= "<tr>
-          <td class='uk-width-expand'>
-            <span class='uk-text-small uk-text-muted' $t>$label</span><br>
+          <td class='uk-width-expand' style='{$opt->tdStyle}'>
+            <{$opt->labelNode} class='uk-text-small uk-text-muted' $t>$label</{$opt->labelNode}><br>
             $val
           </td>
         </tr>";
