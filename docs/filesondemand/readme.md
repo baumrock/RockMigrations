@@ -13,12 +13,25 @@ With filesOnDemand you only pull the latest database from the remote and RockMig
 All you have to do to make this work is to add this to your local development config:
 
 ```php
-$config->filesOnDemand = 'https://your-live-site.com';
+$config->filesOnDemand = 'https://my-live-site.com';
 ```
 
-So when ProcessWire tries to load /site/assets/files/1/foo.jpg it will grab it from https://your-live-site.com/site/assets/files/1/foo.jpg
+So when ProcessWire tries to load /site/assets/files/1/foo.jpg it will grab it from https://my-live-site.com/site/assets/files/1/foo.jpg
 
 This is a lot more efficient than downloading the whole project, especially if the live site is large.
+
+## Callback
+
+Sometimes you want to prevent the filesOnDemand feature to kick in. For example in the RockInvoice module I have a pdf field that stores invoices, but these invoices are protected from direct download by htaccess.
+
+When I develop locally this leads to time consuming page requests and HTTP error messages that the requested file could not be downloaded. Callbacks to the rescue!
+
+```php
+$config->filesOnDemand = function (Pagefile $file) {
+  if ($file->field->name === RockInvoice::field_pdfs) return false;
+  return 'https://my-live-site.com/';
+};
+```
 
 ## Warning
 

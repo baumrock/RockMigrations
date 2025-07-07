@@ -2914,6 +2914,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // this makes it possible to prevent downloading at runtime
       if (!$host = $this->wire->config->filesOnDemand) return;
 
+      // if $host is a callback, call it
+      if (is_callable($host)) {
+        $host = $host($pagefile);
+        if (!$host) return;
+      }
+
       // convert url to disk path
       if ($event->method == 'url') {
         $file = $config->paths->root . substr($file, strlen($config->urls->root));
