@@ -5329,7 +5329,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'name' => '_RockMigrations',
       'type' => 'markup',
       'label' => 'RockMigrations',
-      'value' => '<div class="uk-alert">
+      'value' => '<div class="uk-alert uk-margin-remove">
         ATTENTION - RockMigrations is installed on this system. You can apply
         changes in the GUI as usual but if any settings are set via code in a
         migration file they will be overwritten on the next migration cycle!
