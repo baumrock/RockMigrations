@@ -96,7 +96,7 @@ jobs:
       - name: 🚚 Deploy via RSYNC and Set Permissions
         run: |
           ssh ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }} -p${{ inputs.SSH_PORT }} "mkdir -p ${{ env.DEPLOY_FOLDER }}"
-          rsync -avz -e "ssh -p ${{ inputs.SSH_PORT }}" ${{ env.SRC }}/ ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }}:${{ env.DEPLOY_FOLDER }}
+          rsync -avz --exclude '.git' --chmod=D755,F644 -e "ssh -p ${{ inputs.SSH_PORT }}" ${{ env.SRC }}/ ${{ inputs.SSH_USER }}@${{ inputs.SSH_HOST }}:${{ env.DEPLOY_FOLDER }}
 
       - name: 🐘 Get PHP Command
         id: get-php
