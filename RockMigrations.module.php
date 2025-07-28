@@ -194,7 +194,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   public function ready()
   {
-    $this->hideFromGuests();
     $this->forceMigrate();
 
     // other actions
@@ -549,19 +548,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $src = __DIR__ . "/.vscode/launch.json";
     $dst = $this->wire->config->paths->root . ".vscode/launch.json";
     if (!is_file($dst)) $this->wire->files->copy($src, $dst);
-  }
-
-  /**
-   * Allow requests from this ip even if site is hidden from guests
-   * This is to support multi-domain setups where viewing a new domain
-   * would result in a redirect to the login-screen even though the preview
-   * password was present on the prior request.
-   */
-  private function allowIP(): void
-  {
-    $ip = $this->wire->session->getIP();
-    $key = "hidefromguests-allow-$ip";
-    $this->wire->cache->save($key, $ip, self::oneMinute * 30);
   }
 
   /**
@@ -2396,48 +2382,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   }
 
   /**
-   * Hide website from guest access
-   */
-  private function hideFromGuests(): void
-  {
-    // only do all below if the feature is activated
-    if (!$this->hideFromGuests) return;
-
-    // set preview password for the session if one is provided
-    if ($this->wire->input->get('preview', 'string') === $this->previewPassword) {
-      $this->wire->session->previewPassword = $this->previewPassword;
-    }
-
-    // only redirect guest users
-    // no guest? do nothing
-    if (!$this->wire->user->isGuest()) return;
-
-    // dont redirect cli usage
-    if ($this->wire->config->external) return;
-
-    // don't redirect if the session has the preview password
-    $matches = $this->wire->session->previewPassword === $this->previewPassword;
-    if ($this->previewPassword && $matches) {
-      // this will allow requests from this ip
-      // and update the cache on every request
-      $this->allowIP();
-      return;
-    }
-
-    // don't redirect if the IP is allowed
-    if ($this->isAllowedIP()) return;
-
-    // don't redirect if we are on the login page
-    $loginID = $this->wire->config->loginPageID;
-    if ($this->wire->page->id === $loginID) return;
-
-    // redirect to login page
-    $this->wire->session->redirect(
-      $this->wire->pages->get($loginID)->url
-    );
-  }
-
-  /**
    * Hide given page from pagetree and adjust numchildren count
    * @param mixed $page
    * @return void
@@ -2751,16 +2695,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
     if ($userLanguage) $user->language = $userLanguage;
     return $permission;
-  }
-
-  /**
-   * Is IP allowed to view sites hidden from guest access?
-   */
-  private function isAllowedIP(): bool
-  {
-    $ip = $this->wire->session->getIP();
-    $key = "hidefromguests-allow-$ip";
-    return !!$this->wire->cache->get($key);
   }
 
   /**
@@ -6241,45 +6175,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'checked' => $this->configRaw->addVersion ? 'checked' : '',
       'notes' => 'When using [fully automated releases and version numbers](https://processwire.com/talk/topic/28235-how-to-get-fully-automated-releases-tags-changelog-and-version-numbers-for-your-module-or-processwire-project/) for your project, github will create a package.json in the root directory of your project file for every release. If you check the box RockMigrations will show that info in the footer: [screenshot](https://i.imgur.com/0pkdKBd.png)'
     ]);
-    $inputfields->add([
-      'type' => 'checkbox',
-      'name' => 'hideFromGuests',
-      'label' => 'Hide website from guests',
-      'notes' => 'When checked all guest visits will be redirected to the login page, handy for hiding staging sites from unwanted access.',
-      'checked' => $this->configRaw->hideFromGuests ? 'checked' : '',
-    ]);
-    $inputfields->add([
-      'type' => 'text',
-      'name' => 'previewPassword',
-      'label' => 'Preview Password',
-      'notes' => 'Guests can append ?preview=XXX to any URL and will gain access to the site for their session (where XXX is the password that you set here).',
-      'value' => $this->configRaw->previewPassword,
-      'showIf' => 'hideFromGuests=1',
-    ]);
-
-    // reset hidefromguest ips
-    $resetIPs = wire()->input->post('allowedIPs');
-    if (!is_array($resetIPs)) $resetIPs = [];
-    foreach ($resetIPs as $ip) {
-      wire()->cache->delete("hidefromguests-allow-$ip");
-    }
-
-    // show allowed ips checkboxes
-    $allowedIPs = wire()->cache->get('hidefromguests-allow-*');
-    if (is_array($allowedIPs) && count($allowedIPs)) {
-      /** @var InputfieldCheckboxes $f */
-      $f = wire()->modules->get('InputfieldCheckboxes');
-      $f->name = 'allowedIPs';
-      $f->label = 'Allowed IPs (Hide from Guests)';
-      $f->icon = 'check';
-      $f->description = 'This list shows all IPs that are allowed to view the frontend for 30min.';
-      foreach ($allowedIPs as $ip) {
-        $f->addOption($ip, $ip);
-      }
-      $f->showIf = 'hideFromGuests=1';
-      $f->notes = 'You can remove an IP by checking the box and saving the config.';
-      $inputfields->add($f);
-    }
 
     $this->wrapFields($inputfields, [
       'disabled' => ['columnWidth' => 100],
@@ -6288,9 +6183,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       'addVersion' => ['columnWidth' => 50],
       'syncSnippets' => ['columnWidth' => 50],
       'colorBar' => ['columnWidth' => 50],
-      'hideFromGuests' => ['columnWidth' => 50],
-      'previewPassword' => ['columnWidth' => 100],
-      'allowedIPs' => ['columnWidth' => 100],
     ], [
       'label' => 'RockMigrations Options',
       'icon' => 'cogs',
