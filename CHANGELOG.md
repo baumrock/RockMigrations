@@ -1,3 +1,24 @@
+## [7.0.0](https://github.com/baumrock/RockMigrations/compare/v6.9.0...v7.0.0) (2025-07-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove hideFromGuests feature
+
+### Features
+
+* add filesOnDemand callback support ([9674fa3](https://github.com/baumrock/RockMigrations/commit/9674fa3e924ef8c2029d083823015cd9b0a3e988))
+
+
+### Bug Fixes
+
+* remove space after -p flag ([5e65b9e](https://github.com/baumrock/RockMigrations/commit/5e65b9e1b0eb11c79c4fb8298e9b1195724d07e6))
+
+
+### Miscellaneous Chores
+
+* remove hideFromGuests feature ([7e93865](https://github.com/baumrock/RockMigrations/commit/7e938658e95be40ad1d26e9ff023970221de9416))
+
 ## [6.9.0](https://github.com/baumrock/RockMigrations/compare/v6.8.3...v6.9.0) (2025-07-02)
 
 
@@ -31,16 +52,4 @@
 ### Bug Fixes
 
 * remove auto-install process module to fix upgrade issue ([63e382b](https://github.com/baumrock/RockMigrations/commit/63e382b54650ce4ee5e74ff46155c0caec862647))
-
-## [6.8.0](https://github.com/baumrock/RockMigrations/compare/v6.7.1...v6.8.0) (2025-03-12)
-
-
-### Features
-
-* add _END constant for fieldsetopen automatically ([2c51632](https://github.com/baumrock/RockMigrations/commit/2c51632f12adb7620af485e94daea6692cbcac85))
-
-
-### Bug Fixes
-
-* lastrunlogfile is null (issue Error when upgrading from v6.0.1 to 6.1.0 or higher [#75](https://github.com/baumrock/RockMigrations/issues/75)) ([a6fe22d](https://github.com/baumrock/RockMigrations/commit/a6fe22d45c33fbb908050c0b1bbedd536c9065c4))
 
