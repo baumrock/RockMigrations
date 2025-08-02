@@ -114,11 +114,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     }
 
     $this->watchlist = $this->wire(new WireArray());
-    $this->lastrun = (int)$this->wire->cache->get(self::cachename);
   }
 
   public function init()
   {
+    $this->lastrun = (int)wire()->cache->get(self::cachename);
     $this->wire->classLoader->addNamespace("RockMigrations", __DIR__ . "/classes");
     $this->wire->classLoader->addNamespace("ProcessWire", wire()->config->paths->assets . 'RockMigrations');
 
