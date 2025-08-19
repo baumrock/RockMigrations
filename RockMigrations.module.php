@@ -4660,7 +4660,12 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
     $optionsArray = [];
     foreach ($options as $lang => $opt) {
+      $langName = $lang;
       $lang = $this->getLanguage($lang);
+      if (!$lang) {
+        $this->wire->warning("RockMigrations attempted to create options for '$field->name' in unconfigured language '$langName'", Notice::noGroup);
+        continue;
+      }
       $string = "";
       foreach ($opt as $k => $v) {
         if ($k === 0) $this->log("Option with key 0 skipped");
