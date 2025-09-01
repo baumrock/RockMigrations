@@ -1,3 +1,10 @@
+## [7.1.0](https://github.com/baumrock/RockMigrations/compare/v7.0.0...v7.1.0) (2025-09-01)
+
+
+### Features
+
+* add support for filesystem cache ([fac8527](https://github.com/baumrock/RockMigrations/commit/fac852726c15e128b3bfcb39c4a732f64a42639c))
+
 ## [7.0.0](https://github.com/baumrock/RockMigrations/compare/v6.9.0...v7.0.0) (2025-07-28)
 
 
@@ -45,11 +52,4 @@
 ### Bug Fixes
 
 * improve logging and prevent adding files to watchlist if migrations are disabled ([429ce68](https://github.com/baumrock/RockMigrations/commit/429ce68f3418aeedee108d80949fc14a224561a5))
-
-## [6.8.1](https://github.com/baumrock/RockMigrations/compare/v6.8.0...v6.8.1) (2025-03-17)
-
-
-### Bug Fixes
-
-* remove auto-install process module to fix upgrade issue ([63e382b](https://github.com/baumrock/RockMigrations/commit/63e382b54650ce4ee5e74ff46155c0caec862647))
 
