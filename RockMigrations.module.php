@@ -2834,7 +2834,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   protected function loadFilesOnDemand()
   {
     if (!$this->wire->config->filesOnDemand) return;
-    if ($this->isCLI()) return;
+    if ($this->isCLI() && !$this->wire->config->cliFilesOnDemand) return;
 
     $hook = function (HookEvent $event) {
       $config = $this->wire->config;
