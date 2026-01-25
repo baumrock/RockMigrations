@@ -1859,7 +1859,74 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       }
 
       // we have a different syntax for options of an options field
-      if ($item->type instanceof FieldtypeRepeater) {
+      // handle RepeaterMatrix fields
+      if (wireInstanceOf($item->type, 'FieldtypeRepeaterMatrix')) {
+        $matrixItems = [];
+        $n = 1;
+        while (true) {
+          $prefix = "matrix{$n}_";
+          if (!array_key_exists("{$prefix}name", $data)) break;
+
+          $name = $data["{$prefix}name"];
+          $typeData = [];
+
+          // basic props
+          if (isset($data["{$prefix}label"])) $typeData['label'] = $data["{$prefix}label"];
+
+          // fields
+          if (isset($data["{$prefix}fields"]) && is_array($data["{$prefix}fields"])) {
+            $typeData['fields'] = [];
+            foreach ($data["{$prefix}fields"] as $fieldName) {
+              // check for context in fieldContexts
+              // RepeaterMatrix uses NS_matrixN as context key
+              $contextKey = "NS_matrix{$n}";
+              $fieldConfig = [];
+
+              if (isset($data['fieldContexts'][$fieldName][$contextKey])) {
+                $fieldConfig = $data['fieldContexts'][$fieldName][$contextKey];
+              }
+
+              if (!empty($fieldConfig)) {
+                $typeData['fields'][$fieldName] = $fieldConfig;
+              } else {
+                $typeData['fields'][] = $fieldName;
+              }
+            }
+          }
+
+          // copy all other properties
+          foreach (array_keys($data) as $k) {
+            if (strpos($k, $prefix) !== 0) continue;
+            $subKey = substr($k, strlen($prefix));
+            if ($subKey === 'name') continue;
+            if ($subKey === 'sort') continue;
+            if ($subKey === 'fields') continue;
+            if ($subKey === 'label') continue;
+            $typeData[$subKey] = $data[$k];
+          }
+
+          $matrixItems[$name] = $typeData;
+
+          // clean up matrixN keys
+          foreach (array_keys($data) as $k) {
+            if (strpos($k, $prefix) === 0) unset($data[$k]);
+          }
+
+          $n++;
+        }
+        $data['matrixItems'] = $matrixItems;
+
+        // Unset standard repeater stuff
+        unset($data['fieldContexts']);
+        unset($data['repeaterFields']);
+        unset($data['template_id']);
+        unset($data['template_ids']);
+
+        // Remove matrixN properties (template for new items)
+        foreach (array_keys($data) as $k) {
+          if (strpos($k, 'matrixN_') === 0) unset($data[$k]);
+        }
+      } elseif ($item->type instanceof FieldtypeRepeater) {
         $data['fields'] = $data['fieldContexts'];
         unset($data['fieldContexts']);
         unset($data['repeaterFields']);
@@ -4414,6 +4481,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         if ($key === 'fields' or $key === 'fields-') {
           $tpl = $field->type->getRepeaterTemplate($field);
           $this->setTemplateData($tpl, [$key => $data[$key]]);
+        }
+      }
+
+      // define matrix items for RepeaterMatrix fields
+      if ($key === 'matrixItems') {
+        if (wireInstanceOf($field->type, 'FieldtypeRepeaterMatrix')) {
+          $this->setMatrixItems($field, $val);
+          unset($data[$key]);
+          continue;
         }
       }
 
