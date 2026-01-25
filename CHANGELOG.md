@@ -1,3 +1,10 @@
+## [7.2.0](https://github.com/baumrock/RockMigrations/compare/v7.1.0...v7.2.0) (2026-01-25)
+
+
+### Features
+
+* Add RepeaterMatrix config support and getCode generation ([a0ed39a](https://github.com/baumrock/RockMigrations/commit/a0ed39a31c17cf024026c86b616a9cc0a33f178b))
+
 ## [7.1.0](https://github.com/baumrock/RockMigrations/compare/v7.0.0...v7.1.0) (2025-09-01)
 
 
@@ -45,11 +52,4 @@
 ### Bug Fixes
 
 * fieldset close field not created for module migrations ([cc617ad](https://github.com/baumrock/RockMigrations/commit/cc617ad65cbe4f1fcc7a7600638ff01710238178))
-
-## [6.8.2](https://github.com/baumrock/RockMigrations/compare/v6.8.1...v6.8.2) (2025-04-07)
-
-
-### Bug Fixes
-
-* improve logging and prevent adding files to watchlist if migrations are disabled ([429ce68](https://github.com/baumrock/RockMigrations/commit/429ce68f3418aeedee108d80949fc14a224561a5))
 
