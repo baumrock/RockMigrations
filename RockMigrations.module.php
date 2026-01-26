@@ -1932,6 +1932,59 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         unset($data['repeaterFields']);
         unset($data['template_id']);
         unset($data['template_ids']);
+      } elseif (strpos((string)$item->type, 'FieldtypeCombo') !== false) {
+        $comboFields = [];
+        // order in exportData is usually numeric indices "1,2,3"
+        // but could potentially be names if not normalized.
+        $order = explode(',', $data['order']);
+
+        // Gather existing slots: ID => Name
+        $slots = [];
+        foreach ($data as $k => $v) {
+          if (preg_match("/^i(\d+)_name$/", $k, $matches)) {
+            $slots[$matches[1]] = $v;
+          }
+        }
+
+        foreach ($order as $val) {
+          $id = null;
+          $name = null;
+
+          if (isset($slots[$val])) {
+            // It's a slot ID
+            $id = $val;
+            $name = $slots[$id];
+          } elseif (in_array($val, $slots)) {
+            // It's a name
+            $name = $val;
+            $id = array_search($name, $slots);
+          }
+
+          if (!$id || !$name) continue;
+
+          $prefix = "i{$id}_";
+          $fieldData = [];
+
+          // Extract all properties for this subfield
+          foreach ($data as $k => $v) {
+            if (strpos($k, $prefix) === 0) {
+              $key = substr($k, strlen($prefix));
+              if ($key === 'name') continue; // Name is the key in comboFields
+              if ($key === 'ok') continue; // Internal flag
+              $fieldData[$key] = $v;
+            }
+          }
+          $comboFields[$name] = $fieldData;
+        }
+
+        $data['comboFields'] = $comboFields;
+
+        // Unset raw data
+        unset($data['order']);
+        unset($data['qty']);
+        foreach (array_keys($data) as $k) {
+          if (preg_match("/^i\d+_/", $k)) unset($data[$k]);
+        }
       } elseif ($item->type instanceof FieldtypeOptions) {
         $options = [];
         foreach ($item->type->manager->getOptions($item) as $opt) {
@@ -4513,6 +4566,16 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         unset($data[$key]);
         continue; // early exit
       }
+
+      // support for FieldtypeCombo
+      if ($key == 'comboFields' || $key == 'comboFields-') {
+        if (strpos((string)$field->type, 'FieldtypeCombo') !== false) {
+          $wipe = ($key == 'comboFields-');
+          $this->setComboFields($field, $val, $wipe);
+        }
+        unset($data[$key]);
+        continue;
+      }
     }
 
     // set data
@@ -4544,6 +4607,148 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $field->save();
 
     return $field;
+  }
+
+  /**
+   * Set combo fields (ProFields FieldtypeCombo)
+   *
+   * ~~~~~
+   * $rm->createField('my_combo', 'FieldtypeCombo', [
+   *   'label' => 'My Combo Field',
+   *   'comboFields' => [
+   *     'first' => [
+   *       'type' => 'text',
+   *       'label' => 'First input',
+   *       'columnWidth' => 50,
+   *     ],
+   *     'second' => [
+   *       'type' => 'text',
+   *       'label' => 'Second input',
+   *       'columnWidth' => 50,
+   *     ],
+   *   ],
+   * ]);
+   * ~~~~~
+   *
+   * @param Field|string $field Field name or instance
+   * @param array $fields Combo subfields config
+   * @param bool $wipe=false
+   *  - `false` (default): Merge/reuse existing slots + append new ones
+   *  - `true`: Wipe all existing (iX_type='DELETE') + recreate from $fields
+   *
+   * @return void
+   */
+  public function setComboFields($field, $fields, $wipe = false)
+  {
+    $field = $this->getField($field);
+    $data = $field->getArray();
+
+    // get existing slots
+    $slots = [];
+    foreach ($data as $k => $v) {
+      if (preg_match("/^i(\d+)_name$/", $k, $matches)) {
+        $id = $matches[1];
+        $name = $v;
+        $slots[$name] = $id;
+      }
+    }
+
+    if ($wipe) {
+      foreach ($slots as $name => $slot) {
+        $field->set("i{$slot}_type", 'DELETE');
+      }
+      $nextSlot = 1;
+    } else {
+      // find next free slot
+      $nextSlot = 1;
+      while (true) {
+        if (array_key_exists("i{$nextSlot}_name", $data)) {
+          if ($data["i{$nextSlot}_type"] != 'DELETE') {
+            $nextSlot++;
+            continue;
+          }
+        }
+        break;
+      }
+    }
+
+    // merge new fields with existing order
+    $allOrder = explode(',', $field->order ?? '');
+    $allOrder = array_filter($allOrder);
+
+    // If order contains IDs, we need to map them back to names for processing
+    $idToName = array_flip($slots);
+    foreach ($allOrder as $k => $v) {
+      if (is_numeric($v) && isset($idToName[$v])) {
+        $allOrder[$k] = $idToName[$v];
+      }
+    }
+
+    if ($wipe) $allOrder = [];
+
+    // cleanup allOrder: remove items that are in the new fields list
+    // this ensures that the order of the new fields is applied
+    $newFieldNames = [];
+    foreach ($fields as $k => $v) {
+      $name = is_int($k) && isset($v['name']) ? $v['name'] : $k;
+      $newFieldNames[] = $name;
+    }
+    $allOrder = array_diff($allOrder, $newFieldNames);
+
+    foreach ($fields as $name => $f) {
+      // support numeric keys with name property
+      if (is_int($name) && isset($f['name'])) $name = $f['name'];
+
+      // get slot: either existing or new
+      $slot = $slots[$name] ?? $nextSlot++;
+      $slots[$name] = $slot; // Update mapping
+
+      $field->set("i{$slot}_name", $name);
+      foreach ($f as $k => $v) {
+        if ($k == 'name') continue;
+        if ($k == 'type') {
+          if (! $v || strpos($v, 'Inputfield') === 0) {
+            continue;
+          }
+          $inputfieldClass = 'Inputfield' . ucfirst($v);
+          if ($inputfield = $this->wire()->modules->get($inputfieldClass)) {
+            $v = $inputfield->className();
+          }
+        }
+        $field->set("i{$slot}_{$k}", $v);
+      }
+
+      // ensure "ok" is set to 1, meaning the field is configured
+      $field->set("i{$slot}_ok", 1);
+      $allOrder[] = $name;
+    }
+
+    // invalid slots from order
+    if ($wipe) {
+      // if wiping, we only keep the new fields in order
+      $allOrder = array_keys($fields);
+      // handling numeric keys if present in $fields input
+      foreach ($allOrder as $k => $v) {
+        if (is_int($v) && isset($fields[$v]['name'])) $allOrder[$k] = $fields[$v]['name'];
+      }
+    }
+
+    // cleanup duplicates
+    $allOrder = array_unique($allOrder);
+
+    // Convert names back to slot IDs for the order property
+    $orderIds = [];
+    foreach ($allOrder as $name) {
+      if (isset($slots[$name])) {
+        $orderIds[] = $slots[$name];
+      }
+    }
+
+    // set order
+    $field->order = implode(',', $orderIds);
+
+    $field->qty = $nextSlot;
+    $field->save();
   }
 
   /**
