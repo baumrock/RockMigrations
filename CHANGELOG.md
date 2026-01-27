@@ -1,3 +1,10 @@
+## [7.3.0](https://github.com/baumrock/RockMigrations/compare/v7.2.0...v7.3.0) (2026-01-27)
+
+
+### Features
+
+* add support for FieldtypeCombo ([b4f2ff3](https://github.com/baumrock/RockMigrations/commit/b4f2ff3afa3932c12d69135cbacf37a771400b06))
+
 ## [7.2.0](https://github.com/baumrock/RockMigrations/compare/v7.1.0...v7.2.0) (2026-01-25)
 
 
@@ -45,11 +52,4 @@
 ### Bug Fixes
 
 * remove old migrate syntax as config migrations are recommended now ([3196c20](https://github.com/baumrock/RockMigrations/commit/3196c20e6e2c2725a3054312aaae74b6e1904598))
-
-## [6.8.3](https://github.com/baumrock/RockMigrations/compare/v6.8.2...v6.8.3) (2025-05-01)
-
-
-### Bug Fixes
-
-* fieldset close field not created for module migrations ([cc617ad](https://github.com/baumrock/RockMigrations/commit/cc617ad65cbe4f1fcc7a7600638ff01710238178))
 
