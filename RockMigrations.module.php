@@ -2010,6 +2010,49 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           $data['optionsLang'] = $arr;
           unset($data['options']);
         }
+      } elseif ($item->type instanceof FieldtypeTable) {
+        $maxCols = $item->maxCols;
+        $columns = [];
+        $colPrefix = 'col';
+
+        for ($i = 1; $i <= $maxCols; $i++) {
+          $prefix = "{$colPrefix}{$i}";
+          $name = $data["{$prefix}name"] ?? null;
+          if (!$name) continue;
+
+          $col = [];
+          $prefixLen = strlen($prefix);
+
+          foreach ($data as $k => $v) {
+            if (!str_starts_with($k, $prefix)) continue;
+
+            $property = substr($k, $prefixLen);
+
+            // Skip numeric collisions (col1 vs col10) and name property
+            if ($property === 'name' || ($property[0] ?? '') >= '0' && $property[0] <= '9') continue;
+
+            // Process options and settings
+            if ($property === 'options') {
+              $v = array_values(array_filter(explode("\n", $v), fn($line) => trim($line) !== ''));
+            } elseif ($property === 'settings') {
+              $kvs = [];
+              foreach (explode("\n", $v) as $line) {
+                if (str_contains($line, '=')) {
+                  [$k, $val] = explode('=', $line, 2);
+                  $kvs[trim($k)] = trim($val);
+                }
+              }
+              $v = $kvs;
+            }
+
+            $col[$property] = $v;
+          }
+          $columns[$name] = $col;
+        }
+
+        $data['columns'] = $columns;
+        $data = array_filter($data, fn($k) => !preg_match('/^col\d+/', $k), ARRAY_FILTER_USE_KEY);
+        unset($data['maxCols']); // will be set by number of columns
       }
     } elseif ($item instanceof Template) {
       $data = $item->getExportData();
@@ -4576,6 +4619,15 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         unset($data[$key]);
         continue;
       }
+      // support for FieldtypeTable
+      if ($key == 'columns' or $key == 'columns-') {
+        if ($field->type instanceof FieldtypeTable) {
+          $wipe = $key == 'columns-';
+          $this->setTableColumns($field, $val, $wipe);
+        }
+        unset($data[$key]);
+        continue;
+      }
     }
 
     // set data
@@ -4750,6 +4802,163 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $field->qty = $nextSlot;
     $field->save();
   }
+
+  /**
+   * Set columns for a FieldtypeTable field
+   *
+   * ~~~~~
+   * $rm->createField('my_table', 'FieldtypeTable', [
+   *   'label' => 'My Table Field',
+   *   'columns' => [
+   *     'col1' => [
+   *       'type' => 'text',
+   *       'label' => 'First Column',
+   *       'width' => 50,
+   *     ],
+   *     'col2' => [
+   *       'type' => 'int',
+   *       'label' => 'Second Column',
+   *       'width' => 50,
+   *     ],
+   *   ],
+   * ]);
+   * ~~~~~
+   *
+   * @param Field|string $field Field name or instance
+   * @param array $columns Column definitions
+   * @param bool $wipe=false
+   *  - `false` (default): Merge/reuse existing columns + append new ones
+   *  - `true`: Wipe all existing columns + recreate from $columns
+   * @return Field|null
+   */
+  public function setTableColumns($field, array $columns, $wipe = false)
+  {
+    if (!$field = $this->getField($field)) return null;
+    if (!$field->type instanceof FieldtypeTable) return null;
+    $existing = [];
+    $maxCols = (int)$field->maxCols;
+    $propertiesToReset = ['label', 'width', 'sort', 'options', 'settings', 'selector'];
+    $backup = [];
+
+    // Reset slot properties including language labels to prevent ghost data
+    $resetSlot = function ($idx) use ($field, $propertiesToReset) {
+      foreach ($propertiesToReset as $prop) {
+        $field->set("col{$idx}{$prop}", null);
+      }
+      if ($this->wire->languages) {
+        foreach ($this->wire->languages as $lang) {
+          if (!$lang->isDefault()) $field->set("col{$idx}label{$lang->id}", null);
+        }
+      }
+    };
+
+    if (!$wipe) {
+      for ($i = 1; $i <= $maxCols; $i++) {
+        $name = $field->get("col{$i}name");
+        if (!$name) continue;
+
+        $existing[$name] = $i;
+
+        // Backup all properties to allow safe reordering
+        $data = [];
+        foreach ($propertiesToReset as $prop) {
+          $val = $field->get("col{$i}{$prop}");
+          if ($val !== null) $data[$prop] = $val;
+        }
+        if ($this->wire->languages) {
+          foreach ($this->wire->languages as $lang) {
+            if ($lang->isDefault()) continue;
+            $val = $field->get("col{$i}label{$lang->id}");
+            if ($val !== null) $data["label{$lang->id}"] = $val;
+          }
+        }
+        $backup[$name] = $data;
+      }
+    }
+
+    $fullReorder = $wipe || (!empty($existing) && !array_diff_key($existing, $columns));
+
+    $sortCount = 0;
+    if (!$fullReorder) {
+      for ($i = 1; $i <= $maxCols; $i++) {
+        $sortCount = max($sortCount, (int)$field->get("col{$i}sort"));
+      }
+    }
+
+    $columnIndex = 1;
+    foreach ($columns as $name => $col) {
+      if ($wipe || $fullReorder) {
+        $idx = $columnIndex++;
+        $reset = true;
+      } else {
+        $idx = $existing[$name] ?? ++$maxCols;
+        $reset = !isset($existing[$name]);
+        $existing[$name] = $idx;
+      }
+
+      $field->set("col{$idx}name", $name);
+
+      if ($reset) {
+        $resetSlot($idx);
+      }
+
+      $colData = is_string($col) ? ['type' => $col] : $col;
+      $prevData = $backup[$name] ?? [];
+
+      if (isset($colData['sort'])) {
+        $currentSort = (int)$colData['sort'];
+      } elseif ($wipe || $fullReorder) {
+        $currentSort = $columnIndex - 1;
+      } elseif ($reset) {
+        $currentSort = ++$sortCount;
+      } else {
+        $currentSort = $prevData['sort'] ?? null;
+      }
+      if ($currentSort !== null) $colData['sort'] = $currentSort;
+
+      $allKeys = array_unique(array_merge(array_keys($prevData), array_keys($colData)));
+      foreach ($allKeys as $key) {
+        if ($key === 'type') {
+          $field->set("col{$idx}type", $colData['type'] ?? $prevData['type']);
+          continue;
+        }
+
+        $value = $colData[$key] ?? $prevData[$key] ?? null;
+        if ($value === null) continue;
+
+        if ($key === 'options' && is_array($value)) {
+          $value = implode("\n", $value);
+        } elseif ($key === 'settings' && is_array($value)) {
+          $lines = [];
+          foreach ($value as $k => $v) $lines[] = "$k=$v";
+          $value = implode("\n", $lines);
+        }
+
+        $isLangLabel = (strpos($key, 'label') === 0 && strlen($key) > 5 && is_numeric(substr($key, 5)));
+
+        if ($isLangLabel || in_array($key, $propertiesToReset)) {
+          $field->set("col{$idx}{$key}", $value);
+        }
+      }
+    }
+
+    $numNew = count($columns);
+    if (($wipe || $fullReorder) && $numNew < $maxCols) {
+      for ($i = $numNew + 1; $i <= $maxCols; $i++) {
+        $field->set("col{$i}name", null);
+        $field->set("col{$i}type", null);
+        $resetSlot($i);
+      }
+    }
+
+    $field->maxCols = ($wipe || $fullReorder) ? $numNew : $maxCols;
+    $field->save();
+
+    return $field;
+  }
+
+
+
 
   /**
    * Set the language value of the given field
