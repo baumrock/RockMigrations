@@ -1,3 +1,10 @@
+## [7.4.0](https://github.com/baumrock/RockMigrations/compare/v7.3.0...v7.4.0) (2026-01-29)
+
+
+### Features
+
+* add support for FieldtypeTable ([5b1ecb1](https://github.com/baumrock/RockMigrations/commit/5b1ecb1c35106e7340251dfb29104a3829552b7f))
+
 ## [7.3.0](https://github.com/baumrock/RockMigrations/compare/v7.2.0...v7.3.0) (2026-01-27)
 
 
@@ -39,17 +46,4 @@
 ### Miscellaneous Chores
 
 * remove hideFromGuests feature ([7e93865](https://github.com/baumrock/RockMigrations/commit/7e938658e95be40ad1d26e9ff023970221de9416))
-
-## [6.9.0](https://github.com/baumrock/RockMigrations/compare/v6.8.3...v6.9.0) (2025-07-02)
-
-
-### Features
-
-* add option for renderTable labels ([d534ff1](https://github.com/baumrock/RockMigrations/commit/d534ff14d884c6f1f20b3fbff65f9b5a19bd6477))
-* add tdStyle option to rendertable ([96732dd](https://github.com/baumrock/RockMigrations/commit/96732dd589c1950ce1ff8cca15a260b4b32b4706))
-
-
-### Bug Fixes
-
-* remove old migrate syntax as config migrations are recommended now ([3196c20](https://github.com/baumrock/RockMigrations/commit/3196c20e6e2c2725a3054312aaae74b6e1904598))
 
