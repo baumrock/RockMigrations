@@ -1,3 +1,10 @@
+## [7.4.1](https://github.com/baumrock/RockMigrations/compare/v7.4.0...v7.4.1) (2026-02-11)
+
+
+### Bug Fixes
+
+* only log deprecated magic field methods in debug mode ([f38c525](https://github.com/baumrock/RockMigrations/commit/f38c525442bdc29bbb13b6c8dbd8f2d1e3cb4144))
+
 ## [7.4.0](https://github.com/baumrock/RockMigrations/compare/v7.3.0...v7.4.0) (2026-01-29)
 
 
@@ -25,25 +32,4 @@
 ### Features
 
 * add support for filesystem cache ([fac8527](https://github.com/baumrock/RockMigrations/commit/fac852726c15e128b3bfcb39c4a732f64a42639c))
-
-## [7.0.0](https://github.com/baumrock/RockMigrations/compare/v6.9.0...v7.0.0) (2025-07-28)
-
-
-### ⚠ BREAKING CHANGES
-
-* remove hideFromGuests feature
-
-### Features
-
-* add filesOnDemand callback support ([9674fa3](https://github.com/baumrock/RockMigrations/commit/9674fa3e924ef8c2029d083823015cd9b0a3e988))
-
-
-### Bug Fixes
-
-* remove space after -p flag ([5e65b9e](https://github.com/baumrock/RockMigrations/commit/5e65b9e1b0eb11c79c4fb8298e9b1195724d07e6))
-
-
-### Miscellaneous Chores
-
-* remove hideFromGuests feature ([7e93865](https://github.com/baumrock/RockMigrations/commit/7e938658e95be40ad1d26e9ff023970221de9416))
 
