@@ -120,9 +120,11 @@ class MagicPages extends WireData implements Module
       // add the dynamic method via hook to the page
       $this->wire->addHookMethod(
         "Page(template=$tpl)::$methodname",
-        function ($event) use ($fieldname) {
-          // show note to indicate that this will be removed some day
-          $this->log('Magic fieldmethods are deprecated! See baumrock.com/rff ' . Debug::backtrace()[0]['file']);
+        function ($event) use ($fieldname, $tpl, $methodname) {
+          // only log deprecation in debug mode to avoid log spam
+          if ($this->wire->config->debug) {
+            $this->log("Magic fieldmethods are deprecated! See baumrock.com/rff $tpl::$methodname() -> $fieldname");
+          }
 
           // get field value of original field
           $page = $event->object;
