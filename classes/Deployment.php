@@ -124,7 +124,7 @@ class Deployment extends WireData
     $this->trigger("chown", "after");
 
     $this->trigger("finish", "before");
-    $this->finish();
+    $this->finish($keep);
     $this->trigger("finish", "after");
 
     $this->trigger("healthcheck", "before");
