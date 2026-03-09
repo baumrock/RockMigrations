@@ -4359,9 +4359,26 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (array_key_exists('type', $data)) {
       $type = $this->getFieldtype($data['type']);
       if ((string)$type !== (string)$field->type) {
-        $field->type = $type;
-        // if we do not save the field here it will lose some data (eg icon)
-        $field->save();
+        // If either type has no DB table, PW's changeFieldtype() will crash:
+        // it tries to DESCRIBE the old table AND create a _PWTMP table for the new one.
+        // For virtual fieldtypes (getDatabaseSchema() === []) bypass changeFieldtype()
+        // by nulling prevFieldtype after assignment so Fields::___save() skips it.
+        $newSchema = $type->getDatabaseSchema($field);
+        $oldSchema = $field->type->getDatabaseSchema($field);
+        if (empty($newSchema) || empty($oldSchema)) {
+          $this->log("Bypassing changeFieldtype() for '{$field->name}': "
+            . "{$field->type} → {$type} (one or both types have no DB table)");
+          // Assign the new type, then immediately null prevFieldtype so
+          // Fields::___save() does NOT call changeFieldtype() (no data to migrate).
+          $field->type = $type;
+          $field->prevFieldtype = null;
+          // if we do not save the field here it will lose some data (eg icon)
+          $field->save();
+        } else {
+          $field->type = $type;
+          // if we do not save the field here it will lose some data (eg icon)
+          $field->save();
+        }
       }
     }
 
