@@ -4507,7 +4507,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * @param Field|string $field
    * @param array $data
    * @param Template|string $template
-   * @return void
+   * @return Field|null
    */
   public function setFieldData($field, $data, $template = null)
   {
@@ -4517,6 +4517,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // Support shortcut syntax
     // $rm->setFieldData('title', 'textLanguage');
     if (is_string($data)) $data = ['type' => $data];
+
+    // Guard against persisting a field that ProcessWire lazy-loaded as the
+    // FieldtypeText fallback because its real Fieldtype module was momentarily
+    // unresolvable (e.g. right after a core update relocated the module and the
+    // module cache was still cold - see processwire-issues #2261). Saving here
+    // would overwrite the real type in the database; defer instead - it
+    // self-heals on the next refresh once the module cache is warm.
+    if ($this->shouldDeferFieldSave($field, $data)) return $field;
 
     // check if the field type has changed
     if (array_key_exists('type', $data)) {
@@ -4659,6 +4667,99 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $field->save();
 
     return $field;
+  }
+
+  /**
+   * Should this field save be deferred because PW lazy-loaded it as the
+   * FieldtypeText fallback?
+   *
+   * When a field's real Fieldtype module cannot be resolved at load time (e.g.
+   * a transient cold module cache right after a core update relocated the
+   * module - processwire-issues #2261), ProcessWire silently substitutes
+   * FieldtypeText in Fields::makeItem(). Persisting that object would overwrite
+   * the field's real type in the database. We detect this exact situation and
+   * defer the save; it self-heals on the next refresh once the cache is warm.
+   *
+   * Inheritance-safe by design: clause 1 uses EXACT class identity, because
+   * FieldtypeTextLanguage, FieldtypeTextarea, FieldtypeEmail, FieldtypeURL,
+   * FieldtypePageTitle ... all extend FieldtypeText and would be wrongly
+   * matched by instanceof/wireInstanceOf.
+   *
+   * @param Field $field
+   * @param array $data Migration data being applied (its 'type', if any, is the intent)
+   * @return bool True if the save should be skipped this run
+   */
+  protected function shouldDeferFieldSave(Field $field, array $data): bool
+  {
+    $type = $field->type;
+
+    // 1) Effective type must be the EXACT FieldtypeText fallback sentinel.
+    if (!$type instanceof Fieldtype) return false;
+    if ($type->className() !== 'FieldtypeText') return false;
+
+    // A deliberate change to (or re-save of) FieldtypeText is never a fallback;
+    // short-circuit before the DB lookup.
+    $declared = array_key_exists('type', $data) ? $this->canonicalFieldtypeName($data['type']) : '';
+    if ($declared === 'FieldtypeText') return false;
+
+    // Intended (real) type: the declared type when it resolves to an installed
+    // module, otherwise what the DB still records for this field. This stops a
+    // mistyped/uninstalled declaration from silently disabling the guard.
+    $stored   = $this->storedFieldtypeName($field);
+    $intended = ($declared !== '' && $this->modules->isInstalled($declared)) ? $declared : $stored;
+
+    // 2) Nothing to protect if the field is genuinely (or already) FieldtypeText.
+    if ($intended === '' || $intended === 'FieldtypeText') return false;
+    if ($stored === 'FieldtypeText') return false;
+
+    // 3) Real fieldtype still installed -> transient cache miss, not a real uninstall.
+    if (!$this->modules->isInstalled($intended)) return false;
+
+    $this->log(
+      "Deferred save of field '{$field->name}': it lazy-loaded as the FieldtypeText "
+      . "fallback while its real type '{$intended}' was momentarily unresolvable. "
+      . "Skipping this run to protect the stored type; it self-heals on the next refresh."
+    );
+    return true;
+  }
+
+  /**
+   * Normalize a fieldtype declaration (Fieldtype instance, FQCN, or short alias
+   * like 'text'/'textLanguage') to its bare ProcessWire module class name.
+   *
+   * @param Fieldtype|string $type
+   * @return string e.g. 'FieldtypeText' ('' if it cannot be derived)
+   */
+  protected function canonicalFieldtypeName($type): string
+  {
+    if ($type instanceof Fieldtype) return $type->className();
+    if (!is_string($type) || $type === '') return '';
+    $type = trim(wireClassName($type, false));
+    // Mirror core Fields::getFieldtype() canonicalization so aliases and
+    // mixed-case input ('text', 'fieldtypeText', ...) map to the real class.
+    if (strpos($type, 'Fieldtype') !== 0) {
+      $type = str_ireplace('fieldtype', '', $type);
+      $type = 'Fieldtype' . ucfirst($type);
+    }
+    return $type;
+  }
+
+  /**
+   * The fieldtype class name currently stored in the database for this field.
+   *
+   * @param Field $field
+   * @return string '' for a new/unsaved field
+   */
+  protected function storedFieldtypeName(Field $field): string
+  {
+    if (!$field->id) return '';
+    $table = $this->fields->getTable();
+    $query = $this->wire->database->prepare("SELECT `type` FROM `$table` WHERE `id`=:id");
+    $query->bindValue(':id', (int) $field->id, \PDO::PARAM_INT);
+    $query->execute();
+    $type = (string) $query->fetchColumn();
+    $query->closeCursor();
+    return $this->canonicalFieldtypeName($type);
   }
 
   /**
