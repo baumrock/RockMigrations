@@ -1,3 +1,10 @@
+## [7.4.2](https://github.com/baumrock/RockMigrations/compare/v7.4.1...v7.4.2) (2026-06-14)
+
+
+### Bug Fixes
+
+* defer field save when a fieldtype lazy-loads as the FieldtypeText fallback ([6de1585](https://github.com/baumrock/RockMigrations/commit/6de15850367e1cef061f2609ab27c02572c3a25d)), closes [#2261](https://github.com/baumrock/RockMigrations/issues/2261)
+
 ## [7.4.1](https://github.com/baumrock/RockMigrations/compare/v7.4.0...v7.4.1) (2026-02-11)
 
 
@@ -25,11 +32,4 @@
 ### Features
 
 * Add RepeaterMatrix config support and getCode generation ([a0ed39a](https://github.com/baumrock/RockMigrations/commit/a0ed39a31c17cf024026c86b616a9cc0a33f178b))
-
-## [7.1.0](https://github.com/baumrock/RockMigrations/compare/v7.0.0...v7.1.0) (2025-09-01)
-
-
-### Features
-
-* add support for filesystem cache ([fac8527](https://github.com/baumrock/RockMigrations/commit/fac852726c15e128b3bfcb39c4a732f64a42639c))
 
