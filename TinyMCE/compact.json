@@ -1,0 +1,10 @@
+{
+  "menubar": false,
+  "plugins": "anchor link lists pwlink quickbars paste autoresize",
+  "paste_as_text": true,
+  "toolbar": "bold italic pwlink bullist numlist",
+  "quickbars_selection_toolbar": "bold italic pwlink bullist numlist",
+  "quickbars_insert_toolbar": "bold italic pwlink bullist numlist",
+  "min_height": 120,
+  "resize": false
+}
