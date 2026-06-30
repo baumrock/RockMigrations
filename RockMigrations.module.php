@@ -832,6 +832,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       // no type means it's a config migrations hook file
       // in the root of the /RockMigrations folder
       if (!$type) continue;
+      if ($type === 'once') continue;
       $tag = $this->getConfigFileTag($file);
 
       // skip files that have no tag (not part of a module)
@@ -2356,11 +2357,166 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
 
   public function getOnceHistory(): array
   {
-    $history = $this->wire->cache->get("rm:once|*") ?: [];
+    $onceConfig = $this->getModuleConfig($this, 'once');
+    if (!is_array($onceConfig)) return [];
+    $history = $onceConfig;
     uasort($history, function ($a, $b) {
-      return $a['time'] <=> $b['time'];
+      return ($a['time'] ?? 0) <=> ($b['time'] ?? 0);
     });
-    return array_reverse($history);
+    return array_reverse($history, true);
+  }
+
+  /**
+   * Get all once folder script files (site + installed modules).
+   * @return array<int, string>
+   */
+  public function getOnceFolderFiles(): array
+  {
+    $files = [];
+    foreach ($this->getOnceFolderPaths() as $dir) {
+      foreach (glob(rtrim($dir, '/') . '/*.php') ?: [] as $file) {
+        $files[] = $file;
+      }
+    }
+    sort($files, SORT_STRING);
+    return $files;
+  }
+
+  /**
+   * Get once folder scripts that have not yet been executed.
+   * @return array<int, string>
+   */
+  public function getPendingOnceScripts(): array
+  {
+    $onceConfig = $this->getOnceConfigData();
+    $pending = [];
+    foreach ($this->getOnceFolderFiles() as $file) {
+      $basename = basename($file);
+      if (!$this->isOnceScriptFilename($basename)) continue;
+      $key = $this->getOnceScriptKey($file);
+      if ($onceConfig->get($key)) continue;
+      $pending[] = $file;
+    }
+    return $pending;
+  }
+
+  /**
+   * Clear all once execution history (inline callbacks + folder scripts).
+   */
+  public function clearOnceHistory(): void
+  {
+    $this->setModuleConfig($this, ['once' => []]);
+  }
+
+  /**
+   * Clear once execution history for a single key.
+   */
+  public function clearOnceHistoryItem(string $key): void
+  {
+    $onceConfig = $this->getOnceConfigData();
+    $onceConfig->remove($key);
+    $this->setModuleConfig($this, [
+      'once' => $onceConfig->getArray(),
+    ]);
+  }
+
+  /**
+   * Run pending once folder scripts after all other migrations.
+   */
+  public function runOnceFolderScripts(): void
+  {
+    $scripts = $this->getPendingOnceScripts();
+    if (!count($scripts)) return;
+
+    $this->log('### Running Once Folder Scripts (' . count($scripts) . ') ###');
+    $this->indent(2);
+
+    foreach ($this->getOnceFolderFiles() as $file) {
+      $basename = basename($file);
+      $key = $this->getOnceScriptKey($file);
+
+      if (!$this->isOnceScriptFilename($basename)) {
+        $this->warn("Skipping once script with invalid filename: $basename");
+        continue;
+      }
+
+      if ($this->getOnceConfigData()->get($key)) continue;
+
+      $this->log($key);
+      try {
+        $rm = $this;
+        $this->wire->files->render($file, compact('rm'), [
+          'allowedPaths' => [dirname($file)],
+        ]);
+        $this->saveOnceHistory($key, $file);
+      } catch (\Throwable $th) {
+        $this->log($th->getMessage());
+      }
+    }
+
+    $this->indent(-2);
+  }
+
+  /**
+   * @return array<int, string>
+   */
+  private function getOnceFolderPaths(): array
+  {
+    $paths = [];
+    $siteOnce = $this->wire->config->paths->site . 'RockMigrations/once';
+    if (is_dir($siteOnce)) $paths[] = $siteOnce;
+
+    foreach (glob($this->wire->config->paths->siteModules . '*') ?: [] as $dir) {
+      if (!is_dir($dir)) continue;
+      $moduleName = basename($dir);
+      if (!$this->wire->modules->isInstalled($moduleName)) continue;
+      $onceDir = $dir . '/RockMigrations/once';
+      if (is_dir($onceDir)) $paths[] = $onceDir;
+    }
+
+    return $paths;
+  }
+
+  private function getOnceConfigData(): WireData
+  {
+    $onceConfig = $this->getModuleConfig($this, 'once');
+    if (!is_array($onceConfig)) $onceConfig = [];
+    return (new WireData())->setArray($onceConfig);
+  }
+
+  private function getOnceScriptKey(string $file): string
+  {
+    $file = Paths::normalizeSeparators($file);
+    $site = Paths::normalizeSeparators($this->wire->config->paths->site);
+    if (str_starts_with($file, $site)) {
+      return ltrim(substr($file, strlen($site)), '/');
+    }
+    return ltrim($this->toUrl($file), '/');
+  }
+
+  private function isOnceFolderFile(string $file): bool
+  {
+    return (bool) preg_match(
+      '#/RockMigrations/once/[^/]+\.php$#',
+      Paths::normalizeSeparators($file),
+    );
+  }
+
+  private function isOnceScriptFilename(string $basename): bool
+  {
+    return (bool) preg_match('/^\d{4}-\d{2}-\d{2}-.+\.php$/', $basename);
+  }
+
+  private function saveOnceHistory(string $key, string $file): void
+  {
+    $onceConfig = $this->getOnceConfigData();
+    $onceConfig->set($key, [
+      'file' => is_file($file) ? $this->toUrl($file) : $file,
+      'time' => microtime(true),
+    ]);
+    $this->setModuleConfig($this, [
+      'once' => $onceConfig->getArray(),
+    ]);
   }
 
   /**
@@ -3548,9 +3704,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   private function migrateWatchfiles($force = false)
   {
     $debug = $this->wire->config->debug;
+    $pendingOnce = count($this->getPendingOnceScripts());
 
-    // no files in watchlist? early exit
-    if (!$this->watchlist->count()) {
+    // no files in watchlist and no pending once scripts? early exit
+    if (!$this->watchlist->count() && !$pendingOnce) {
       $disabled = "disabled=" . $this->disabled;
       if ($debug) $this->log(date('Y-m-d H:i:s') . " No files in watchlist ($disabled)");
       return;
@@ -3595,14 +3752,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       return;
     }
 
-    // run only if there are changed files or if force or debug is true
+    // run only if there are changed files, pending once scripts, or force/debug
     $changed = $this->getChangedFiles();
-    $run = ($force or self::debug or count($changed));
+    $run = ($force or self::debug or count($changed) or $pendingOnce);
     if (!$run) return;
 
     // on module uninstall we reset the watchlist
     // this is just to indicate that behaviour
-    if (!count($this->watchlist)) return;
+    if (!count($this->watchlist) && !$pendingOnce) return;
 
     // set flag that indicates that migrations are in progress
     // this can be helpful in other modules to check if save actions
@@ -3617,6 +3774,9 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if (!$cli) {
       $this->log('---------- ' . date('Y-m-d H:i:s') . ' ----------');
       foreach ($changed as $file) $this->log("Detected change in $file");
+      if ($pendingOnce && !count($changed)) {
+        $this->log('Pending once folder scripts detected');
+      }
       $this->log('Running migrations from watchfiles ...');
     }
 
@@ -3655,6 +3815,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     if ($this->isCLI()) $this->log("---");
     $this->log("Trigger RockMigrations::migrationsDone");
     $this->migrationsDone();
+    $this->runOnceFolderScripts();
   }
 
   public function ___migrationsDone() {}
@@ -3802,9 +3963,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $debug = false,
     callable $confirm = null,
   ): void {
-    $onceConfig = $this->getModuleConfig($this, 'once');
-    if (!is_array($onceConfig)) $onceConfig = [];
-    $onceConfig = (new WireData())->setArray($onceConfig);
+    $onceConfig = $this->getOnceConfigData();
 
     // already run and not in debug mode? early exit!
     if (!$debug && $onceConfig->get($key)) return;
@@ -3813,11 +3972,6 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     try {
       $this->log($key);
       $callback($this);
-      $trace = debug_backtrace()[0];
-      $data = [
-        'file' => $this->toUrl($trace['file']) . ":" . $trace['line'],
-        'time' => microtime(true),
-      ];
       if ($confirm) {
         $confirmed = !!$confirm();
         if (!$confirmed) {
@@ -3825,10 +3979,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
           return;
         }
       }
-      $onceConfig->set($key, $data);
-      $this->setModuleConfig($this, [
-        'once' => $onceConfig->getArray(),
-      ]);
+      $trace = debug_backtrace()[0];
+      $this->saveOnceHistory(
+        $key,
+        $this->toUrl($trace['file']) . ":" . $trace['line'],
+      );
     } catch (\Throwable $th) {
       $this->log($th->getMessage());
     }
@@ -4299,6 +4454,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     // these files are hook-files like beforeData.php or afterAssets.php
     $type = $this->getConfigFileType($file);
     if ($type === false) return;
+    if ($type === 'once') return;
 
     $url = $this->toUrl($file);
     $this->log($url);
@@ -4398,6 +4554,11 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
         return;
       }
     }
+
+    $items = array_values(array_filter(
+      $items,
+      fn($file) => !$this->isOnceFolderFile($file),
+    ));
 
     $this->log("### Running Config Migrations ###");
     $this->indent(2);
