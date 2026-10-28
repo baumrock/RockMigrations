@@ -347,7 +347,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    * @param string $title Optional title of the language
    * @return Language Language that was created
    */
-  public function addLanguage(string $name, string $title = null)
+  public function addLanguage(string $name, ?string $title = null)
   {
     // Make sure Language Support is installed
     $languages = $this->addLanguageSupport();
@@ -757,7 +757,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     Page|string|int $sourcePage,
     Field|string|int $sourceField,
     Field|string|int $targetField,
-    Page|string|int $targetPage = null,
+    Page|string|int|null $targetPage = null,
     bool $resetTarget = false,
     array $newFieldnames = [],
   ): void {
@@ -1031,10 +1031,10 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function createPage(
     $template,
     $parent,
-    string $name = null,
-    string $title = null,
-    array $status = null,
-    array $data = null,
+    ?string $name = null,
+    ?string $title = null,
+    ?array $status = null,
+    ?array $data = null,
     bool $allLanguages = true
   ) {
     // create pagename from page title if it is not set
@@ -1771,7 +1771,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
    */
   public function firstSecond($year = null, $month = null, $day = null): int
   {
-    $date = new DateTime();
+    $date = new \DateTime();
     $date->setDate($year ?: date('Y'), $month ?: 1, $day ?: 1);
     $date->setTime(0, 0, 0);
     return $date->getTimestamp();
@@ -3127,7 +3127,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   public function lastSecond($year = null, $month = null, $day = null): int
   {
     $year = $year ?: date("Y");
-    $date = new DateTime();
+    $date = new \DateTime();
     $date->setDate($year, $month ?: 1, $day ?: 1);
     $date->setTime(0, 0, 0);
     if ($day) $date->modify("+1 day");
@@ -3605,7 +3605,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       if (!$tmp->template) {
         // the page object does not have a template property
         // so we try to get the template name from the tpl constant
-        $reflection = new ReflectionClass($tmp);
+        $reflection = new \ReflectionClass($tmp);
         if ($reflection->hasConstant('tpl')) {
           $templatename = $tmp::tpl;
           $tpl = $this->wire->templates->get($templatename);
@@ -3925,7 +3925,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     Page|string|int $sourcePage,
     Field|string|int $sourceField,
     Field|string|int $targetField,
-    Page|string|int $targetPage = null,
+    Page|string|int|null $targetPage = null,
     bool $resetTarget = false,
     array $newFieldnames = [],
   ): void {
@@ -3961,7 +3961,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     $key,
     $callback,
     $debug = false,
-    callable $confirm = null,
+    ?callable $confirm = null,
   ): void {
     $onceConfig = $this->getOnceConfigData();
 
@@ -6699,7 +6699,7 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
   {
     if (!$this->watchEnabled()) return;
     $path = $this->wire->config->paths->siteModules;
-    foreach (new DirectoryIterator($path) as $fileInfo) {
+    foreach (new \DirectoryIterator($path) as $fileInfo) {
       if (!$fileInfo->isDir()) continue;
       if ($fileInfo->isDot()) continue;
       $name = $fileInfo->getFilename();

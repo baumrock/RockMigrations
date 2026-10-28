@@ -366,7 +366,7 @@ class MagicPages extends WireData implements Module
       return $this->filePaths[$tpl];
     }
     // otherwise get filepath from reflectionclass
-    $reflector = new ReflectionClass($page);
+    $reflector = new \ReflectionClass($page);
     $filePath = Paths::normalizeSeparators($reflector->getFileName());
     if ($tpl) $this->filePaths[$tpl] = $filePath;
     return $filePath;
