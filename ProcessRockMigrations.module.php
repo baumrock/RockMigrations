@@ -58,8 +58,10 @@ class ProcessRockMigrations extends Process
     foreach ($rm->getOnceHistory() as $key => $item) {
       $data = new WireData();
       if (is_array($item)) $data->setArray($item);
-      $hash = base64_encode($key);
-      $key = substr($key, 8);
+      // base64 may contain "+", "/" and "=", so the hash must be urlencoded
+      $hash = rawurlencode(base64_encode($key));
+      $key = $this->wire->sanitizer->entities($key);
+      $data->file = $this->wire->sanitizer->entities((string)$data->file);
       $time = (int)$data->time;
       $table .= "<tr>
         <td class='uk-text-nowrap'>"
@@ -97,7 +99,8 @@ class ProcessRockMigrations extends Process
   {
     // Check if confirmation has been given
     if ($this->wire->input->get->confirm == 1) {
-      $this->wire->cache->delete("rm:once|*");
+      $this->wire->session->CSRF->validate();
+      rockmigrations()->clearOnce();
       $this->wire->session->redirect("./once/");
     }
 
@@ -133,11 +136,11 @@ class ProcessRockMigrations extends Process
 
     // Check if confirmation has been given
     if ($this->wire->input->get->confirm == 1) {
-      // $data = $this->wire->cache->get($key);
-      $this->wire->cache->delete($key);
-      // $this->wire->cache->save("$key (deleted @ " . date("Y-m-d H:i:s") . ")", $data);
+      $this->wire->session->CSRF->validate();
+      rockmigrations()->clearOnce($key);
       $this->wire->session->redirect("./once/");
     }
+    $hash = rawurlencode($hash);
 
     $this->headline('Clear once-cache');
     $this->browserTitle('Clear once-cache');
