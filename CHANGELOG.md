@@ -1,3 +1,10 @@
+## [7.5.1](https://github.com/baumrock/RockMigrations/compare/v7.5.0...v7.5.1) (2026-11-09)
+
+
+### Bug Fixes
+
+* read and clear the once() history from the module config ([#91](https://github.com/baumrock/RockMigrations/issues/91)) ([5c64973](https://github.com/baumrock/RockMigrations/commit/5c649733a8d387f79f43f47cfb62736389ed76f1))
+
 ## [7.5.0](https://github.com/baumrock/RockMigrations/compare/v7.4.2...v7.5.0) (2026-06-18)
 
 
@@ -31,11 +38,4 @@
 ### Features
 
 * add support for FieldtypeTable ([5b1ecb1](https://github.com/baumrock/RockMigrations/commit/5b1ecb1c35106e7340251dfb29104a3829552b7f))
-
-## [7.3.0](https://github.com/baumrock/RockMigrations/compare/v7.2.0...v7.3.0) (2026-01-27)
-
-
-### Features
-
-* add support for FieldtypeCombo ([b4f2ff3](https://github.com/baumrock/RockMigrations/commit/b4f2ff3afa3932c12d69135cbacf37a771400b06))
 
