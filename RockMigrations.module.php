@@ -2354,13 +2354,32 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
     return $data;
   }
 
+  /**
+   * Get all keys executed by once(), newest first
+   *
+   * once() stores them in the module config ("once").
+   */
   public function getOnceHistory(): array
   {
-    $history = $this->wire->cache->get("rm:once|*") ?: [];
+    $history = $this->getModuleConfig($this, 'once');
+    if (!is_array($history)) $history = [];
     uasort($history, function ($a, $b) {
-      return $a['time'] <=> $b['time'];
+      return ($a['time'] ?? 0) <=> ($b['time'] ?? 0);
     });
-    return array_reverse($history);
+    return array_reverse($history, true);
+  }
+
+  /**
+   * Remove one key (or all keys if null) from the once() history
+   *
+   * The migration wrapped in once() will run again on the next migration run.
+   */
+  public function clearOnce(?string $key = null): void
+  {
+    $history = $this->getModuleConfig($this, 'once');
+    if (!is_array($history) || $key === null) $history = [];
+    else unset($history[$key]);
+    $this->setModuleConfig($this, ['once' => $history]);
   }
 
   /**
