@@ -1,3 +1,10 @@
+## [7.5.2](https://github.com/baumrock/RockMigrations/compare/v7.5.1...v7.5.2) (2026-11-22)
+
+
+### Bug Fixes
+
+* tolerate null module after Modules::install ([50a250c](https://github.com/baumrock/RockMigrations/commit/50a250c0f8a4920b0ec18612c5518dac6a16b905))
+
 ## [7.5.1](https://github.com/baumrock/RockMigrations/compare/v7.5.0...v7.5.1) (2026-11-09)
 
 
@@ -31,11 +38,4 @@
 ### Bug Fixes
 
 * only log deprecated magic field methods in debug mode ([f38c525](https://github.com/baumrock/RockMigrations/commit/f38c525442bdc29bbb13b6c8dbd8f2d1e3cb4144))
-
-## [7.4.0](https://github.com/baumrock/RockMigrations/compare/v7.3.0...v7.4.0) (2026-01-29)
-
-
-### Features
-
-* add support for FieldtypeTable ([5b1ecb1](https://github.com/baumrock/RockMigrations/commit/5b1ecb1c35106e7340251dfb29104a3829552b7f))
 
