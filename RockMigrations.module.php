@@ -182,9 +182,14 @@ class RockMigrations extends WireData implements Module, ConfigurableModule
       throw new WireException('Module name is missing.');
     }
 
-    $module = wire()->modules->get($moduleName);
+    // Prefer the install() return value — Modules::get() can be null right after
+    // install for some core modules (e.g. FileValidatorZip during SystemUpdate21).
+    $module = $event->return;
+    if (!$module instanceof Module) {
+      $module = wire()->modules->get($moduleName);
+    }
     if (!$module) {
-      throw new WireException('Module not found: ' . $moduleName);
+      return;
     }
 
     if (!$this->pageClassFiles($module)) {
