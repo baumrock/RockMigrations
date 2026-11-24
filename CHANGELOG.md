@@ -1,3 +1,10 @@
+## [7.5.3](https://github.com/baumrock/RockMigrations/compare/v7.5.2...v7.5.3) (2026-11-24)
+
+
+### Bug Fixes
+
+* bump symfony/yaml to 5.4.56 (security) ([c8f9bf8](https://github.com/baumrock/RockMigrations/commit/c8f9bf8f3c00e831067734b835f54a1c140010eb))
+
 ## [7.5.2](https://github.com/baumrock/RockMigrations/compare/v7.5.1...v7.5.2) (2026-11-22)
 
 
@@ -31,11 +38,4 @@
 ### Bug Fixes
 
 * defer field save when a fieldtype lazy-loads as the FieldtypeText fallback ([6de1585](https://github.com/baumrock/RockMigrations/commit/6de15850367e1cef061f2609ab27c02572c3a25d)), closes [#2261](https://github.com/baumrock/RockMigrations/issues/2261)
-
-## [7.4.1](https://github.com/baumrock/RockMigrations/compare/v7.4.0...v7.4.1) (2026-02-11)
-
-
-### Bug Fixes
-
-* only log deprecated magic field methods in debug mode ([f38c525](https://github.com/baumrock/RockMigrations/commit/f38c525442bdc29bbb13b6c8dbd8f2d1e3cb4144))
 
